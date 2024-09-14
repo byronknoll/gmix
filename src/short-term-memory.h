@@ -13,6 +13,9 @@ struct ShortTermMemory {
   // >=128: 7 bits seen
   int bit_context;
 
+  // Newly perceived bit.
+  int new_bit;
+
   ContextHashOutput context_hash;
 };
 

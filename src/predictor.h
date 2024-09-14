@@ -11,6 +11,9 @@
 class Predictor {
  public:
   Predictor();
+  float Predict();
+  void Perceive(int bit);
+  void Train();
 
  private:
   LongTermMemory long_term_memory_;

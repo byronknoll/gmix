@@ -10,7 +10,7 @@ class Model {
   virtual ~Model() {}
   virtual void Predict(ShortTermMemory& short_term_memory,
                        const LongTermMemory& long_term_memory) = 0;
-  virtual void Perceive(int bit, ShortTermMemory& short_term_memory,
+  virtual void Perceive(ShortTermMemory& short_term_memory,
                         const LongTermMemory& long_term_memory) = 0;
   virtual void Learn(const ShortTermMemory& short_term_memory,
                      LongTermMemory& long_term_memory) = 0;
