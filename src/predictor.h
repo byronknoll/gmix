@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 
-#include "long-term-memory/long-term-memory.h"
+#include "long-term-memory.h"
 #include "model.h"
 #include "short-term-memory.h"
 

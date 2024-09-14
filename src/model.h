@@ -1,7 +1,7 @@
 #ifndef MODEL_H_
 #define MODEL_H_
 
-#include "long-term-memory/long-term-memory.h"
+#include "long-term-memory.h"
 #include "short-term-memory.h"
 
 class Model {
