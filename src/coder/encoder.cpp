@@ -17,6 +17,7 @@ void Encoder::Encode(int bit) {
     x1_ = xmid + 1;
   }
   p_->Perceive(bit);
+  p_->Learn();
 
   while (((x1_ ^ x2_) & 0xff000000) == 0) {
     WriteByte(x2_ >> 24);

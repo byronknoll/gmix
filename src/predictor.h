@@ -13,7 +13,7 @@ class Predictor {
   Predictor();
   float Predict();
   void Perceive(int bit);
-  void Train();
+  void Learn();
 
  private:
   LongTermMemory long_term_memory_;

@@ -27,6 +27,7 @@ int Decoder::Decode() {
     x1_ = xmid + 1;
   }
   p_->Perceive(bit);
+  p_->Learn();
 
   while (((x1_ ^ x2_) & 0xff000000) == 0) {
     x1_ <<= 8;

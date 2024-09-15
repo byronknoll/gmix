@@ -18,7 +18,7 @@ struct LongTermMemory : MemoryInterface {
   void WriteToDisk() {}
   void ReadFromDisk() {}
 
-  DirectMemory direct_;
+  DirectMemory direct;
 };
 
 #endif  // LONG_TERM_MEMORY_H_
