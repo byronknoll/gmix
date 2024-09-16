@@ -22,6 +22,8 @@ struct ShortTermMemory : MemoryInterface {
   void WriteToDisk() {}
   void ReadFromDisk() {}
 
+  // Predictions for the next bit of data. Each prediction should be a
+  // probability between 0 to 1.
   std::vector<float> predictions;
 
   // The most recently perceived bit.

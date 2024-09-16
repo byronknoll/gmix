@@ -1,13 +1,16 @@
 #ifndef PREDICTOR_H_
 #define PREDICTOR_H_
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "long-term-memory.h"
 #include "model.h"
 #include "short-term-memory.h"
 
+// This is the main predictor which runs all models to produce a final
+// prediction. The Predict+Perceive+Learn functions are similar to the Model
+// interface (see model.h).
 class Predictor : MemoryInterface {
  public:
   Predictor();
