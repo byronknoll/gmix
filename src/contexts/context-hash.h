@@ -6,7 +6,7 @@
 class ContextHash : public Model {
  public:
   ContextHash(unsigned int order, unsigned int hash_size,
-              unsigned long long& output, unsigned long long& max_size);
+              ContextHashOutput& output);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory) {}
   void Perceive(ShortTermMemory& short_term_memory,
@@ -16,8 +16,7 @@ class ContextHash : public Model {
 
  private:
   unsigned int hash_size_;
-  unsigned long long& output_;
-  unsigned long long& size_;
+  ContextHashOutput& output_;
 };
 
 #endif  // CONTEXTS_CONTEXT_HASH_H_
