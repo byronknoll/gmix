@@ -16,7 +16,7 @@
 //
 // Models always "Predict", "Perceive", and then optionally "Learn". See below
 // for descriptions of these three functions.
-class Model {
+class Model : MemoryInterface {
  public:
   Model() {}
   virtual ~Model() {}

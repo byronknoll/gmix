@@ -8,12 +8,14 @@
 #include "model.h"
 #include "short-term-memory.h"
 
-class Predictor {
+class Predictor : MemoryInterface {
  public:
   Predictor();
   float Predict();
   void Perceive(int bit);
   void Learn();
+  void WriteToDisk() {}
+  void ReadFromDisk() {}
 
  private:
   LongTermMemory long_term_memory_;
