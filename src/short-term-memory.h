@@ -6,11 +6,15 @@
 #include "memory-interface.h"
 
 struct ContextHashOutput {
-  unsigned long long context = 0, max_size;
+  // Hash of the most recent bytes. Values range from 0 to (max_size - 1).
+  unsigned long long context = 0;
+  unsigned long long max_size;
 };
 
-// ShortTermMemory contains all the "state" models need in order to make
-// predictions, but does not contain any data used for training/learning.
+// ShortTermMemory contains "state" models need in order to make predictions,
+// but does not contain any data used for training/learning. Models can also
+// store state within member variables of their class, so the primary purpose of
+// this struct is as a way to share inputs/outputs between models.
 struct ShortTermMemory : MemoryInterface {
  public:
   ShortTermMemory() {}

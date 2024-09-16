@@ -11,7 +11,8 @@ struct DirectMemory {
   std::vector<std::array<unsigned char, 255>> counts;
 };
 
-// LongTermMemory contains any data models use for training/learning.
+// LongTermMemory contains any data/information that models use for
+// training/learning.
 struct LongTermMemory : MemoryInterface {
  public:
   LongTermMemory() {}
