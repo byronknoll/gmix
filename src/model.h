@@ -29,7 +29,7 @@ class Model : MemoryInterface {
   virtual void Perceive(ShortTermMemory& short_term_memory,
                         const LongTermMemory& long_term_memory) = 0;
   // "Learn" can be called after "Perceive", allowing models to update their
-  // long-term memory. Note: "Learn" is not always called. Models should be able
+  // long-term memory. Note: calling "Learn" is optional. Models should be able
   // to make meaningful predictions even when long-term memory is frozen.
   virtual void Learn(const ShortTermMemory& short_term_memory,
                      LongTermMemory& long_term_memory) = 0;
