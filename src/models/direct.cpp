@@ -2,7 +2,7 @@
 
 Direct::Direct(ShortTermMemory& short_term_memory,
                LongTermMemory& long_term_memory, int limit, float delta,
-               ContextHashOutput& context, DirectMemory& memory)
+               RecentBytesContextOutput& context, DirectMemory& memory)
     : limit_(limit),
       delta_(delta),
       divisor_(1.0 / (limit + delta)),

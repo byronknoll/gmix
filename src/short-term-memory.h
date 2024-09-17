@@ -5,7 +5,7 @@
 
 #include "memory-interface.h"
 
-struct ContextHashOutput {
+struct RecentBytesContextOutput {
   // Hash of the most recent bytes. Values range from 0 to (max_size - 1).
   unsigned long long context = 0;
   unsigned long long max_size;
@@ -45,8 +45,8 @@ struct ShortTermMemory : MemoryInterface {
   // (i.e. recent_bits becomes "1").
   int last_byte = 0;
 
-  ContextHashOutput hash_1_8;
-  ContextHashOutput hash_2_8;
+  RecentBytesContextOutput recent1;
+  RecentBytesContextOutput recent2;
 };
 
 #endif  // SHORT_TERM_MEMORY_H_

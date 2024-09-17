@@ -6,7 +6,8 @@
 class Direct : public Model {
  public:
   Direct(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-         int limit, float delta, ContextHashOutput& context, DirectMemory& memory);
+         int limit, float delta, RecentBytesContextOutput& context,
+         DirectMemory& memory);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Perceive(ShortTermMemory& short_term_memory,
@@ -19,7 +20,7 @@ class Direct : public Model {
  private:
   int limit_, prediction_index_;
   float delta_, divisor_;
-  ContextHashOutput& context_;
+  RecentBytesContextOutput& context_;
   DirectMemory& memory_;
 };
 

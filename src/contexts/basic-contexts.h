@@ -3,6 +3,7 @@
 
 #include "../model.h"
 
+// This is used to create a set of simple contexts.
 class BasicContexts : public Model {
  public:
   BasicContexts() {}
