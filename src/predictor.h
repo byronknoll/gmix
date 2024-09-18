@@ -10,7 +10,7 @@
 #include "mixer/sigmoid.h"
 
 // This is the main predictor which runs all models to produce a final
-// prediction. The Predict+Perceive+Learn functions are similar to the Model
+// prediction. The Predict+Learn functions are similar to the Model
 // interface (see model.h).
 class Predictor : MemoryInterface {
  public:

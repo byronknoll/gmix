@@ -13,9 +13,6 @@
 // This separation of data is important, so that models can train/learn their
 // long-term memory, and separately use their short-term memory for
 // prediction/inference (with long-term memory frozen).
-//
-// Models always "Predict", "Perceive", and then optionally "Learn". See below
-// for descriptions of these three functions.
 class Model : MemoryInterface {
  public:
   Model() {}
@@ -24,13 +21,10 @@ class Model : MemoryInterface {
   // Models can make a prediction about the next bit in this function.
   virtual void Predict(ShortTermMemory& short_term_memory,
                        const LongTermMemory& long_term_memory) = 0;
-  // "Perceive" is called after the next bit of the input sequence is seen.
-  // Models can update their state (short-term memory) based on this bit.
-  virtual void Perceive(ShortTermMemory& short_term_memory,
-                        const LongTermMemory& long_term_memory) = 0;
-  // "Learn" can be called after "Perceive", allowing models to update their
-  // long-term memory. Note: calling "Learn" is optional. Models should be able
-  // to make meaningful predictions even when long-term memory is frozen.
+  // "Learn" is called after the next bit of the input sequence is seen,
+  // allowing models to update their long-term memory. Note: calling "Learn" is
+  // optional. Models should be able to make meaningful predictions even when
+  // long-term memory is frozen.
   virtual void Learn(const ShortTermMemory& short_term_memory,
                      LongTermMemory& long_term_memory) = 0;
 };

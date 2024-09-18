@@ -9,8 +9,6 @@ class BasicContexts : public Model {
   BasicContexts() {}
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
-  void Perceive(ShortTermMemory& short_term_memory,
-                const LongTermMemory& long_term_memory) {}
   void Learn(const ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory) {}
   void WriteToDisk() {}

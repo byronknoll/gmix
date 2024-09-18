@@ -14,8 +14,6 @@ class Mixer : public Model {
         bool final_layer);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
-  void Perceive(ShortTermMemory& short_term_memory,
-                const LongTermMemory& long_term_memory) {}
   void Learn(const ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory);
   void WriteToDisk() {}

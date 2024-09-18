@@ -61,9 +61,6 @@ float Predictor::Predict() {
 
 void Predictor::Perceive(int bit) {
   short_term_memory_.new_bit = bit;
-  for (const auto& model : models_) {
-    model->Perceive(short_term_memory_, long_term_memory_);
-  }
 }
 
 void Predictor::Learn() {
