@@ -1,11 +1,10 @@
 #include "direct.h"
 
-Direct::Direct(ShortTermMemory& short_term_memory, int limit, float delta,
+Direct::Direct(ShortTermMemory& short_term_memory, int limit,
                unsigned long long& context, unsigned long long size,
                DirectMemory& memory)
     : limit_(limit),
-      delta_(delta),
-      divisor_(1.0 / (limit + delta)),
+      min_learning_rate_(1.0 / limit),
       context_(context),
       memory_(memory) {
   prediction_index_ = short_term_memory.predictions.size();
@@ -27,14 +26,14 @@ void Direct::Predict(ShortTermMemory& short_term_memory,
 
 void Direct::Learn(const ShortTermMemory& short_term_memory,
                    LongTermMemory& long_term_memory) {
-  float divisor = divisor_;
+  float learning_rate = min_learning_rate_;
   if (memory_.counts[context_][short_term_memory.bit_context] < limit_) {
     ++memory_.counts[context_][short_term_memory.bit_context];
-    divisor = 1.0 / (memory_.counts[context_][short_term_memory.bit_context] +
-                     delta_);
+    learning_rate =
+        1.0 / memory_.counts[context_][short_term_memory.bit_context];
   }
   memory_.predictions[context_][short_term_memory.bit_context] +=
       (short_term_memory.new_bit -
        memory_.predictions[context_][short_term_memory.bit_context]) *
-      divisor;
+      learning_rate;
 }

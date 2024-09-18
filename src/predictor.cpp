@@ -20,16 +20,16 @@ Predictor::Predictor() : sigmoid_(100001) {
 
 void Predictor::AddDirect() {
   Direct* direct0 =
-      new Direct(short_term_memory_, 30, 0, short_term_memory_.always_zero, 1,
+      new Direct(short_term_memory_, 30, short_term_memory_.always_zero, 1,
                  long_term_memory_.direct_0);
   models_.push_back(std::unique_ptr<Model>(direct0));
 
-  Direct* direct1 = new Direct(short_term_memory_, 30, 0,
+  Direct* direct1 = new Direct(short_term_memory_, 30,
                                short_term_memory_.last_byte_context, 256,
                                long_term_memory_.direct_1);
   models_.push_back(std::unique_ptr<Model>(direct1));
 
-  Direct* direct2 = new Direct(short_term_memory_, 30, 0,
+  Direct* direct2 = new Direct(short_term_memory_, 30,
                                short_term_memory_.last_two_bytes_context,
                                256 * 256, long_term_memory_.direct_2);
   models_.push_back(std::unique_ptr<Model>(direct2));
