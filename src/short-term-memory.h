@@ -5,12 +5,6 @@
 
 #include "memory-interface.h"
 
-struct RecentBytesContextOutput {
-  // Hash of the most recent bytes. Values range from 0 to (max_size - 1).
-  unsigned long long context = 0;
-  unsigned long long max_size;
-};
-
 // ShortTermMemory contains "state" models need in order to make predictions,
 // but does not contain any data used for training/learning. Models can also
 // store state within member variables of their class, so the primary purpose of
@@ -45,8 +39,9 @@ struct ShortTermMemory : MemoryInterface {
   // (i.e. recent_bits becomes "1").
   int last_byte = 0;
 
-  RecentBytesContextOutput recent1;
-  RecentBytesContextOutput recent2;
+  unsigned long long always_zero = 0;
+  unsigned long long last_byte_context = 0;
+  unsigned long long last_two_bytes_context = 0;
 };
 
 #endif  // SHORT_TERM_MEMORY_H_
