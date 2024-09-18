@@ -20,8 +20,9 @@ Direct::Direct(ShortTermMemory& short_term_memory, int limit,
 
 void Direct::Predict(ShortTermMemory& short_term_memory,
                      const LongTermMemory& long_term_memory) {
-  short_term_memory.predictions[prediction_index_] =
-      memory_.predictions[context_][short_term_memory.bit_context];
+  short_term_memory.SetPrediction(
+      memory_.predictions[context_][short_term_memory.bit_context],
+      prediction_index_);
 }
 
 void Direct::Learn(const ShortTermMemory& short_term_memory,

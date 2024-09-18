@@ -1,12 +1,19 @@
 #include "mixer.h"
 
 Mixer::Mixer(ShortTermMemory& short_term_memory, unsigned long long& context,
-             const Sigmoid& sigmoid, float learning_rate)
+             const std::valarray<float>& inputs, float learning_rate,
+             bool final_layer)
     : context_(context),
-      sigmoid_(sigmoid),
       max_steps_(1),
       steps_(0),
-      learning_rate_(learning_rate) {}
+      output_index_(short_term_memory.num_mixers),
+      learning_rate_(learning_rate),
+      inputs_(inputs),
+      final_layer_(final_layer) {
+  if (!final_layer) {
+    ++short_term_memory.num_mixers;
+  }
+}
 
 MixerData* Mixer::FindMixerData(const LongTermMemory& long_term_memory) {
   MixerData* data = nullptr;
@@ -35,15 +42,15 @@ MixerData* Mixer::FindOrCreateMixerData(
           long_term_memory.mixer_map.end()) {
     data = long_term_memory.mixer_map[0xDEADBEEF].get();
     if (data == nullptr) {
-      long_term_memory.mixer_map[0xDEADBEEF] = std::unique_ptr<MixerData>(
-          new MixerData(short_term_memory.predictions.size()));
+      long_term_memory.mixer_map[0xDEADBEEF] =
+          std::unique_ptr<MixerData>(new MixerData(inputs_.size()));
       data = long_term_memory.mixer_map[0xDEADBEEF].get();
     }
   } else {
     data = long_term_memory.mixer_map[context_].get();
     if (data == nullptr) {
-      long_term_memory.mixer_map[context_] = std::unique_ptr<MixerData>(
-          new MixerData(short_term_memory.predictions.size()));
+      long_term_memory.mixer_map[context_] =
+          std::unique_ptr<MixerData>(new MixerData(inputs_.size()));
       data = long_term_memory.mixer_map[context_].get();
     }
   }
@@ -56,11 +63,15 @@ void Mixer::Predict(ShortTermMemory& short_term_memory,
   MixerData* data = FindMixerData(long_term_memory);
   float p = 0;
   if (data != nullptr) {
-    for (int i = 0; i < short_term_memory.predictions.size(); ++i) {
-      p += sigmoid_.Logit(short_term_memory.predictions[i]) * data->weights[i];
+    for (int i = 0; i < inputs_.size(); ++i) {
+      p += inputs_[i] * data->weights[i];
     }
   }
-  short_term_memory.mixer_output = Sigmoid::Logistic(p);
+  if (final_layer_) {
+    short_term_memory.final_mixer_output = p;
+  } else {
+    short_term_memory.mixer_outputs[output_index_] = p;
+  }
 }
 
 void Mixer::Learn(const ShortTermMemory& short_term_memory,
@@ -68,14 +79,19 @@ void Mixer::Learn(const ShortTermMemory& short_term_memory,
   MixerData* data = FindOrCreateMixerData(short_term_memory, long_term_memory);
   float decay = 0.9 / pow(0.0000001 * steps_ + 0.8, 0.8);
   decay *= 1.5 - ((1.0 * data->steps) / max_steps_);
-  float update = decay * learning_rate_ *
-                 (short_term_memory.mixer_output - short_term_memory.new_bit);
+  float p;
+  if (final_layer_) {
+    p = Sigmoid::Logistic(short_term_memory.final_mixer_output);
+  } else {
+    p = Sigmoid::Logistic(short_term_memory.mixer_outputs[output_index_]);
+  }
+  float update = decay * learning_rate_ * (p - short_term_memory.new_bit);
   ++steps_;
   ++data->steps;
   if (data->steps > max_steps_) {
     max_steps_ = data->steps;
   }
-  data->weights -= update * short_term_memory.predictions;
+  data->weights -= update * inputs_;
   if ((data->steps & 1023) == 0) {
     data->weights *= 1.0f - 3.0e-6f;
   }

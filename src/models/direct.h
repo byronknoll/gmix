@@ -8,7 +8,7 @@ class Direct : public Model {
  public:
   // limit: as the context count gets closer to this limit, the learning rate
   // decreases.
-  // size: the number of possible context values.
+  // size: context should be in the range: 0 to (size-1).
   Direct(ShortTermMemory& short_term_memory, int limit,
          unsigned long long& context, unsigned long long size,
          DirectMemory& memory);

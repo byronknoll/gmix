@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "memory-interface.h"
+#include "mixer/sigmoid.h"
 
 // ShortTermMemory contains "state" models need in order to make predictions,
 // but does not contain any data used for training/learning. Models can also
@@ -11,13 +12,16 @@
 // this struct is as a way to share inputs/outputs between models.
 struct ShortTermMemory : MemoryInterface {
  public:
-  ShortTermMemory() {}
+  ShortTermMemory(const Sigmoid& sigmoid) : sigmoid(sigmoid) {}
   ~ShortTermMemory() {}
   void WriteToDisk() {}
   void ReadFromDisk() {}
 
   // Predictions for the next bit of data. Each prediction should be a
   // probability between 0 to 1.
+  void SetPrediction(float prediction, int index) {
+    predictions[index] = sigmoid.Logit(prediction);
+  }
   std::valarray<float> predictions;
   int num_predictions = 0;
 
@@ -44,7 +48,11 @@ struct ShortTermMemory : MemoryInterface {
   unsigned long long last_byte_context = 0;
   unsigned long long last_two_bytes_context = 0;
 
-  float mixer_output = 0.5;
+  std::valarray<float> mixer_outputs;
+  int num_mixers = 0;
+  float final_mixer_output = 0.5;
+
+  const Sigmoid& sigmoid;
 };
 
 #endif  // SHORT_TERM_MEMORY_H_

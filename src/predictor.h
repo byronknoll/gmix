@@ -22,12 +22,13 @@ class Predictor : MemoryInterface {
   void ReadFromDisk() {}
 
  private:
+  Sigmoid sigmoid_;
   LongTermMemory long_term_memory_;
   ShortTermMemory short_term_memory_;
   std::vector<std::unique_ptr<Model>> models_;
-  Sigmoid sigmoid_;
 
   void AddDirect();
+  void AddMixers();
 };
 
 #endif  // PREDICTOR_H_
