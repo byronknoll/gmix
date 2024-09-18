@@ -20,6 +20,7 @@ struct LongTermMemory : MemoryInterface {
   void WriteToDisk() {}
   void ReadFromDisk() {}
 
+  DirectMemory direct_0;
   DirectMemory direct_1;
   DirectMemory direct_2;
 };
