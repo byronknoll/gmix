@@ -5,8 +5,8 @@
 
 class Direct : public Model {
  public:
-  Direct(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-         int limit, float delta, unsigned long long& context, unsigned long long size,
+  Direct(ShortTermMemory& short_term_memory, int limit, float delta,
+         unsigned long long& context, unsigned long long size,
          DirectMemory& memory);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);

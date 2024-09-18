@@ -7,6 +7,7 @@
 #include "long-term-memory.h"
 #include "model.h"
 #include "short-term-memory.h"
+#include "mixer/sigmoid.h"
 
 // This is the main predictor which runs all models to produce a final
 // prediction. The Predict+Perceive+Learn functions are similar to the Model
@@ -24,6 +25,7 @@ class Predictor : MemoryInterface {
   LongTermMemory long_term_memory_;
   ShortTermMemory short_term_memory_;
   std::vector<std::unique_ptr<Model>> models_;
+  Sigmoid sigmoid_;
 
   void AddDirect();
 };

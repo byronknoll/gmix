@@ -1,7 +1,6 @@
 #include "direct.h"
 
-Direct::Direct(ShortTermMemory& short_term_memory,
-               LongTermMemory& long_term_memory, int limit, float delta,
+Direct::Direct(ShortTermMemory& short_term_memory, int limit, float delta,
                unsigned long long& context, unsigned long long size,
                DirectMemory& memory)
     : limit_(limit),
@@ -10,7 +9,7 @@ Direct::Direct(ShortTermMemory& short_term_memory,
       context_(context),
       memory_(memory) {
   prediction_index_ = short_term_memory.predictions.size();
-  short_term_memory.predictions.push_back(0.5);
+  ++short_term_memory.num_predictions;
   memory_.predictions.resize(size, std::array<float, 255>());
   memory_.counts.resize(size, std::array<unsigned char, 255>());
 

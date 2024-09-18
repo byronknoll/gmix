@@ -18,7 +18,8 @@ struct ShortTermMemory : MemoryInterface {
 
   // Predictions for the next bit of data. Each prediction should be a
   // probability between 0 to 1.
-  std::vector<float> predictions;
+  std::valarray<float> predictions;
+  int num_predictions = 0;
 
   // The most recently perceived bit.
   int new_bit = 0;
@@ -42,6 +43,8 @@ struct ShortTermMemory : MemoryInterface {
   unsigned long long always_zero = 0;
   unsigned long long last_byte_context = 0;
   unsigned long long last_two_bytes_context = 0;
+
+  float mixer_output = 0.5;
 };
 
 #endif  // SHORT_TERM_MEMORY_H_
