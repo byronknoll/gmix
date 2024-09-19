@@ -11,8 +11,8 @@ class BasicContexts : public Model {
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory) {}
-  void WriteToDisk() {}
-  void ReadFromDisk() {}
+  void WriteToDisk(std::ofstream* os) {}
+  void ReadFromDisk(std::ifstream* is) {}
 };
 
 #endif  // CONTEXTS_BASIC_CONTEXTS_H_

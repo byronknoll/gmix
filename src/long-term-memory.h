@@ -29,8 +29,8 @@ struct LongTermMemory : MemoryInterface {
  public:
   LongTermMemory() {}
   ~LongTermMemory() {}
-  void WriteToDisk() {}
-  void ReadFromDisk() {}
+  void WriteToDisk(std::ofstream* os) {}
+  void ReadFromDisk(std::ifstream* is) {}
 
   DirectMemory direct_0;
   DirectMemory direct_1;

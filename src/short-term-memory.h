@@ -14,8 +14,8 @@ struct ShortTermMemory : MemoryInterface {
  public:
   ShortTermMemory(const Sigmoid& sigmoid) : sigmoid(sigmoid) {}
   ~ShortTermMemory() {}
-  void WriteToDisk() {}
-  void ReadFromDisk() {}
+  void WriteToDisk(std::ofstream* os) {}
+  void ReadFromDisk(std::ifstream* is) {}
 
   // Predictions for the next bit of data. Each prediction should be a
   // probability between 0 to 1.

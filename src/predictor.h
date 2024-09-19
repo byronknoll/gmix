@@ -2,24 +2,29 @@
 #define PREDICTOR_H_
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "long-term-memory.h"
+#include "mixer/sigmoid.h"
 #include "model.h"
 #include "short-term-memory.h"
-#include "mixer/sigmoid.h"
 
 // This is the main predictor which runs all models to produce a final
-// prediction. The Predict+Learn functions are similar to the Model
-// interface (see model.h).
-class Predictor : MemoryInterface {
+// prediction. The following functions should be called in order:
+// (1) Predict: predicts the next bit.
+// (2) Perceive: pass in the next bit of input.
+// (3) Learn: this updates long term memory to learn from the input. After
+// training is finished, calling this is optional since predictions can be made
+// using just Predict+Perceive.
+class Predictor {
  public:
   Predictor();
   float Predict();
   void Perceive(int bit);
   void Learn();
-  void WriteToDisk() {}
-  void ReadFromDisk() {}
+  void WriteCheckpoint(std::string path) {}
+  void ReadCheckpoint(std::string path) {}
 
  private:
   Sigmoid sigmoid_;
