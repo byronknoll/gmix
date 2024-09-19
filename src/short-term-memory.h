@@ -1,7 +1,7 @@
 #ifndef SHORT_TERM_MEMORY_H_
 #define SHORT_TERM_MEMORY_H_
 
-#include <vector>
+#include <valarray>
 
 #include "memory-interface.h"
 #include "mixer/sigmoid.h"
@@ -14,8 +14,8 @@ struct ShortTermMemory : MemoryInterface {
  public:
   ShortTermMemory(const Sigmoid& sigmoid) : sigmoid(sigmoid) {}
   ~ShortTermMemory() {}
-  void WriteToDisk(std::ofstream* os) {}
-  void ReadFromDisk(std::ifstream* is) {}
+  void WriteToDisk(std::ofstream* os);
+  void ReadFromDisk(std::ifstream* is);
 
   // Predictions for the next bit of data. Each prediction should be a
   // probability between 0 to 1.

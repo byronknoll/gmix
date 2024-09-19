@@ -9,20 +9,20 @@
 
 class Mixer : public Model {
  public:
-  Mixer(ShortTermMemory& short_term_memory, unsigned long long& context,
-        const std::valarray<float>& inputs, float learning_rate,
-        bool final_layer);
+  Mixer(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
+        unsigned long long& context, const std::valarray<float>& inputs,
+        float learning_rate, bool final_layer);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory);
-  void WriteToDisk(std::ofstream* os) {}
-  void ReadFromDisk(std::ifstream* is) {}
+  void WriteToDisk(std::ofstream* os);
+  void ReadFromDisk(std::ifstream* is);
 
  private:
   unsigned long long& context_;
   unsigned long long max_steps_, steps_;
-  int output_index_;
+  int output_index_, memory_index_;
   float learning_rate_;
   const std::valarray<float>& inputs_;
   bool final_layer_;

@@ -23,8 +23,8 @@ class Predictor {
   float Predict();
   void Perceive(int bit);
   void Learn();
-  void WriteCheckpoint(std::string path) {}
-  void ReadCheckpoint(std::string path) {}
+  void WriteCheckpoint(std::string path);
+  void ReadCheckpoint(std::string path);
 
  private:
   Sigmoid sigmoid_;

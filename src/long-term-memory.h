@@ -23,20 +23,21 @@ struct MixerData {
   std::valarray<float> weights;
 };
 
+struct MixerMemory {
+  std::unordered_map<unsigned int, std::unique_ptr<MixerData>> mixer_map;
+};
+
 // LongTermMemory contains any data/information that models use for
 // training/learning.
 struct LongTermMemory : MemoryInterface {
  public:
   LongTermMemory() {}
   ~LongTermMemory() {}
-  void WriteToDisk(std::ofstream* os) {}
-  void ReadFromDisk(std::ifstream* is) {}
+  void WriteToDisk(std::ofstream* os);
+  void ReadFromDisk(std::ifstream* is);
 
-  DirectMemory direct_0;
-  DirectMemory direct_1;
-  DirectMemory direct_2;
-
-  std::unordered_map<unsigned int, std::unique_ptr<MixerData>> mixer_map;
+  std::vector<std::unique_ptr<DirectMemory>> direct;
+  std::vector<std::unique_ptr<MixerMemory>> mixers;
 };
 
 #endif  // LONG_TERM_MEMORY_H_

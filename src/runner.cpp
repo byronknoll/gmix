@@ -164,6 +164,7 @@ bool RunGeneration(const std::string& input_path, const std::string& output_path
   printf("\rcross entropy: %.4f\n", entropy);
 
   data_in.close();
+  p.WriteCheckpoint("checkpoint.dat");
 
   percent = 1 + (output_size / 100);
   for (int i = 0; i < output_size; ++i) {

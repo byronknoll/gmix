@@ -9,9 +9,8 @@ class Direct : public Model {
   // limit: as the context count gets closer to this limit, the learning rate
   // decreases.
   // size: context should be in the range: 0 to (size-1).
-  Direct(ShortTermMemory& short_term_memory, int limit,
-         unsigned long long& context, unsigned long long size,
-         DirectMemory& memory);
+  Direct(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
+         int limit, unsigned long long& context, unsigned long long size);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
@@ -20,10 +19,9 @@ class Direct : public Model {
   void ReadFromDisk(std::ifstream* is) {}
 
  private:
-  int limit_, prediction_index_;
+  int limit_, prediction_index_, memory_index_;
   float min_learning_rate_;
   unsigned long long& context_;
-  DirectMemory& memory_;
 };
 
 #endif  // MODELS_DIRECT_H_

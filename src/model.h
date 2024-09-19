@@ -27,6 +27,8 @@ class Model : MemoryInterface {
   // long-term memory is frozen.
   virtual void Learn(const ShortTermMemory& short_term_memory,
                      LongTermMemory& long_term_memory) = 0;
+  virtual void WriteToDisk(std::ofstream* os) = 0;
+  virtual void ReadFromDisk(std::ifstream* is) = 0;
 };
 
 #endif  // MODEL_H_
