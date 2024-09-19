@@ -8,9 +8,9 @@
 #include <fstream>
 #include <vector>
 
-#include "coder/decoder.h"
-#include "coder/encoder.h"
-#include "predictor.h"
+#include "../coder/decoder.h"
+#include "../coder/encoder.h"
+#include "../predictor.h"
 
 namespace runner_utils {
 inline float Rand() {

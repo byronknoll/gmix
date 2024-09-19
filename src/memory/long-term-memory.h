@@ -7,7 +7,7 @@
 #include <valarray>
 #include <vector>
 
-#include "memory-interface.h"
+#include "../memory-interface.h"
 
 struct DirectMemory {
   // Predictions in 0-1 range. The 255 values are for "bit_context", the outer

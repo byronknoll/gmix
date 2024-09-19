@@ -3,8 +3,8 @@
 
 #include <valarray>
 
-#include "memory-interface.h"
-#include "mixer/sigmoid.h"
+#include "../memory-interface.h"
+#include "../mixer/sigmoid.h"
 
 // ShortTermMemory contains "state" models need in order to make predictions,
 // but does not contain any data used for training/learning. Models can also

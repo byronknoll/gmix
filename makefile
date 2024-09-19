@@ -10,8 +10,8 @@ debug: gmix test
 test: LFLAGS += -Ofast -march=native
 test: tester
 
-GMIX_SRC_FILES := $(filter-out src/tester.cpp, $(wildcard src/*.cpp) $(wildcard src/*/*.cpp))
-TEST_SRC_FILES := $(filter-out src/runner.cpp, $(wildcard src/*.cpp) $(wildcard src/*/*.cpp))
+GMIX_SRC_FILES := $(filter-out src/runner/tester.cpp, $(wildcard src/*.cpp) $(wildcard src/*/*.cpp))
+TEST_SRC_FILES := $(filter-out src/runner/runner.cpp, $(wildcard src/*.cpp) $(wildcard src/*/*.cpp))
 HDR_FILES := $(wildcard src/*.h) $(wildcard src/*/*.cpp)
 
 gmix: $(GMIX_SRC_FILES) $(HDR_FILES)

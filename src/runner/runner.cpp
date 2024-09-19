@@ -6,9 +6,9 @@
 #include <fstream>
 #include <vector>
 
-#include "coder/decoder.h"
-#include "coder/encoder.h"
-#include "predictor.h"
+#include "../coder/decoder.h"
+#include "../coder/encoder.h"
+#include "../predictor.h"
 #include "runner-utils.h"
 
 int Help() {

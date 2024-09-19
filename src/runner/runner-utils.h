@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include "predictor.h"
+#include "../predictor.h"
 
 namespace runner_utils {
 inline float Rand();

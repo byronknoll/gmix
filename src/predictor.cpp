@@ -17,38 +17,34 @@ Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   short_term_memory_.mixer_outputs = 0.5;
 }
 
+void Predictor::AddModel(Model* model) {
+  models_.push_back(std::unique_ptr<Model>(model));
+}
+
 void Predictor::AddDirect() {
-  Direct* direct0 = new Direct(short_term_memory_, long_term_memory_, 30,
-                               short_term_memory_.always_zero, 1);
-  models_.push_back(std::unique_ptr<Model>(direct0));
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
+                      short_term_memory_.always_zero, 1));
 
-  Direct* direct1 = new Direct(short_term_memory_, long_term_memory_, 30,
-                               short_term_memory_.last_byte_context, 256);
-  models_.push_back(std::unique_ptr<Model>(direct1));
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
+                      short_term_memory_.last_byte_context, 256));
 
-  Direct* direct2 =
-      new Direct(short_term_memory_, long_term_memory_, 30,
-                 short_term_memory_.last_two_bytes_context, 256 * 256);
-  models_.push_back(std::unique_ptr<Model>(direct2));
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
+                      short_term_memory_.last_two_bytes_context, 256 * 256));
 }
 
 void Predictor::AddMixers() {
-  Mixer* mixer1 = new Mixer(short_term_memory_, long_term_memory_,
-                            short_term_memory_.last_byte_context,
-                            short_term_memory_.predictions, 0.005, false);
-  models_.push_back(std::unique_ptr<Model>(mixer1));
-  Mixer* mixer2 = new Mixer(short_term_memory_, long_term_memory_,
-                            short_term_memory_.always_zero,
-                            short_term_memory_.predictions, 0.005, false);
-  models_.push_back(std::unique_ptr<Model>(mixer2));
-  Mixer* mixer3 = new Mixer(short_term_memory_, long_term_memory_,
-                            short_term_memory_.last_two_bytes_context,
-                            short_term_memory_.predictions, 0.005, false);
-  models_.push_back(std::unique_ptr<Model>(mixer3));
-  Mixer* second_layer = new Mixer(
-      short_term_memory_, long_term_memory_, short_term_memory_.always_zero,
-      short_term_memory_.mixer_outputs, 0.005, true);
-  models_.push_back(std::unique_ptr<Model>(second_layer));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_byte_context,
+                     short_term_memory_.predictions, 0.005, false));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.always_zero,
+                     short_term_memory_.predictions, 0.005, false));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_two_bytes_context,
+                     short_term_memory_.predictions, 0.005, false));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.always_zero,
+                     short_term_memory_.mixer_outputs, 0.005, true));
 }
 
 float Predictor::Predict() {

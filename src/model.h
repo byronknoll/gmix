@@ -1,8 +1,8 @@
 #ifndef MODEL_H_
 #define MODEL_H_
 
-#include "long-term-memory.h"
-#include "short-term-memory.h"
+#include "memory/long-term-memory.h"
+#include "memory/short-term-memory.h"
 
 // Models are used to make predictions. There are two types of data models can
 // store:

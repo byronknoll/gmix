@@ -1,5 +1,5 @@
 #include "runner-utils.h"
-#include "coder/encoder.h"
+#include "../coder/encoder.h"
 
 void TestCompression() {
   unsigned long long in, out;

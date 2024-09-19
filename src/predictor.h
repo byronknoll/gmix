@@ -5,10 +5,10 @@
 #include <string>
 #include <vector>
 
-#include "long-term-memory.h"
+#include "memory/long-term-memory.h"
 #include "mixer/sigmoid.h"
 #include "model.h"
-#include "short-term-memory.h"
+#include "memory/short-term-memory.h"
 
 // This is the main predictor which runs all models to produce a final
 // prediction. The following functions should be called in order:
@@ -34,6 +34,7 @@ class Predictor {
 
   void AddDirect();
   void AddMixers();
+  void AddModel(Model* model);
 };
 
 #endif  // PREDICTOR_H_
