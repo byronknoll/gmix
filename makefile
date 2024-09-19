@@ -5,13 +5,20 @@ all: LFLAGS += -Ofast -march=native
 all: gmix
 
 debug: LFLAGS += -ggdb
-debug: gmix
+debug: gmix test
 
-SRC_FILES := $(wildcard src/*.cpp) $(wildcard src/*/*.cpp)
+test: LFLAGS += -Ofast -march=native
+test: tester
+
+GMIX_SRC_FILES := $(filter-out src/tester.cpp, $(wildcard src/*.cpp) $(wildcard src/*/*.cpp))
+TEST_SRC_FILES := $(filter-out src/runner.cpp, $(wildcard src/*.cpp) $(wildcard src/*/*.cpp))
 HDR_FILES := $(wildcard src/*.h) $(wildcard src/*/*.cpp)
 
-gmix: $(SRC_FILES) $(HDR_FILES)
-	$(CC) $(LFLAGS) $(SRC_FILES) -o gmix
+gmix: $(GMIX_SRC_FILES) $(HDR_FILES)
+	$(CC) $(LFLAGS) $(GMIX_SRC_FILES) -o gmix
+
+tester: $(TEST_SRC_FILES) $(HDR_FILES)
+	$(CC) $(LFLAGS) $(TEST_SRC_FILES) -o tester
 
 clean:
-	rm -f gmix
+	rm -f gmix tester

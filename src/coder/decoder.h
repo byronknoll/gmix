@@ -9,6 +9,7 @@ class Decoder {
  public:
   Decoder(std::ifstream* is, Predictor* p);
   int Decode();
+  void SetPredictor(Predictor* p) { p_ = p; }
 
  private:
   int ReadByte();

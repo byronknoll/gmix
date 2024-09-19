@@ -10,6 +10,7 @@ class Encoder {
   Encoder(std::ofstream* os, Predictor* p);
   void Encode(int bit);
   void Flush();
+  void SetPredictor(Predictor* p) { p_ = p; }
 
  private:
   void WriteByte(unsigned int byte);
