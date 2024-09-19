@@ -56,7 +56,11 @@ float Predictor::Predict() {
   for (const auto& model : models_) {
     model->Predict(short_term_memory_, long_term_memory_);
   }
-  return Sigmoid::Logistic(short_term_memory_.final_mixer_output);
+  float prob = Sigmoid::Logistic(short_term_memory_.final_mixer_output);
+  float eps = 0.0001;
+  if (prob < eps) prob = eps;
+  else if (prob > 1-eps) prob = 1-eps;
+  return prob;
 }
 
 void Predictor::Perceive(int bit) {

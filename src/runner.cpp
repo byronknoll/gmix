@@ -10,10 +10,17 @@
 #include "coder/encoder.h"
 #include "predictor.h"
 
+namespace {
+  inline float Rand() {
+    return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+  }
+}
+
 int Help() {
   printf("gmix version 1\n");
   printf("Compress: gmix -c [input] [output]\n");
   printf("Decompress: gmix -d [input] [output]\n");
+  printf("Generate: gmix -g [input] [output] [output_size]\n");
   return -1;
 }
 
@@ -122,9 +129,69 @@ bool RunDecompression(const std::string& input_path,
   return true;
 }
 
+bool RunGeneration(const std::string& input_path, const std::string& output_path,
+    int output_size) {
+  std::ifstream data_in(input_path, std::ios::in | std::ios::binary);
+  if (!data_in.is_open()) return false;
+
+  std::ofstream data_out(output_path, std::ios::out | std::ios::binary);
+  if (!data_out.is_open()) return false;
+
+  data_in.seekg(0, std::ios::end);
+  unsigned long long input_bytes = data_in.tellg();
+  data_in.seekg(0, std::ios::beg);
+
+  Predictor p;
+  float prob = p.Predict();
+  double entropy = 0;
+  unsigned long long percent = 1 + (input_bytes / 100);
+  for (unsigned int pos = 0; pos < input_bytes; ++pos) {
+    int c = data_in.get();
+    for (int j = 7; j >= 0; --j) {
+      int bit = (c >> j) & 1;
+      if (bit) entropy += log2(prob);
+      else entropy += log2(1 - prob);
+      p.Perceive(bit);
+      p.Learn();
+      prob = p.Predict();
+    }
+    if (pos % percent == 0) {
+      printf("\rtraining: %lld%%", pos / percent);
+      fflush(stdout);
+    }
+  }
+  entropy = -entropy / input_bytes;
+  printf("\rcross entropy: %.4f\n", entropy);
+
+  data_in.close();
+
+  percent = 1 + (output_size / 100);
+  for (int i = 0; i < output_size; ++i) {
+    int byte = 1;
+    while (byte < 256) {
+      int bit = 0;
+      float r = Rand();
+      if (r < prob) bit = 1;
+      byte += byte + bit;
+      p.Perceive(bit);
+      prob = p.Predict();
+    }
+    data_out.put(byte);
+    if (i % percent == 0) {
+      printf("\rgeneration: %lld%%", i / percent);
+      fflush(stdout);
+    }
+  }
+  printf("\rgeneration: 100%%\n");  
+
+  data_out.close();
+
+  return true;
+}
+
 int main(int argc, char* argv[]) {
-  if (argc != 4 || strlen(argv[1]) != 2 || argv[1][0] != '-' ||
-      (argv[1][1] != 'c' && argv[1][1] != 'd')) {
+  if (argc < 4 || argc > 5 || strlen(argv[1]) != 2 || argv[1][0] != '-' ||
+      (argv[1][1] != 'c' && argv[1][1] != 'd' && argv[1][1] != 'g')) {
     return Help();
   }
 
@@ -132,6 +199,16 @@ int main(int argc, char* argv[]) {
 
   std::string input_path = argv[2];
   std::string output_path = argv[3];
+
+  if (argv[1][1] == 'g') {
+    if (argc != 5) return Help();
+    int output_size = std::stoi(argv[4]);
+    if (!RunGeneration(input_path, output_path, output_size)) {
+      return Help();
+    }
+    return 0;
+  }
+  if (argc != 4) return Help();
 
   unsigned long long input_bytes = 0, output_bytes = 0;
 
