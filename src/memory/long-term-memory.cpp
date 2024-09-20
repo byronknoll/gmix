@@ -1,14 +1,14 @@
 #include "long-term-memory.h"
 
 void LongTermMemory::WriteToDisk(std::ofstream* os) {
-  for (auto& ptr : direct) {
-    for (auto pred : ptr->predictions) {
-      for (float p : pred) {
+  for (auto& mem_ptr : direct) {
+    for (auto& pred : mem_ptr->predictions) {
+      for (float& p : pred) {
         os->write(reinterpret_cast<char*>(&p), sizeof(p));
       }
     }
-    for (auto pred : ptr->counts) {
-      for (unsigned char c : pred) {
+    for (auto& counts : mem_ptr->counts) {
+      for (unsigned char& c : counts) {
         os->write(reinterpret_cast<char*>(&c), sizeof(c));
       }
     }
@@ -31,14 +31,14 @@ void LongTermMemory::WriteToDisk(std::ofstream* os) {
   }
 }
 void LongTermMemory::ReadFromDisk(std::ifstream* is) {
-  for (auto& ptr : direct) {
-    for (auto pred : ptr->predictions) {
+  for (auto& mem_ptr : direct) {
+    for (auto& pred : mem_ptr->predictions) {
       for (float& p : pred) {
         is->read(reinterpret_cast<char*>(&p), sizeof(p));
       }
     }
-    for (auto pred : ptr->counts) {
-      for (unsigned char& c : pred) {
+    for (auto& counts : mem_ptr->counts) {
+      for (unsigned char& c : counts) {
         is->read(reinterpret_cast<char*>(&c), sizeof(c));
       }
     }
@@ -55,7 +55,6 @@ void LongTermMemory::ReadFromDisk(std::ifstream* is) {
       is->read(reinterpret_cast<char*>(&context), sizeof(context));
       ptr->mixer_map[context] =
           std::unique_ptr<MixerData>(new MixerData(input_size));
-
       is->read(reinterpret_cast<char*>(&(ptr->mixer_map[context]->steps)),
                sizeof(ptr->mixer_map[context]->steps));
       for (int j = 0; j < input_size; ++j) {
