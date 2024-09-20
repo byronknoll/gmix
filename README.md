@@ -9,4 +9,4 @@ gmix is a successor to [cmix](https://github.com/byronknoll/cmix). It has a simi
 1. Ability to generate new data based on a trained model (i.e. LLM-style text generation). cmix is not good at text generation because there is no way to disable training/learning, which causes the output to quickly spiral into repetitive cycles. With gmix, learning can be disabled during text generation.
 1. Improved readability. Cleaner design and source code comments compared to cmix.
 
-Due to the changed memory architecture, models from other programs (e.g. cmix/PAQ8) need to be re-written in order to be used in gmix. gmix is still early in development, so it doesn't have a competitive compression rate yet.
+Due to the changed memory architecture, models from other programs (e.g. cmix/PAQ8) need to be rewritten in order to be used in gmix. gmix is still early in development, so it doesn't have a competitive compression rate yet.
