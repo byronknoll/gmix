@@ -17,10 +17,6 @@ void LstmModel::Predict(ShortTermMemory& short_term_memory,
   if (short_term_memory.recent_bits == 1) {
     top_ = 255;
     bot_ = 0;
-    if (learning_enabled_) {
-      learning_enabled_ = false;
-      lstm_.Perceive(short_term_memory.last_byte);
-    }
     probs_ = lstm_.Predict(short_term_memory.last_byte);
   } else {
     mid_ = bot_ + ((top_ - bot_) / 2);
@@ -40,5 +36,10 @@ void LstmModel::Predict(ShortTermMemory& short_term_memory,
 
 void LstmModel::Learn(const ShortTermMemory& short_term_memory,
                       LongTermMemory& long_term_memory) {
-  learning_enabled_ = true;
+  int current_byte =
+      short_term_memory.recent_bits * 2 + short_term_memory.new_bit;
+  if (current_byte >= 256) {
+    current_byte -= 256;
+    lstm_.Perceive(current_byte);
+  }
 }
