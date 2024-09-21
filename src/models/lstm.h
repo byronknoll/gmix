@@ -1,18 +1,18 @@
-#ifndef LSTM_COMPRESS_H
-#define LSTM_COMPRESS_H
+#ifndef MODELS_LSTM_H
+#define MODELS_LSTM_H
 
-#include <valarray>
-#include <vector>
 #include <memory>
 #include <string>
+#include <valarray>
+#include <vector>
 
 #include "lstm-layer.h"
 
 class Lstm {
  public:
-  Lstm(unsigned int input_size, unsigned int output_size, unsigned int
-      num_cells, unsigned int num_layers, int horizon, float learning_rate,
-      float gradient_clip);
+  Lstm(unsigned int input_size, unsigned int output_size,
+       unsigned int num_cells, unsigned int num_layers, int horizon,
+       float learning_rate, float gradient_clip);
   ~Lstm();
   void Perceive(unsigned int input);
   std::valarray<float>& Predict(unsigned int input);
@@ -31,4 +31,4 @@ class Lstm {
   unsigned int num_cells_, epoch_, horizon_, input_size_, output_size_;
 };
 
-#endif
+#endif  // MODELS_LSTM_H
