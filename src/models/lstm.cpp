@@ -84,7 +84,7 @@ void Lstm::SetInput(const std::valarray<float>& input) {
   }
 }
 
-std::valarray<float>& Lstm::Perceive(unsigned int input) {
+void Lstm::Perceive(unsigned int input) {
   int last_epoch = epoch_ - 1;
   if (last_epoch == -1) last_epoch = horizon_ - 1;
   int old_input = input_history_[last_epoch];
@@ -114,7 +114,6 @@ std::valarray<float>& Lstm::Perceive(unsigned int input) {
     output_layer_[epoch_][i] = output_layer_[last_epoch][i];
     output_layer_[epoch_][i] -= learning_rate_ * error * hidden_;
   }
-  return Predict(input);
 }
 
 std::valarray<float>& Lstm::Predict(unsigned int input) {

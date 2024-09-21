@@ -5,11 +5,12 @@
 #include "contexts/basic-contexts.h"
 #include "mixer/mixer.h"
 #include "models/direct.h"
+#include "models/lstm-model.h"
 
 Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
-  BasicContexts* basic = new BasicContexts();
-  models_.push_back(std::unique_ptr<Model>(basic));
+  AddModel(new BasicContexts());
   AddDirect();
+  AddModel(new LstmModel(short_term_memory_, long_term_memory_));
   AddMixers();
   short_term_memory_.predictions.resize(short_term_memory_.num_predictions);
   short_term_memory_.predictions = 0.5;

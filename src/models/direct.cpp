@@ -4,9 +4,7 @@ Direct::Direct(ShortTermMemory& short_term_memory,
                LongTermMemory& long_term_memory, int limit,
                unsigned long long& context, unsigned long long size)
     : limit_(limit), min_learning_rate_(1.0 / limit), context_(context) {
-  prediction_index_ = short_term_memory.predictions.size();
-
-  ++short_term_memory.num_predictions;
+  prediction_index_ = short_term_memory.num_predictions++;
 
   memory_index_ = long_term_memory.direct.size();
   long_term_memory.direct.push_back(
