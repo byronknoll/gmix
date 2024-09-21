@@ -34,3 +34,20 @@ void Encoder::Flush() {
   }
   WriteByte(x2_ >> 24);
 }
+
+void Encoder::WriteCheckpoint(std::string path) {
+  std::ofstream data_out(path, std::ios::out | std::ios::binary);
+  if (!data_out.is_open()) return;
+  data_out.write(reinterpret_cast<char*>(&x1_), sizeof(x1_));
+  data_out.write(reinterpret_cast<char*>(&x2_), sizeof(x2_));
+  data_out.close();
+  os_->flush();
+}
+
+void Encoder::ReadCheckpoint(std::string path) {
+  std::ifstream data_in(path, std::ios::in | std::ios::binary);
+  if (!data_in.is_open()) return;
+  data_in.read(reinterpret_cast<char*>(&x1_), sizeof(x1_));
+  data_in.read(reinterpret_cast<char*>(&x2_), sizeof(x2_));
+  data_in.close();
+}

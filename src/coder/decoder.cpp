@@ -1,7 +1,8 @@
 #include "decoder.h"
 
-Decoder::Decoder(std::ifstream* is, Predictor* p)
+Decoder::Decoder(std::ifstream* is, Predictor* p, bool resume)
     : is_(is), x1_(0), x2_(0xffffffff), x_(0), p_(p) {
+  if (resume) return;
   for (int i = 0; i < 4; ++i) {
     x_ = (x_ << 8) + (ReadByte() & 0xff);
   }
@@ -35,4 +36,22 @@ int Decoder::Decode() {
     x_ = (x_ << 8) + ReadByte();
   }
   return bit;
+}
+
+void Decoder::WriteCheckpoint(std::string path) {
+  std::ofstream data_out(path, std::ios::out | std::ios::binary);
+  if (!data_out.is_open()) return;
+  data_out.write(reinterpret_cast<char*>(&x1_), sizeof(x1_));
+  data_out.write(reinterpret_cast<char*>(&x2_), sizeof(x2_));
+  data_out.write(reinterpret_cast<char*>(&x_), sizeof(x_));
+  data_out.close();
+}
+
+void Decoder::ReadCheckpoint(std::string path) {
+  std::ifstream data_in(path, std::ios::in | std::ios::binary);
+  if (!data_in.is_open()) return;
+  data_in.read(reinterpret_cast<char*>(&x1_), sizeof(x1_));
+  data_in.read(reinterpret_cast<char*>(&x2_), sizeof(x2_));
+  data_in.read(reinterpret_cast<char*>(&x_), sizeof(x_));
+  data_in.close();
 }

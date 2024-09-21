@@ -7,9 +7,11 @@
 
 class Decoder {
  public:
-  Decoder(std::ifstream* is, Predictor* p);
+  // Set "resume" to true if restarting from a checkpoint.
+  Decoder(std::ifstream* is, Predictor* p, bool resume = false);
   int Decode();
-  void SetPredictor(Predictor* p) { p_ = p; }
+  void WriteCheckpoint(std::string path);
+  void ReadCheckpoint(std::string path);
 
  private:
   int ReadByte();
