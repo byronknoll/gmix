@@ -27,6 +27,12 @@ struct MixerMemory {
   std::unordered_map<unsigned int, std::unique_ptr<MixerData>> mixer_map;
 };
 
+struct NeuronLayerWeights {
+  NeuronLayerWeights(unsigned int input_size, unsigned int num_cells)
+      : weights(std::valarray<float>(input_size), num_cells) {};
+  std::valarray<std::valarray<float>> weights;
+};
+
 // LongTermMemory contains any data/information that models use for
 // training/learning.
 struct LongTermMemory : MemoryInterface {
@@ -40,6 +46,7 @@ struct LongTermMemory : MemoryInterface {
   std::vector<std::unique_ptr<MixerMemory>> mixers;
 
   std::valarray<std::valarray<std::valarray<float>>> lstm_output_layer;
+  std::vector<std::unique_ptr<NeuronLayerWeights>> neuron_layer_weights;
 };
 
 #endif  // LONG_TERM_MEMORY_H_

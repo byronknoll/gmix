@@ -29,7 +29,23 @@ void LongTermMemory::WriteToDisk(std::ofstream* os) {
       }
     }
   }
+
+  for (auto& x : lstm_output_layer) {
+    for (auto& y : x) {
+      for (float& z : y) {
+        os->write(reinterpret_cast<char*>(&z), sizeof(z));
+      }
+    }
+  }
+  for (auto& x : neuron_layer_weights) {
+    for (auto& y : x->weights) {
+      for (float& z : y) {
+        os->write(reinterpret_cast<char*>(&z), sizeof(z));
+      }
+    }
+  }
 }
+
 void LongTermMemory::ReadFromDisk(std::ifstream* is) {
   for (auto& mem_ptr : direct) {
     for (auto& pred : mem_ptr->predictions) {
@@ -61,6 +77,21 @@ void LongTermMemory::ReadFromDisk(std::ifstream* is) {
         float p;
         is->read(reinterpret_cast<char*>(&p), sizeof(p));
         ptr->mixer_map[context]->weights[j] = p;
+      }
+    }
+  }
+
+  for (auto& x : lstm_output_layer) {
+    for (auto& y : x) {
+      for (float& z : y) {
+        is->read(reinterpret_cast<char*>(&z), sizeof(z));
+      }
+    }
+  }
+  for (auto& x : neuron_layer_weights) {
+    for (auto& y : x->weights) {
+      for (float& z : y) {
+        is->read(reinterpret_cast<char*>(&z), sizeof(z));
       }
     }
   }

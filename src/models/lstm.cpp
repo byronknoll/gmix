@@ -38,7 +38,7 @@ Lstm::Lstm(unsigned int input_size, unsigned int output_size,
   for (unsigned int i = 0; i < num_layers; ++i) {
     layers_.push_back(std::unique_ptr<LstmLayer>(new LstmLayer(
         layer_input_[0][i].size() + output_size, input_size_, output_size_,
-        num_cells, horizon, gradient_clip, learning_rate)));
+        num_cells, horizon, gradient_clip, learning_rate, long_term_memory)));
   }
 }
 
@@ -72,7 +72,8 @@ void Lstm::Perceive(unsigned int input, LongTermMemory& long_term_memory) {
         int input_symbol = input_history_[prev_epoch];
         if (epoch == 0) input_symbol = old_input;
         layers_[layer]->BackwardPass(layer_input_[epoch][layer], epoch, layer,
-                                     input_symbol, &hidden_error_);
+                                     input_symbol, &hidden_error_,
+                                     long_term_memory);
       }
     }
   }
@@ -94,7 +95,7 @@ std::valarray<float>& Lstm::Predict(unsigned int input,
     std::copy(start, start + num_cells_,
               begin(layer_input_[epoch_][i]) + input_size_);
     layers_[i]->ForwardPass(layer_input_[epoch_][i], input, &hidden_,
-                            i * num_cells_);
+                            i * num_cells_, long_term_memory);
     if (i < layers_.size() - 1) {
       auto start2 =
           begin(layer_input_[epoch_][i + 1]) + num_cells_ + input_size_;

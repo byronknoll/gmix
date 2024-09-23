@@ -7,9 +7,11 @@
 #include <valarray>
 #include <vector>
 
+#include "../memory/long-term-memory.h"
+
 struct NeuronLayer {
   NeuronLayer(unsigned int input_size, unsigned int num_cells, int horizon,
-              int offset)
+              int offset, LongTermMemory& long_term_memory)
       : error_(num_cells),
         ivar_(horizon),
         gamma_(1.0, num_cells),
@@ -20,33 +22,40 @@ struct NeuronLayer {
         beta_u_(num_cells),
         beta_m_(num_cells),
         beta_v_(num_cells),
-        weights_(std::valarray<float>(input_size), num_cells),
         state_(std::valarray<float>(num_cells), horizon),
         update_(std::valarray<float>(input_size), num_cells),
         m_(std::valarray<float>(input_size), num_cells),
         v_(std::valarray<float>(input_size), num_cells),
         transpose_(std::valarray<float>(num_cells), input_size - offset),
-        norm_(std::valarray<float>(num_cells), horizon) {};
+        norm_(std::valarray<float>(num_cells), horizon) {
+    layer_index_ = long_term_memory.neuron_layer_weights.size();
+    long_term_memory.neuron_layer_weights.push_back(
+        std::unique_ptr<NeuronLayerWeights>(
+            new NeuronLayerWeights(input_size, num_cells)));
+  };
 
   std::valarray<float> error_, ivar_, gamma_, gamma_u_, gamma_m_, gamma_v_,
       beta_, beta_u_, beta_m_, beta_v_;
-  std::valarray<std::valarray<float>> weights_, state_, update_, m_, v_,
-      transpose_, norm_;
+  std::valarray<std::valarray<float>> state_, update_, m_, v_, transpose_,
+      norm_;
+  int layer_index_;
 };
 
 class LstmLayer {
  public:
   LstmLayer(unsigned int input_size, unsigned int auxiliary_input_size,
             unsigned int output_size, unsigned int num_cells, int horizon,
-            float gradient_clip, float learning_rate);
+            float gradient_clip, float learning_rate,
+            LongTermMemory& long_term_memory);
   void ForwardPass(const std::valarray<float>& input, int input_symbol,
-                   std::valarray<float>* hidden, int hidden_start);
+                   std::valarray<float>* hidden, int hidden_start,
+                   const LongTermMemory& long_term_memory);
   void BackwardPass(const std::valarray<float>& input, int epoch, int layer,
-                    int input_symbol, std::valarray<float>* hidden_error);
+                    int input_symbol, std::valarray<float>* hidden_error,
+                    LongTermMemory& long_term_memory);
   static inline float Rand() {
     return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
   }
-  std::vector<std::valarray<std::valarray<float>>*> Weights();
 
  private:
   std::valarray<float> state_, state_error_, stored_error_;
@@ -59,10 +68,11 @@ class LstmLayer {
 
   void ClipGradients(std::valarray<float>* arr);
   void ForwardPass(NeuronLayer& neurons, const std::valarray<float>& input,
-                   int input_symbol);
+                   int input_symbol, const LongTermMemory& long_term_memory);
   void BackwardPass(NeuronLayer& neurons, const std::valarray<float>& input,
                     int epoch, int layer, int input_symbol,
-                    std::valarray<float>* hidden_error);
+                    std::valarray<float>* hidden_error,
+                    LongTermMemory& long_term_memory);
 };
 
 #endif  // MODELS_LSTM_LAYER_H
