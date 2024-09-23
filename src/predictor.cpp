@@ -70,27 +70,33 @@ void Predictor::Learn() {
 }
 
 void Predictor::WriteCheckpoint(std::string path) {
-  std::ofstream data_out(path, std::ios::out | std::ios::binary);
-  if (!data_out.is_open()) return;
+  std::ofstream data_out_short(path + ".short", std::ios::out | std::ios::binary);
+  if (!data_out_short.is_open()) return;
+  std::ofstream data_out_long(path + ".long", std::ios::out | std::ios::binary);
+  if (!data_out_long.is_open()) return;
 
   for (const auto& model : models_) {
-    model->WriteToDisk(&data_out);
+    model->WriteToDisk(&data_out_short);
   }
-  short_term_memory_.WriteToDisk(&data_out);
-  long_term_memory_.WriteToDisk(&data_out);
+  short_term_memory_.WriteToDisk(&data_out_short);
+  long_term_memory_.WriteToDisk(&data_out_long);
 
-  data_out.close();
+  data_out_short.close();
+  data_out_long.close();
 }
 
 void Predictor::ReadCheckpoint(std::string path) {
-  std::ifstream data_in(path, std::ios::in | std::ios::binary);
-  if (!data_in.is_open()) return;
+  std::ifstream data_in_short(path + ".short", std::ios::in | std::ios::binary);
+  if (!data_in_short.is_open()) return;
+  std::ifstream data_in_long(path + ".long", std::ios::in | std::ios::binary);
+  if (!data_in_long.is_open()) return;
 
   for (const auto& model : models_) {
-    model->ReadFromDisk(&data_in);
+    model->ReadFromDisk(&data_in_short);
   }
-  short_term_memory_.ReadFromDisk(&data_in);
-  long_term_memory_.ReadFromDisk(&data_in);
+  short_term_memory_.ReadFromDisk(&data_in_short);
+  long_term_memory_.ReadFromDisk(&data_in_long);
 
-  data_in.close();
+  data_in_short.close();
+  data_in_long.close();
 }

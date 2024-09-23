@@ -4,7 +4,7 @@
 
 LstmModel::LstmModel(ShortTermMemory& short_term_memory,
                      LongTermMemory& long_term_memory)
-    : lstm_(0, 256, 20, 1, 100, 0.03, 10),
+    : lstm_(0, 256, 20, 1, 100, 0.03, 10, long_term_memory),
       top_(255),
       mid_(127),
       bot_(0),
@@ -16,7 +16,7 @@ void LstmModel::Predict(ShortTermMemory& short_term_memory,
                         const LongTermMemory& long_term_memory) {
   if (short_term_memory.recent_bits == 1) {
     // A new byte has been observed. Update the byte-level predictions.
-    probs_ = lstm_.Predict(short_term_memory.last_byte);
+    probs_ = lstm_.Predict(short_term_memory.last_byte, long_term_memory);
     top_ = 255;
     bot_ = 0;
   } else {
@@ -41,6 +41,6 @@ void LstmModel::Learn(const ShortTermMemory& short_term_memory,
   if (current_byte >= 256) {
     // A new byte has been observed.
     current_byte -= 256;
-    lstm_.Perceive(current_byte);
+    lstm_.Perceive(current_byte, long_term_memory);
   }
 }

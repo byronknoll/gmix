@@ -38,6 +38,8 @@ struct LongTermMemory : MemoryInterface {
 
   std::vector<std::unique_ptr<DirectMemory>> direct;
   std::vector<std::unique_ptr<MixerMemory>> mixers;
+
+  std::valarray<std::valarray<std::valarray<float>>> lstm_output_layer;
 };
 
 #endif  // LONG_TERM_MEMORY_H_
