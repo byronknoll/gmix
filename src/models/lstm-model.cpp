@@ -44,3 +44,23 @@ void LstmModel::Learn(const ShortTermMemory& short_term_memory,
     lstm_.Perceive(current_byte, long_term_memory);
   }
 }
+
+void LstmModel::WriteToDisk(std::ofstream* os) {
+  os->write(reinterpret_cast<char*>(&top_), sizeof(top_));
+  os->write(reinterpret_cast<char*>(&mid_), sizeof(mid_));
+  os->write(reinterpret_cast<char*>(&bot_), sizeof(bot_));
+  for (float& p : probs_) {
+    os->write(reinterpret_cast<char*>(&p), sizeof(p));
+  }
+  lstm_.WriteToDisk(os);
+}
+
+void LstmModel::ReadFromDisk(std::ifstream* is) {
+  is->read(reinterpret_cast<char*>(&top_), sizeof(top_));
+  is->read(reinterpret_cast<char*>(&mid_), sizeof(mid_));
+  is->read(reinterpret_cast<char*>(&bot_), sizeof(bot_));
+  for (float& p : probs_) {
+    is->read(reinterpret_cast<char*>(&p), sizeof(p));
+  }
+  lstm_.ReadFromDisk(is);
+}

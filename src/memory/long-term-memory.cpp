@@ -1,5 +1,7 @@
 #include "long-term-memory.h"
 
+#include <set>
+
 void LongTermMemory::WriteToDisk(std::ofstream* os) {
   for (auto& mem_ptr : direct) {
     for (auto& pred : mem_ptr->predictions) {
@@ -19,12 +21,15 @@ void LongTermMemory::WriteToDisk(std::ofstream* os) {
     os->write(reinterpret_cast<char*>(&mixer_size), sizeof(mixer_size));
     unsigned int input_size = ptr->mixer_map.begin()->second->weights.size();
     os->write(reinterpret_cast<char*>(&(input_size)), sizeof(input_size));
+    std::set<unsigned int> keys;  // use a set to get consistent key order.
     for (auto& it : ptr->mixer_map) {
-      unsigned int context = it.first;
+      keys.insert(it.first);
+    }
+    for (unsigned int context : keys) {
       os->write(reinterpret_cast<char*>(&context), sizeof(context));
-      os->write(reinterpret_cast<char*>(&(it.second->steps)),
-                sizeof(it.second->steps));
-      for (float p : it.second->weights) {
+      os->write(reinterpret_cast<char*>(&(ptr->mixer_map[context]->steps)),
+                sizeof(ptr->mixer_map[context]->steps));
+      for (float p : ptr->mixer_map[context]->weights) {
         os->write(reinterpret_cast<char*>(&p), sizeof(p));
       }
     }

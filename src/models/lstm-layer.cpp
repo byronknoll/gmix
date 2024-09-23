@@ -35,6 +35,161 @@ void Adam(std::valarray<float>* g, std::valarray<float>* m,
 
 }  // namespace
 
+NeuronLayer::NeuronLayer(unsigned int input_size, unsigned int num_cells,
+                         int horizon, int offset,
+                         LongTermMemory& long_term_memory)
+    : error_(num_cells),
+      ivar_(horizon),
+      gamma_(1.0, num_cells),
+      gamma_u_(num_cells),
+      gamma_m_(num_cells),
+      gamma_v_(num_cells),
+      beta_(num_cells),
+      beta_u_(num_cells),
+      beta_m_(num_cells),
+      beta_v_(num_cells),
+      state_(std::valarray<float>(num_cells), horizon),
+      update_(std::valarray<float>(input_size), num_cells),
+      m_(std::valarray<float>(input_size), num_cells),
+      v_(std::valarray<float>(input_size), num_cells),
+      transpose_(std::valarray<float>(num_cells), input_size - offset),
+      norm_(std::valarray<float>(num_cells), horizon) {
+  layer_index_ = long_term_memory.neuron_layer_weights.size();
+  long_term_memory.neuron_layer_weights.push_back(
+      std::unique_ptr<NeuronLayerWeights>(
+          new NeuronLayerWeights(input_size, num_cells)));
+}
+
+std::valarray<float> error_, ivar_, gamma_, gamma_u_, gamma_m_, gamma_v_, beta_,
+    beta_u_, beta_m_, beta_v_;
+std::valarray<std::valarray<float>> state_, update_, m_, v_, transpose_, norm_;
+
+void NeuronLayer::WriteToDisk(std::ofstream* os) {
+  for (float& f : error_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : ivar_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : gamma_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : gamma_u_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : gamma_m_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : gamma_v_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : beta_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : beta_u_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : beta_m_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : beta_v_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (auto& x : state_) {
+    for (float& f : x) {
+      os->write(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : update_) {
+    for (float& f : x) {
+      os->write(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : m_) {
+    for (float& f : x) {
+      os->write(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : v_) {
+    for (float& f : x) {
+      os->write(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : transpose_) {
+    for (float& f : x) {
+      os->write(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : norm_) {
+    for (float& f : x) {
+      os->write(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+}
+
+void NeuronLayer::ReadFromDisk(std::ifstream* is) {
+  for (float& f : error_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : ivar_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : gamma_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : gamma_u_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : gamma_m_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : gamma_v_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : beta_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : beta_u_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : beta_m_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : beta_v_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (auto& x : state_) {
+    for (float& f : x) {
+      is->read(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : update_) {
+    for (float& f : x) {
+      is->read(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : m_) {
+    for (float& f : x) {
+      is->read(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : v_) {
+    for (float& f : x) {
+      is->read(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : transpose_) {
+    for (float& f : x) {
+      is->read(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : norm_) {
+    for (float& f : x) {
+      is->read(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+}
+
 LstmLayer::LstmLayer(unsigned int input_size, unsigned int auxiliary_input_size,
                      unsigned int output_size, unsigned int num_cells,
                      int horizon, float gradient_clip, float learning_rate,
@@ -48,10 +203,10 @@ LstmLayer::LstmLayer(unsigned int input_size, unsigned int auxiliary_input_size,
       gradient_clip_(gradient_clip),
       learning_rate_(learning_rate),
       num_cells_(num_cells),
-      epoch_(0),
       horizon_(horizon),
       input_size_(auxiliary_input_size),
       output_size_(output_size),
+      epoch_(0),
       forget_gate_(input_size, num_cells, horizon, output_size_ + input_size_,
                    long_term_memory),
       input_node_(input_size, num_cells, horizon, output_size_ + input_size_,
@@ -104,7 +259,8 @@ void LstmLayer::ForwardPass(const std::valarray<float>& input, int input_symbol,
 void LstmLayer::ForwardPass(NeuronLayer& neurons,
                             const std::valarray<float>& input, int input_symbol,
                             const LongTermMemory& long_term_memory) {
-  const auto& weights = long_term_memory.neuron_layer_weights[neurons.layer_index_]->weights;
+  const auto& weights =
+      long_term_memory.neuron_layer_weights[neurons.layer_index_]->weights;
   for (unsigned int i = 0; i < num_cells_; ++i) {
     float f = weights[i][input_symbol];
     for (unsigned int j = 0; j < input.size(); ++j) {
@@ -163,9 +319,12 @@ void LstmLayer::BackwardPass(const std::valarray<float>& input, int epoch,
     }
   }
 
-  BackwardPass(forget_gate_, input, epoch, layer, input_symbol, hidden_error, long_term_memory);
-  BackwardPass(input_node_, input, epoch, layer, input_symbol, hidden_error, long_term_memory);
-  BackwardPass(output_gate_, input, epoch, layer, input_symbol, hidden_error, long_term_memory);
+  BackwardPass(forget_gate_, input, epoch, layer, input_symbol, hidden_error,
+               long_term_memory);
+  BackwardPass(input_node_, input, epoch, layer, input_symbol, hidden_error,
+               long_term_memory);
+  BackwardPass(output_gate_, input, epoch, layer, input_symbol, hidden_error,
+               long_term_memory);
 
   ClipGradients(&state_error_);
   ClipGradients(&stored_error_);
@@ -177,7 +336,8 @@ void LstmLayer::BackwardPass(NeuronLayer& neurons,
                              int layer, int input_symbol,
                              std::valarray<float>* hidden_error,
                              LongTermMemory& long_term_memory) {
-  auto& weights = long_term_memory.neuron_layer_weights[neurons.layer_index_]->weights;
+  auto& weights =
+      long_term_memory.neuron_layer_weights[neurons.layer_index_]->weights;
   if (epoch == (int)horizon_ - 1) {
     neurons.gamma_u_ = 0;
     neurons.beta_u_ = 0;
@@ -220,12 +380,76 @@ void LstmLayer::BackwardPass(NeuronLayer& neurons,
   }
   if (epoch == 0) {
     for (unsigned int i = 0; i < num_cells_; ++i) {
-      Adam(&neurons.update_[i], &neurons.m_[i], &neurons.v_[i],
-           &weights[i], learning_rate_, update_steps_, update_limit_);
+      Adam(&neurons.update_[i], &neurons.m_[i], &neurons.v_[i], &weights[i],
+           learning_rate_, update_steps_, update_limit_);
     }
     Adam(&neurons.gamma_u_, &neurons.gamma_m_, &neurons.gamma_v_,
          &neurons.gamma_, learning_rate_, update_steps_, update_limit_);
     Adam(&neurons.beta_u_, &neurons.beta_m_, &neurons.beta_v_, &neurons.beta_,
          learning_rate_, update_steps_, update_limit_);
   }
+}
+
+void LstmLayer::WriteToDisk(std::ofstream* os) {
+  for (float& f : state_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : state_error_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : stored_error_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (auto& x : tanh_state_) {
+    for (float& f : x) {
+      os->write(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : input_gate_state_) {
+    for (float& f : x) {
+      os->write(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : last_state_) {
+    for (float& f : x) {
+      os->write(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  os->write(reinterpret_cast<char*>(&epoch_), sizeof(epoch_));
+  os->write(reinterpret_cast<char*>(&update_steps_), sizeof(update_steps_));
+  forget_gate_.WriteToDisk(os);
+  input_node_.WriteToDisk(os);
+  output_gate_.WriteToDisk(os);
+}
+
+void LstmLayer::ReadFromDisk(std::ifstream* is) {
+  for (float& f : state_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : state_error_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : stored_error_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (auto& x : tanh_state_) {
+    for (float& f : x) {
+      is->read(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : input_gate_state_) {
+    for (float& f : x) {
+      is->read(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  for (auto& x : last_state_) {
+    for (float& f : x) {
+      is->read(reinterpret_cast<char*>(&f), sizeof(f));
+    }
+  }
+  is->read(reinterpret_cast<char*>(&epoch_), sizeof(epoch_));
+  is->read(reinterpret_cast<char*>(&update_steps_), sizeof(update_steps_));
+  forget_gate_.ReadFromDisk(is);
+  input_node_.ReadFromDisk(is);
+  output_gate_.ReadFromDisk(is);
 }

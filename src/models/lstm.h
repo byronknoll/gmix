@@ -19,6 +19,8 @@ class Lstm {
   std::valarray<float>& Predict(unsigned int input,
                                 const LongTermMemory& long_term_memory);
   void SetInput(const std::valarray<float>& input);
+  void WriteToDisk(std::ofstream* os);
+  void ReadFromDisk(std::ifstream* is);
 
  private:
   std::vector<std::unique_ptr<LstmLayer>> layers_;
@@ -26,8 +28,9 @@ class Lstm {
   std::valarray<float> hidden_, hidden_error_;
   std::valarray<std::valarray<std::valarray<float>>> layer_input_;
   std::valarray<std::valarray<float>> output_;
-  float learning_rate_;
-  unsigned int num_cells_, epoch_, horizon_, input_size_, output_size_;
+  const float learning_rate_;
+  const unsigned int num_cells_, horizon_, input_size_, output_size_;
+  unsigned int epoch_;
 };
 
 #endif  // MODELS_LSTM_H

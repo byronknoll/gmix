@@ -11,28 +11,9 @@
 
 struct NeuronLayer {
   NeuronLayer(unsigned int input_size, unsigned int num_cells, int horizon,
-              int offset, LongTermMemory& long_term_memory)
-      : error_(num_cells),
-        ivar_(horizon),
-        gamma_(1.0, num_cells),
-        gamma_u_(num_cells),
-        gamma_m_(num_cells),
-        gamma_v_(num_cells),
-        beta_(num_cells),
-        beta_u_(num_cells),
-        beta_m_(num_cells),
-        beta_v_(num_cells),
-        state_(std::valarray<float>(num_cells), horizon),
-        update_(std::valarray<float>(input_size), num_cells),
-        m_(std::valarray<float>(input_size), num_cells),
-        v_(std::valarray<float>(input_size), num_cells),
-        transpose_(std::valarray<float>(num_cells), input_size - offset),
-        norm_(std::valarray<float>(num_cells), horizon) {
-    layer_index_ = long_term_memory.neuron_layer_weights.size();
-    long_term_memory.neuron_layer_weights.push_back(
-        std::unique_ptr<NeuronLayerWeights>(
-            new NeuronLayerWeights(input_size, num_cells)));
-  };
+              int offset, LongTermMemory& long_term_memory);
+  void WriteToDisk(std::ofstream* os);
+  void ReadFromDisk(std::ifstream* is);
 
   std::valarray<float> error_, ivar_, gamma_, gamma_u_, gamma_m_, gamma_v_,
       beta_, beta_u_, beta_m_, beta_v_;
@@ -56,14 +37,18 @@ class LstmLayer {
   static inline float Rand() {
     return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
   }
+  void WriteToDisk(std::ofstream* os);
+  void ReadFromDisk(std::ifstream* is);
 
  private:
   std::valarray<float> state_, state_error_, stored_error_;
   std::valarray<std::valarray<float>> tanh_state_, input_gate_state_,
       last_state_;
-  float gradient_clip_, learning_rate_;
-  unsigned int num_cells_, epoch_, horizon_, input_size_, output_size_;
-  unsigned long long update_steps_ = 0, update_limit_ = 3000;
+  const float gradient_clip_, learning_rate_;
+  const unsigned int num_cells_, horizon_, input_size_, output_size_;
+  unsigned int epoch_;
+  unsigned long long update_steps_ = 0;
+  const unsigned long long update_limit_ = 3000;
   NeuronLayer forget_gate_, input_node_, output_gate_;
 
   void ClipGradients(std::valarray<float>* arr);

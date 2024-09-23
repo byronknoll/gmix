@@ -20,10 +20,10 @@ Lstm::Lstm(unsigned int input_size, unsigned int output_size,
       output_(std::valarray<float>(1.0 / output_size, output_size), horizon),
       learning_rate_(learning_rate),
       num_cells_(num_cells),
-      epoch_(0),
       horizon_(horizon),
       input_size_(input_size),
-      output_size_(output_size) {
+      output_size_(output_size),
+      epoch_(0) {
   long_term_memory.lstm_output_layer.resize(
       horizon_,
       std::valarray<std::valarray<float>>(
@@ -119,4 +119,60 @@ std::valarray<float>& Lstm::Predict(unsigned int input,
   ++epoch_;
   if (epoch_ == horizon_) epoch_ = 0;
   return output_[epoch];
+}
+
+void Lstm::WriteToDisk(std::ofstream* os) {
+  for (unsigned int& i : input_history_) {
+    os->write(reinterpret_cast<char*>(&i), sizeof(i));
+  }
+  for (float& f : hidden_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : hidden_error_) {
+    os->write(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (auto& x : layer_input_) {
+    for (auto& y : x) {
+      for (float& z : y) {
+        os->write(reinterpret_cast<char*>(&z), sizeof(z));
+      }
+    }
+  }
+  for (auto& y : output_) {
+    for (float& z : y) {
+      os->write(reinterpret_cast<char*>(&z), sizeof(z));
+    }
+  }
+  os->write(reinterpret_cast<char*>(&epoch_), sizeof(epoch_));
+  for (auto& layer : layers_) {
+    layer->WriteToDisk(os);
+  }
+}
+
+void Lstm::ReadFromDisk(std::ifstream* is) {
+  for (unsigned int& i : input_history_) {
+    is->read(reinterpret_cast<char*>(&i), sizeof(i));
+  }
+  for (float& f : hidden_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (float& f : hidden_error_) {
+    is->read(reinterpret_cast<char*>(&f), sizeof(f));
+  }
+  for (auto& x : layer_input_) {
+    for (auto& y : x) {
+      for (float& z : y) {
+        is->read(reinterpret_cast<char*>(&z), sizeof(z));
+      }
+    }
+  }
+  for (auto& y : output_) {
+    for (float& z : y) {
+      is->read(reinterpret_cast<char*>(&z), sizeof(z));
+    }
+  }
+  is->read(reinterpret_cast<char*>(&epoch_), sizeof(epoch_));
+  for (auto& layer : layers_) {
+    layer->ReadFromDisk(is);
+  }
 }
