@@ -20,10 +20,10 @@ void BasicContexts::Predict(ShortTermMemory& short_term_memory,
   short_term_memory.bit_context = short_term_memory.recent_bits - 1;
 }
 
-void BasicContexts::WriteToDisk(std::ofstream* os) {
-  os->write(reinterpret_cast<char*>(&first_prediction_), sizeof(first_prediction_));
+void BasicContexts::WriteToDisk(std::ofstream* s) {
+  Serialize(s, first_prediction_);
 }
 
-void BasicContexts::ReadFromDisk(std::ifstream* is) {
-  is->read(reinterpret_cast<char*>(&first_prediction_), sizeof(first_prediction_));
+void BasicContexts::ReadFromDisk(std::ifstream* s) {
+  Serialize(s, first_prediction_);
 }

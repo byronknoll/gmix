@@ -100,12 +100,12 @@ void Mixer::Learn(const ShortTermMemory& short_term_memory,
   }
 }
 
-void Mixer::WriteToDisk(std::ofstream* os) {
-  os->write(reinterpret_cast<char*>(&steps_), sizeof(steps_));
-  os->write(reinterpret_cast<char*>(&max_steps_), sizeof(max_steps_));
+void Mixer::WriteToDisk(std::ofstream* s) {
+  Serialize(s, steps_);
+  Serialize(s, max_steps_);
 }
 
-void Mixer::ReadFromDisk(std::ifstream* is) {
-  is->read(reinterpret_cast<char*>(&steps_), sizeof(steps_));
-  is->read(reinterpret_cast<char*>(&max_steps_), sizeof(max_steps_));
+void Mixer::ReadFromDisk(std::ifstream* s) {
+  Serialize(s, steps_);
+  Serialize(s, max_steps_);
 }

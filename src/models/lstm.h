@@ -7,9 +7,10 @@
 #include <vector>
 
 #include "../memory/long-term-memory.h"
+#include "../memory-interface.h"
 #include "lstm-layer.h"
 
-class Lstm {
+class Lstm : MemoryInterface {
  public:
   Lstm(unsigned int input_size, unsigned int output_size,
        unsigned int num_cells, unsigned int num_layers, int horizon,
@@ -19,8 +20,8 @@ class Lstm {
   std::valarray<float>& Predict(unsigned int input,
                                 const LongTermMemory& long_term_memory);
   void SetInput(const std::valarray<float>& input);
-  void WriteToDisk(std::ofstream* os);
-  void ReadFromDisk(std::ifstream* is);
+  void WriteToDisk(std::ofstream* s);
+  void ReadFromDisk(std::ifstream* s);
 
  private:
   std::vector<std::unique_ptr<LstmLayer>> layers_;

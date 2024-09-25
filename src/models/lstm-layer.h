@@ -7,13 +7,14 @@
 #include <valarray>
 #include <vector>
 
+#include "../memory-interface.h"
 #include "../memory/long-term-memory.h"
 
-struct NeuronLayer {
+struct NeuronLayer : MemoryInterface {
   NeuronLayer(unsigned int input_size, unsigned int num_cells, int horizon,
               int offset, LongTermMemory& long_term_memory);
-  void WriteToDisk(std::ofstream* os);
-  void ReadFromDisk(std::ifstream* is);
+  void WriteToDisk(std::ofstream* s);
+  void ReadFromDisk(std::ifstream* s);
 
   std::valarray<float> error_, ivar_, gamma_, gamma_u_, gamma_m_, gamma_v_,
       beta_, beta_u_, beta_m_, beta_v_;
@@ -22,7 +23,7 @@ struct NeuronLayer {
   int layer_index_;
 };
 
-class LstmLayer {
+class LstmLayer : MemoryInterface {
  public:
   LstmLayer(unsigned int input_size, unsigned int auxiliary_input_size,
             unsigned int output_size, unsigned int num_cells, int horizon,
@@ -37,8 +38,8 @@ class LstmLayer {
   static inline float Rand() {
     return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
   }
-  void WriteToDisk(std::ofstream* os);
-  void ReadFromDisk(std::ifstream* is);
+  void WriteToDisk(std::ofstream* s);
+  void ReadFromDisk(std::ifstream* s);
 
  private:
   std::valarray<float> state_, state_error_, stored_error_;

@@ -16,8 +16,8 @@ class Mixer : public Model {
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory);
-  void WriteToDisk(std::ofstream* os);
-  void ReadFromDisk(std::ifstream* is);
+  void WriteToDisk(std::ofstream* s);
+  void ReadFromDisk(std::ifstream* s);
 
  private:
   unsigned long long& context_;

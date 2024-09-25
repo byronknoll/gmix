@@ -13,7 +13,7 @@
 // This separation of data is important, so that models can train/learn their
 // long-term memory, and separately use their short-term memory for
 // prediction/inference (with long-term memory frozen).
-class Model : MemoryInterface {
+class Model : public MemoryInterface {
  public:
   Model() {}
   virtual ~Model() {}
@@ -27,8 +27,8 @@ class Model : MemoryInterface {
   // long-term memory is frozen.
   virtual void Learn(const ShortTermMemory& short_term_memory,
                      LongTermMemory& long_term_memory) = 0;
-  virtual void WriteToDisk(std::ofstream* os) = 0;
-  virtual void ReadFromDisk(std::ifstream* is) = 0;
+  virtual void WriteToDisk(std::ofstream* s) = 0;
+  virtual void ReadFromDisk(std::ifstream* s) = 0;
 };
 
 #endif  // MODEL_H_

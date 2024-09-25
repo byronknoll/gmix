@@ -121,58 +121,38 @@ std::valarray<float>& Lstm::Predict(unsigned int input,
   return output_[epoch];
 }
 
-void Lstm::WriteToDisk(std::ofstream* os) {
-  for (unsigned int& i : input_history_) {
-    os->write(reinterpret_cast<char*>(&i), sizeof(i));
-  }
-  for (float& f : hidden_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : hidden_error_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
+void Lstm::WriteToDisk(std::ofstream* s) {
+  SerializeArray(s, input_history_);
+  SerializeArray(s, hidden_);
+  SerializeArray(s, hidden_error_);
   for (auto& x : layer_input_) {
     for (auto& y : x) {
-      for (float& z : y) {
-        os->write(reinterpret_cast<char*>(&z), sizeof(z));
-      }
+      SerializeArray(s, y);
     }
   }
   for (auto& y : output_) {
-    for (float& z : y) {
-      os->write(reinterpret_cast<char*>(&z), sizeof(z));
-    }
+    SerializeArray(s, y);
   }
-  os->write(reinterpret_cast<char*>(&epoch_), sizeof(epoch_));
+  Serialize(s, epoch_);
   for (auto& layer : layers_) {
-    layer->WriteToDisk(os);
+    layer->WriteToDisk(s);
   }
 }
 
-void Lstm::ReadFromDisk(std::ifstream* is) {
-  for (unsigned int& i : input_history_) {
-    is->read(reinterpret_cast<char*>(&i), sizeof(i));
-  }
-  for (float& f : hidden_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : hidden_error_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
+void Lstm::ReadFromDisk(std::ifstream* s) {
+  SerializeArray(s, input_history_);
+  SerializeArray(s, hidden_);
+  SerializeArray(s, hidden_error_);
   for (auto& x : layer_input_) {
     for (auto& y : x) {
-      for (float& z : y) {
-        is->read(reinterpret_cast<char*>(&z), sizeof(z));
-      }
+      SerializeArray(s, y);
     }
   }
   for (auto& y : output_) {
-    for (float& z : y) {
-      is->read(reinterpret_cast<char*>(&z), sizeof(z));
-    }
+    SerializeArray(s, y);
   }
-  is->read(reinterpret_cast<char*>(&epoch_), sizeof(epoch_));
+  Serialize(s, epoch_);
   for (auto& layer : layers_) {
-    layer->ReadFromDisk(is);
+    layer->ReadFromDisk(s);
   }
 }

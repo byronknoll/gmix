@@ -60,129 +60,65 @@ NeuronLayer::NeuronLayer(unsigned int input_size, unsigned int num_cells,
           new NeuronLayerWeights(input_size, num_cells)));
 }
 
-void NeuronLayer::WriteToDisk(std::ofstream* os) {
-  for (float& f : error_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : ivar_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : gamma_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : gamma_u_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : gamma_m_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : gamma_v_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : beta_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : beta_u_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : beta_m_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : beta_v_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
+void NeuronLayer::WriteToDisk(std::ofstream* s) {
+  SerializeArray(s, error_);
+  SerializeArray(s, ivar_);
+  SerializeArray(s, gamma_);
+  SerializeArray(s, gamma_u_);
+  SerializeArray(s, gamma_m_);
+  SerializeArray(s, gamma_v_);
+  SerializeArray(s, beta_);
+  SerializeArray(s, beta_u_);
+  SerializeArray(s, beta_m_);
+  SerializeArray(s, beta_v_);
   for (auto& x : state_) {
-    for (float& f : x) {
-      os->write(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : update_) {
-    for (float& f : x) {
-      os->write(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : m_) {
-    for (float& f : x) {
-      os->write(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : v_) {
-    for (float& f : x) {
-      os->write(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : transpose_) {
-    for (float& f : x) {
-      os->write(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : norm_) {
-    for (float& f : x) {
-      os->write(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
 }
 
-void NeuronLayer::ReadFromDisk(std::ifstream* is) {
-  for (float& f : error_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : ivar_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : gamma_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : gamma_u_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : gamma_m_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : gamma_v_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : beta_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : beta_u_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : beta_m_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : beta_v_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
+void NeuronLayer::ReadFromDisk(std::ifstream* s) {
+  SerializeArray(s, error_);
+  SerializeArray(s, ivar_);
+  SerializeArray(s, gamma_);
+  SerializeArray(s, gamma_u_);
+  SerializeArray(s, gamma_m_);
+  SerializeArray(s, gamma_v_);
+  SerializeArray(s, beta_);
+  SerializeArray(s, beta_u_);
+  SerializeArray(s, beta_m_);
+  SerializeArray(s, beta_v_);
   for (auto& x : state_) {
-    for (float& f : x) {
-      is->read(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : update_) {
-    for (float& f : x) {
-      is->read(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : m_) {
-    for (float& f : x) {
-      is->read(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : v_) {
-    for (float& f : x) {
-      is->read(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : transpose_) {
-    for (float& f : x) {
-      is->read(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : norm_) {
-    for (float& f : x) {
-      is->read(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
 }
 
@@ -386,66 +322,42 @@ void LstmLayer::BackwardPass(NeuronLayer& neurons,
   }
 }
 
-void LstmLayer::WriteToDisk(std::ofstream* os) {
-  for (float& f : state_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : state_error_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : stored_error_) {
-    os->write(reinterpret_cast<char*>(&f), sizeof(f));
-  }
+void LstmLayer::WriteToDisk(std::ofstream* s) {
+  SerializeArray(s, state_);
+  SerializeArray(s, state_error_);
+  SerializeArray(s, stored_error_);
   for (auto& x : tanh_state_) {
-    for (float& f : x) {
-      os->write(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : input_gate_state_) {
-    for (float& f : x) {
-      os->write(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : last_state_) {
-    for (float& f : x) {
-      os->write(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
-  os->write(reinterpret_cast<char*>(&epoch_), sizeof(epoch_));
-  os->write(reinterpret_cast<char*>(&update_steps_), sizeof(update_steps_));
-  forget_gate_.WriteToDisk(os);
-  input_node_.WriteToDisk(os);
-  output_gate_.WriteToDisk(os);
+  Serialize(s, epoch_);
+  Serialize(s, update_steps_);
+  forget_gate_.WriteToDisk(s);
+  input_node_.WriteToDisk(s);
+  output_gate_.WriteToDisk(s);
 }
 
-void LstmLayer::ReadFromDisk(std::ifstream* is) {
-  for (float& f : state_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : state_error_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
-  for (float& f : stored_error_) {
-    is->read(reinterpret_cast<char*>(&f), sizeof(f));
-  }
+void LstmLayer::ReadFromDisk(std::ifstream* s) {
+  SerializeArray(s, state_);
+  SerializeArray(s, state_error_);
+  SerializeArray(s, stored_error_);
   for (auto& x : tanh_state_) {
-    for (float& f : x) {
-      is->read(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : input_gate_state_) {
-    for (float& f : x) {
-      is->read(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
   for (auto& x : last_state_) {
-    for (float& f : x) {
-      is->read(reinterpret_cast<char*>(&f), sizeof(f));
-    }
+    SerializeArray(s, x);
   }
-  is->read(reinterpret_cast<char*>(&epoch_), sizeof(epoch_));
-  is->read(reinterpret_cast<char*>(&update_steps_), sizeof(update_steps_));
-  forget_gate_.ReadFromDisk(is);
-  input_node_.ReadFromDisk(is);
-  output_gate_.ReadFromDisk(is);
+  Serialize(s, epoch_);
+  Serialize(s, update_steps_);
+  forget_gate_.ReadFromDisk(s);
+  input_node_.ReadFromDisk(s);
+  output_gate_.ReadFromDisk(s);
 }
