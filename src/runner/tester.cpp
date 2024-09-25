@@ -58,6 +58,7 @@ void CompressSecondHalf(unsigned long long input_bytes, std::ifstream* is,
   p.ReadCheckpoint("data/checkpoint");
   Encoder e(os, &p);
   e.ReadCheckpoint("data/checkpoint2");
+  p.WriteCheckpoint("data/checkpoint3");
   unsigned long long percent = 1 + (input_bytes / 10000);
   runner_utils::ClearOutput();
   for (unsigned long long pos = (input_bytes / 2) + 1; pos < input_bytes;
@@ -206,6 +207,8 @@ int main(int argc, char* argv[]) {
   TestCompression();
   TestCompressionWithRestart();
   if (!CompareFiles("data/mid", "data/mid2")) return Fail();
+  if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) return Fail();
+  if (!CompareFiles("data/checkpoint.short", "data/checkpoint3.short")) return Fail();
   TestDecompressionWithRestart();
   if (!CompareFiles("./tester", "data/end")) return Fail();
   TestGeneration();

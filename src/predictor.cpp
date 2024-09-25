@@ -8,6 +8,7 @@
 #include "models/lstm-model.h"
 
 Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
+  srand(0xDEADBEEF);
   AddModel(new BasicContexts());
   AddDirect();
   AddModel(new LstmModel(short_term_memory_, long_term_memory_));

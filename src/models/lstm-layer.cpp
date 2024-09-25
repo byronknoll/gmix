@@ -60,10 +60,6 @@ NeuronLayer::NeuronLayer(unsigned int input_size, unsigned int num_cells,
           new NeuronLayerWeights(input_size, num_cells)));
 }
 
-std::valarray<float> error_, ivar_, gamma_, gamma_u_, gamma_m_, gamma_v_, beta_,
-    beta_u_, beta_m_, beta_v_;
-std::valarray<std::valarray<float>> state_, update_, m_, v_, transpose_, norm_;
-
 void NeuronLayer::WriteToDisk(std::ofstream* os) {
   for (float& f : error_) {
     os->write(reinterpret_cast<char*>(&f), sizeof(f));
