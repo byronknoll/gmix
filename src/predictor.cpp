@@ -40,6 +40,9 @@ void Predictor::AddDirect() {
 
   AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
                       short_term_memory_.last_two_bytes_context));
+
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
+                      short_term_memory_.last_three_bytes_context));
 }
 
 void Predictor::AddMixers() {
@@ -52,6 +55,10 @@ void Predictor::AddMixers() {
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_two_bytes_context,
                      short_term_memory_.predictions, 0.005, false));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_three_bytes_context,
+                     short_term_memory_.predictions, 0.005, false));
+
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.always_zero,
                      short_term_memory_.mixer_outputs, 0.005, true));
@@ -79,7 +86,8 @@ void Predictor::Learn() {
 }
 
 void Predictor::WriteCheckpoint(std::string path) {
-  std::ofstream data_out_short(path + ".short", std::ios::out | std::ios::binary);
+  std::ofstream data_out_short(path + ".short",
+                               std::ios::out | std::ios::binary);
   if (!data_out_short.is_open()) return;
   std::ofstream data_out_long(path + ".long", std::ios::out | std::ios::binary);
   if (!data_out_long.is_open()) return;
