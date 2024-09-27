@@ -13,7 +13,8 @@ class BasicContexts : public Model {
              LongTermMemory& long_term_memory) {}
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
- 
+  void Copy(const MemoryInterface* m);
+
  private:
   bool first_prediction_ = true;
 };

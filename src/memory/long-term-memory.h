@@ -41,6 +41,7 @@ struct LongTermMemory : MemoryInterface {
   ~LongTermMemory() {}
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
+  void Copy(const MemoryInterface* m);
 
   std::vector<std::unique_ptr<DirectMemory>> direct;
   std::vector<std::unique_ptr<MixerMemory>> mixers;

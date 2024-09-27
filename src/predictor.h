@@ -25,6 +25,8 @@ class Predictor {
   void Learn();
   void WriteCheckpoint(std::string path);
   void ReadCheckpoint(std::string path);
+  // Makes this predictor a deep copy of the other Predictor.
+  void Copy(const Predictor& p);
 
  private:
   Sigmoid sigmoid_;

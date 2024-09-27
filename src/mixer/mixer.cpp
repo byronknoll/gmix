@@ -109,3 +109,9 @@ void Mixer::ReadFromDisk(std::ifstream* s) {
   Serialize(s, steps_);
   Serialize(s, max_steps_);
 }
+
+void Mixer::Copy(const MemoryInterface* m) {
+  const Mixer* orig = static_cast<const Mixer*>(m);
+  steps_ = orig->steps_;
+  max_steps_ = orig->max_steps_;
+}

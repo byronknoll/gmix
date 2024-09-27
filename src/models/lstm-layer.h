@@ -10,11 +10,12 @@
 #include "../memory-interface.h"
 #include "../memory/long-term-memory.h"
 
-struct NeuronLayer : MemoryInterface {
+struct NeuronLayer : public MemoryInterface {
   NeuronLayer(unsigned int input_size, unsigned int num_cells, int horizon,
               int offset, LongTermMemory& long_term_memory);
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
+  void Copy(const MemoryInterface* m);
 
   std::valarray<float> error_, ivar_, gamma_, gamma_u_, gamma_m_, gamma_v_,
       beta_, beta_u_, beta_m_, beta_v_;
@@ -23,7 +24,7 @@ struct NeuronLayer : MemoryInterface {
   int layer_index_;
 };
 
-class LstmLayer : MemoryInterface {
+class LstmLayer : public MemoryInterface {
  public:
   LstmLayer(unsigned int input_size, unsigned int auxiliary_input_size,
             unsigned int output_size, unsigned int num_cells, int horizon,
@@ -40,6 +41,7 @@ class LstmLayer : MemoryInterface {
   }
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
+  void Copy(const MemoryInterface* m);
 
  private:
   std::valarray<float> state_, state_error_, stored_error_;

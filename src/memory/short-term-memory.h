@@ -16,6 +16,7 @@ struct ShortTermMemory : MemoryInterface {
   ~ShortTermMemory() {}
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
+  void Copy(const MemoryInterface* m);
 
   // Predictions for the next bit of data. Each prediction should be a
   // probability between 0 to 1.

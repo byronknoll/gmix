@@ -122,6 +122,27 @@ void NeuronLayer::ReadFromDisk(std::ifstream* s) {
   }
 }
 
+
+void NeuronLayer::Copy(const MemoryInterface* m) {
+  const NeuronLayer* orig = static_cast<const NeuronLayer*>(m);
+  error_ = orig->error_;
+  ivar_ = orig->ivar_;
+  gamma_ = orig->gamma_;
+  gamma_u_ = orig->gamma_u_;
+  gamma_m_ = orig->gamma_m_;
+  gamma_v_ = orig->gamma_v_;
+  beta_ = orig->beta_;
+  beta_u_ = orig->beta_u_;
+  beta_m_ = orig->beta_m_;
+  beta_v_ = orig->beta_v_;
+  state_ = orig->state_;
+  update_ = orig->update_;
+  m_ = orig->m_;
+  v_ = orig->v_;
+  transpose_ = orig->transpose_;
+  norm_ = orig->norm_;
+}
+
 LstmLayer::LstmLayer(unsigned int input_size, unsigned int auxiliary_input_size,
                      unsigned int output_size, unsigned int num_cells,
                      int horizon, float gradient_clip, float learning_rate,
@@ -360,4 +381,19 @@ void LstmLayer::ReadFromDisk(std::ifstream* s) {
   forget_gate_.ReadFromDisk(s);
   input_node_.ReadFromDisk(s);
   output_gate_.ReadFromDisk(s);
+}
+
+void LstmLayer::Copy(const MemoryInterface* m) {
+  const LstmLayer* orig = static_cast<const LstmLayer*>(m);
+  state_ = orig->state_;
+  state_error_ = orig->state_error_;
+  stored_error_ = orig->stored_error_;
+  tanh_state_ = orig->tanh_state_;
+  input_gate_state_ = orig->input_gate_state_;
+  last_state_ = orig->last_state_;
+  epoch_ = orig->epoch_;
+  update_steps_ = orig->update_steps_;
+  forget_gate_.Copy(&orig->forget_gate_);
+  input_node_.Copy(&orig->input_node_);
+  output_gate_.Copy(&orig->output_gate_);
 }

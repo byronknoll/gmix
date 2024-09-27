@@ -60,3 +60,12 @@ void LstmModel::ReadFromDisk(std::ifstream* s) {
   SerializeArray(s, probs_);
   lstm_.ReadFromDisk(s);
 }
+
+void LstmModel::Copy(const MemoryInterface* m) {
+  const LstmModel* orig = static_cast<const LstmModel*>(m);
+  top_ = orig->top_;
+  mid_ = orig->mid_;
+  bot_ = orig->bot_;
+  probs_ = orig->probs_;
+  lstm_.Copy(&orig->lstm_);
+}

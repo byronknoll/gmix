@@ -11,6 +11,11 @@ class MemoryInterface {
   virtual ~MemoryInterface() {}
   virtual void WriteToDisk(std::ofstream* s) = 0;
   virtual void ReadFromDisk(std::ifstream* s) = 0;
+  // This creates a deep copy of another memory. This should be equivalent to
+  // "WriteToDisk" (for one memory) followed by "ReadFromDisk" (for the other
+  // memory), except the copying takes place in RAM instead of disk (which is
+  // faster, but needs twice as much memory).
+  virtual void Copy(const MemoryInterface* m) = 0;
 
  protected:
   template <typename T>

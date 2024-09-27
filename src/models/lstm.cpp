@@ -156,3 +156,16 @@ void Lstm::ReadFromDisk(std::ifstream* s) {
     layer->ReadFromDisk(s);
   }
 }
+
+void Lstm::Copy(const MemoryInterface* m) {
+  const Lstm* orig = static_cast<const Lstm*>(m);
+  input_history_ = orig->input_history_;
+  hidden_ = orig->hidden_;
+  hidden_error_ = orig->hidden_error_;
+  layer_input_ = orig->layer_input_;
+  output_ = orig->output_;
+  epoch_ = orig->epoch_;
+  for (int i = 0; i < layers_.size(); ++i) {
+    layers_[i]->Copy(orig->layers_[i].get());
+  }
+}

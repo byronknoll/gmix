@@ -17,6 +17,7 @@ class Direct : public Model {
              LongTermMemory& long_term_memory);
   void WriteToDisk(std::ofstream* s) {}
   void ReadFromDisk(std::ifstream* s) {}
+  void Copy(const MemoryInterface* m) {}
 
  private:
   int limit_, prediction_index_, memory_index_;

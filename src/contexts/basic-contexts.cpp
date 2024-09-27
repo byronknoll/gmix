@@ -27,3 +27,8 @@ void BasicContexts::WriteToDisk(std::ofstream* s) {
 void BasicContexts::ReadFromDisk(std::ifstream* s) {
   Serialize(s, first_prediction_);
 }
+
+void BasicContexts::Copy(const MemoryInterface* m) {
+  const BasicContexts* orig = static_cast<const BasicContexts*>(m);
+  first_prediction_ = orig->first_prediction_;
+}

@@ -19,6 +19,14 @@ Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   short_term_memory_.mixer_outputs = 0.5;
 }
 
+void Predictor::Copy(const Predictor& p) {
+  for (int i = 0; i < models_.size(); ++i) {
+    models_[i]->Copy(p.models_[i].get());
+  }
+  long_term_memory_.Copy(&p.long_term_memory_);
+  short_term_memory_.Copy(&p.short_term_memory_);
+}
+
 void Predictor::AddModel(Model* model) {
   models_.push_back(std::unique_ptr<Model>(model));
 }

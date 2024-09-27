@@ -10,7 +10,7 @@
 #include "../memory-interface.h"
 #include "lstm-layer.h"
 
-class Lstm : MemoryInterface {
+class Lstm : public MemoryInterface {
  public:
   Lstm(unsigned int input_size, unsigned int output_size,
        unsigned int num_cells, unsigned int num_layers, int horizon,
@@ -22,6 +22,7 @@ class Lstm : MemoryInterface {
   void SetInput(const std::valarray<float>& input);
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
+  void Copy(const MemoryInterface* m);
 
  private:
   std::vector<std::unique_ptr<LstmLayer>> layers_;

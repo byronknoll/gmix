@@ -99,6 +99,67 @@ bool RunCompressionWithRestart(const std::string& input_path,
   return true;
 }
 
+bool RunCompressionWithCopyRestart(const std::string& input_path,
+                               const std::string& output_path,
+                               unsigned long long* input_bytes,
+                               unsigned long long* output_bytes) {
+  std::ifstream data_in(input_path, std::ios::in | std::ios::binary);
+  if (!data_in.is_open()) return false;
+
+  data_in.seekg(0, std::ios::end);
+  *input_bytes = data_in.tellg();
+  data_in.seekg(0, std::ios::beg);
+
+  std::ofstream data_out(output_path, std::ios::out | std::ios::binary);
+  if (!data_out.is_open()) return false;
+
+  runner_utils::WriteHeader(*input_bytes, &data_out);
+
+  Predictor p;
+  Encoder e(&data_out, &p);
+  unsigned long long percent = 1 + (*input_bytes / 10000);
+  runner_utils::ClearOutput();
+  for (unsigned long long pos = 0; pos < *input_bytes; ++pos) {
+    char c = data_in.get();
+    for (int j = 7; j >= 0; --j) {
+      e.Encode((c >> j) & 1);
+    }
+    if (pos == *input_bytes / 2) {
+      e.WriteCheckpoint("data/checkpoint2");
+      break;
+    }
+    if (pos % percent == 0) {
+      double frac = 100.0 * pos / *input_bytes;
+      fprintf(stderr, "\rprogress: %.2f%%", frac);
+      fflush(stderr);
+    }
+  }
+  Predictor p2;
+  p2.Copy(p);
+  Encoder e2(&data_out, &p2);
+  e2.ReadCheckpoint("data/checkpoint2");
+  p2.WriteCheckpoint("data/checkpoint3");
+
+  for (unsigned long long pos = (*input_bytes / 2) + 1; pos < *input_bytes; ++pos) {
+    char c = data_in.get();
+    for (int j = 7; j >= 0; --j) {
+      e2.Encode((c >> j) & 1);
+    }
+    if (pos % percent == 0) {
+      double frac = 100.0 * pos / *input_bytes;
+      fprintf(stderr, "\rprogress: %.2f%%", frac);
+      fflush(stderr);
+    }
+  }
+  e2.Flush();
+
+  *output_bytes = data_out.tellp();
+
+  data_in.close();
+  data_out.close();
+  return true;
+}
+
 void DecompressFirstHalf(unsigned long long output_length, std::ifstream* is,
                          std::ofstream* os) {
   Predictor p;
@@ -185,6 +246,13 @@ void TestCompressionWithRestart() {
   printf("\n");
 }
 
+void TestCompressionWithCopyRestart() {
+  printf("TestCompressionWithCopyRestart:\n");
+  unsigned long long in, out;
+  RunCompressionWithCopyRestart("./tester", "data/mid3", &in, &out);
+  printf("\n");
+}
+
 void TestDecompressionWithRestart() {
   printf("TestDecompressionWithRestart:\n");
   unsigned long long in, out;
@@ -207,6 +275,10 @@ int main(int argc, char* argv[]) {
   TestCompression();
   TestCompressionWithRestart();
   if (!CompareFiles("data/mid", "data/mid2")) return Fail();
+  if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) return Fail();
+  if (!CompareFiles("data/checkpoint.short", "data/checkpoint3.short")) return Fail();
+  TestCompressionWithCopyRestart();
+  if (!CompareFiles("data/mid", "data/mid3")) return Fail();
   if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) return Fail();
   if (!CompareFiles("data/checkpoint.short", "data/checkpoint3.short")) return Fail();
   TestDecompressionWithRestart();
