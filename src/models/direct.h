@@ -3,14 +3,14 @@
 
 #include "../model.h"
 
-// This simple model directly maps each context to a probability.
+// This simple model directly maps each context to a probability. This model only
+// supports small contexts (up to 24 bits).
 class Direct : public Model {
  public:
   // limit: as the context count gets closer to this limit, the learning rate
   // decreases.
-  // size: context should be in the range: 0 to (size-1).
   Direct(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-         int limit, unsigned long long& context, unsigned long long size);
+         int limit, unsigned long long& context);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,

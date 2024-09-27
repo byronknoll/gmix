@@ -4,11 +4,16 @@
 
 void LongTermMemory::WriteToDisk(std::ofstream* s) {
   for (auto& mem_ptr : direct) {
-    for (auto& pred : mem_ptr->predictions) {
-      SerializeArray(s, pred);
+    std::set<unsigned int> keys;  // use a set to get consistent key order.
+    for (auto& it : mem_ptr->predictions) {
+      keys.insert(it.first);
     }
-    for (auto& counts : mem_ptr->counts) {
-      SerializeArray(s, counts);
+    unsigned int size = keys.size();
+    Serialize(s, size);
+    for (unsigned int key : keys) {
+      Serialize(s, key);
+      Serialize(s, mem_ptr->predictions[key].prediction);
+      Serialize(s, mem_ptr->predictions[key].count);
     }
   }
 
@@ -43,11 +48,17 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
 
 void LongTermMemory::ReadFromDisk(std::ifstream* s) {
   for (auto& mem_ptr : direct) {
-    for (auto& pred : mem_ptr->predictions) {
-      SerializeArray(s, pred);
-    }
-    for (auto& counts : mem_ptr->counts) {
-      SerializeArray(s, counts);
+    unsigned int size;
+    Serialize(s, size);
+    for (int i = 0; i < size; ++i) {
+      unsigned int key;
+      Serialize(s, key);
+      float p;
+      Serialize(s, p);
+      unsigned char count;
+      Serialize(s, count);
+      mem_ptr->predictions[key].prediction = p;
+      mem_ptr->predictions[key].count = count;
     }
   }
 
@@ -82,7 +93,6 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
 void LongTermMemory::Copy(const MemoryInterface* m) {
   const LongTermMemory* orig = static_cast<const LongTermMemory*>(m);
   for (int i = 0; i < direct.size(); ++i) {
-    direct[i]->counts = orig->direct[i]->counts;
     direct[i]->predictions = orig->direct[i]->predictions;
   }
 

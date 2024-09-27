@@ -9,12 +9,15 @@
 
 #include "../memory-interface.h"
 
-struct DirectMemory {
-  // Predictions in 0-1 range. The 255 values are for "bit_context", the outer
-  // index is for byte context.
-  std::vector<std::array<float, 255>> predictions;
+struct DirectPrediction {
+  // Prediction in the 0-1 range.
+  float prediction = 0.5;
   // The number of times this context has been seen.
-  std::vector<std::array<unsigned char, 255>> counts;
+  unsigned char count = 0;
+};
+
+struct DirectMemory {
+  std::unordered_map<unsigned int, DirectPrediction> predictions;
 };
 
 struct MixerData {
