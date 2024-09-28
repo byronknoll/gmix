@@ -1387,7 +1387,7 @@ struct ppmd_Model {
 
 ModPPMD::ModPPMD(ShortTermMemory& short_term_memory,
                  LongTermMemory& long_term_memory, int order, int memory)
-    : top_(255), mid_(127), bot_(0), probs_(1.0 / 256, 256) {
+    : top_(255), mid_(127), bot_(0) {
   prediction_index_ = short_term_memory.num_predictions++;
   ppmd_model_.reset(new ppmd_Model());
   ppmd_model_->Init(order, memory, 1, 0);
@@ -1399,9 +1399,12 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
     // A new byte has been observed. Update the byte-level predictions.
     ppmd_model_->ppmd_PrepareByte();
     for (int i = 0; i < 256; ++i) {
-      probs_[i] = ppmd_model_->sqp[i];
-      if (probs_[i] < 1) probs_[i] = 1;
+      short_term_memory.ppm_predictions[i] = ppmd_model_->sqp[i];
+      if (short_term_memory.ppm_predictions[i] < 1)
+        short_term_memory.ppm_predictions[i] = 1;
     }
+    short_term_memory.ppm_predictions /=
+        short_term_memory.ppm_predictions.sum();
     top_ = 255;
     bot_ = 0;
   } else {
@@ -1412,8 +1415,12 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
     }
   }
   mid_ = bot_ + ((top_ - bot_) / 2);
-  float num = std::accumulate(&probs_[mid_ + 1], &probs_[top_ + 1], 0.0f);
-  float denom = std::accumulate(&probs_[bot_], &probs_[mid_ + 1], num);
+  float num =
+      std::accumulate(&short_term_memory.ppm_predictions[mid_ + 1],
+                      &short_term_memory.ppm_predictions[top_ + 1], 0.0f);
+  float denom =
+      std::accumulate(&short_term_memory.ppm_predictions[bot_],
+                      &short_term_memory.ppm_predictions[mid_ + 1], num);
   float p = 0.5;
   if (denom != 0) p = num / denom;
   short_term_memory.SetPrediction(p, prediction_index_);

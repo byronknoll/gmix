@@ -27,9 +27,6 @@ class ModPPMD : public Model {
   // byte-level predictions to bit-level predictions. The range is updated as
   // bits are observed.
   int top_, mid_, bot_, prediction_index_;
-  // This contains 256 entries, with a probability distribution for the next
-  // byte prediction.
-  std::valarray<float> probs_;
 };
 
 }  // namespace PPMD

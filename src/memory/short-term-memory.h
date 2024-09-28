@@ -12,7 +12,8 @@
 // this struct is as a way to share inputs/outputs between models.
 struct ShortTermMemory : MemoryInterface {
  public:
-  ShortTermMemory(const Sigmoid& sigmoid) : sigmoid(sigmoid) {}
+  ShortTermMemory(const Sigmoid& sigmoid)
+      : ppm_predictions(1.0 / 256, 256), sigmoid(sigmoid) {}
   ~ShortTermMemory() {}
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
@@ -54,6 +55,10 @@ struct ShortTermMemory : MemoryInterface {
   unsigned long long last_four_bytes_15_bit_hash = 0;
   unsigned long long last_five_bytes_context = 0;
   unsigned long long last_five_bytes_15_bit_hash = 0;
+
+  // Predictions for the next byte of data from PPM. Each prediction is in the
+  // 0-1 range.
+  std::valarray<float> ppm_predictions;
 
   std::valarray<float> mixer_outputs;
   int num_mixers = 0;

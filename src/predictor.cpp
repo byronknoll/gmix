@@ -12,8 +12,8 @@ Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   srand(0xDEADBEEF);
   AddModel(new BasicContexts());
   AddDirect();
-  AddModel(new LstmModel(short_term_memory_, long_term_memory_));
   AddModel(new PPMD::ModPPMD(short_term_memory_, long_term_memory_, 25, 14000));
+  AddModel(new LstmModel(short_term_memory_, long_term_memory_));
   AddMixers();
   short_term_memory_.predictions.resize(short_term_memory_.num_predictions);
   short_term_memory_.predictions = 0.5;
