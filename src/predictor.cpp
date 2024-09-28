@@ -43,6 +43,9 @@ void Predictor::AddDirect() {
 
   AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
                       short_term_memory_.last_three_bytes_16_bit_hash));
+
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
+                      short_term_memory_.last_four_bytes_16_bit_hash));
 }
 
 void Predictor::AddMixers() {
@@ -57,6 +60,9 @@ void Predictor::AddMixers() {
                      short_term_memory_.predictions, 0.005, false));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_three_bytes_16_bit_hash,
+                     short_term_memory_.predictions, 0.005, false));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_four_bytes_16_bit_hash,
                      short_term_memory_.predictions, 0.005, false));
 
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
