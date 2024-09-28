@@ -22,13 +22,7 @@ Mixer::Mixer(ShortTermMemory& short_term_memory,
 MixerData* Mixer::FindMixerData(const LongTermMemory& long_term_memory) {
   MixerData* data = nullptr;
   auto& mixer_map = long_term_memory.mixers[memory_index_]->mixer_map;
-  if (mixer_map.find(context_) == mixer_map.end()) {
-    unsigned long long limit = 10000;
-    if (mixer_map.size() >= limit &&
-        mixer_map.find(0xDEADBEEF) != mixer_map.end()) {
-      data = mixer_map.at(0xDEADBEEF).get();
-    }
-  } else {
+  if (mixer_map.find(context_) != mixer_map.end()) {
     data = mixer_map.at(context_).get();
   }
 
@@ -38,24 +32,12 @@ MixerData* Mixer::FindMixerData(const LongTermMemory& long_term_memory) {
 MixerData* Mixer::FindOrCreateMixerData(
     const ShortTermMemory& short_term_memory,
     LongTermMemory& long_term_memory) {
-  MixerData* data;
-  unsigned long long limit = 10000;
   auto& mixer_map = long_term_memory.mixers[memory_index_]->mixer_map;
-  if (mixer_map.size() >= limit &&
-      mixer_map.find(context_) == mixer_map.end()) {
-    data = mixer_map[0xDEADBEEF].get();
-    if (data == nullptr) {
-      mixer_map[0xDEADBEEF] =
-          std::unique_ptr<MixerData>(new MixerData(inputs_.size()));
-      data = mixer_map[0xDEADBEEF].get();
-    }
-  } else {
+  MixerData* data = mixer_map[context_].get();
+  if (data == nullptr) {
+    mixer_map[context_] =
+        std::unique_ptr<MixerData>(new MixerData(inputs_.size()));
     data = mixer_map[context_].get();
-    if (data == nullptr) {
-      mixer_map[context_] =
-          std::unique_ptr<MixerData>(new MixerData(inputs_.size()));
-      data = mixer_map[context_].get();
-    }
   }
 
   return data;
@@ -96,7 +78,7 @@ void Mixer::Learn(const ShortTermMemory& short_term_memory,
   }
   data->weights -= update * inputs_;
   if ((data->steps & 1023) == 0) {
-    data->weights *= 1.0f - 3.0e-6f;
+    data->weights *= 1.0f - 3.0e-6f;  // Weight regularization.
   }
 }
 
