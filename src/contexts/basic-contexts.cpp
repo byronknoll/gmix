@@ -16,13 +16,16 @@ void BasicContexts::Predict(ShortTermMemory& short_term_memory,
     short_term_memory.recent_bits = 1;
     short_term_memory.last_byte_context = short_term_memory.last_byte;
     short_term_memory.last_two_bytes_context =
-        ((short_term_memory.last_two_bytes_context % 256) << 8) +
+        ((short_term_memory.last_two_bytes_context % (1 << 8)) << 8) +
         short_term_memory.last_byte;
     short_term_memory.last_three_bytes_context =
-        ((short_term_memory.last_three_bytes_context % (256 * 256)) << 8) +
+        ((short_term_memory.last_three_bytes_context % (1 << 16)) << 8) +
         short_term_memory.last_byte;
     short_term_memory.last_four_bytes_context =
-        ((short_term_memory.last_four_bytes_context % (256 * 256 * 256)) << 8) +
+        ((short_term_memory.last_four_bytes_context % (1 << 24)) << 8) +
+        short_term_memory.last_byte;
+    short_term_memory.last_five_bytes_context =
+        ((short_term_memory.last_five_bytes_context % (1ULL << 32)) << 8) +
         short_term_memory.last_byte;
     unsigned int hash;
     MurmurHash3_x86_32(&short_term_memory.last_three_bytes_context, 4,
@@ -31,6 +34,9 @@ void BasicContexts::Predict(ShortTermMemory& short_term_memory,
     MurmurHash3_x86_32(&short_term_memory.last_four_bytes_context, 4,
                        0XDEADBEEF, &hash);
     short_term_memory.last_four_bytes_16_bit_hash = hash & 0xFFFF;
+    MurmurHash3_x86_32(&short_term_memory.last_five_bytes_context, 8,
+                       0XDEADBEEF, &hash);
+    short_term_memory.last_five_bytes_16_bit_hash = hash & 0xFFFF;
   }
   short_term_memory.bit_context = short_term_memory.recent_bits - 1;
 }

@@ -34,18 +34,16 @@ void Predictor::AddModel(Model* model) {
 void Predictor::AddDirect() {
   AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
                       short_term_memory_.always_zero));
-
   AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
                       short_term_memory_.last_byte_context));
-
   AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
                       short_term_memory_.last_two_bytes_context));
-
   AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
                       short_term_memory_.last_three_bytes_16_bit_hash));
-
   AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
                       short_term_memory_.last_four_bytes_16_bit_hash));
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
+                      short_term_memory_.last_five_bytes_16_bit_hash));
 }
 
 void Predictor::AddMixers() {

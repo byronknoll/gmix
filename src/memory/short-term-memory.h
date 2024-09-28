@@ -35,7 +35,7 @@ struct ShortTermMemory : MemoryInterface {
   // 2-3: 1 bit seen: (2=zero, 3=one)
   // ...
   // 128-255: 7 bits seen
-  // This gets updated *after* the "Perceive" and "Learn" calls.
+  // This gets updated *after* the "Learn" call.
   int recent_bits = 1;
 
   // This is equal to "recent_bits - 1", so has a range from 0 to 254.
@@ -52,6 +52,8 @@ struct ShortTermMemory : MemoryInterface {
   unsigned long long last_three_bytes_16_bit_hash = 0;
   unsigned long long last_four_bytes_context = 0;
   unsigned long long last_four_bytes_16_bit_hash = 0;
+  unsigned long long last_five_bytes_context = 0;
+  unsigned long long last_five_bytes_16_bit_hash = 0;
 
   std::valarray<float> mixer_outputs;
   int num_mixers = 0;
