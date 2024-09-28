@@ -49,11 +49,11 @@ struct ShortTermMemory : MemoryInterface {
   unsigned long long last_byte_context = 0;
   unsigned long long last_two_bytes_context = 0;
   unsigned long long last_three_bytes_context = 0;
-  unsigned long long last_three_bytes_16_bit_hash = 0;
+  unsigned long long last_three_bytes_15_bit_hash = 0;
   unsigned long long last_four_bytes_context = 0;
-  unsigned long long last_four_bytes_16_bit_hash = 0;
+  unsigned long long last_four_bytes_15_bit_hash = 0;
   unsigned long long last_five_bytes_context = 0;
-  unsigned long long last_five_bytes_16_bit_hash = 0;
+  unsigned long long last_five_bytes_15_bit_hash = 0;
 
   std::valarray<float> mixer_outputs;
   int num_mixers = 0;

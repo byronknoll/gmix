@@ -32,18 +32,18 @@ void Predictor::AddModel(Model* model) {
 }
 
 void Predictor::AddDirect() {
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 20,
                       short_term_memory_.always_zero));
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 10,
                       short_term_memory_.last_byte_context));
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 5,
                       short_term_memory_.last_two_bytes_context));
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
-                      short_term_memory_.last_three_bytes_16_bit_hash));
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
-                      short_term_memory_.last_four_bytes_16_bit_hash));
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 30,
-                      short_term_memory_.last_five_bytes_16_bit_hash));
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 2,
+                      short_term_memory_.last_three_bytes_15_bit_hash));
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 2,
+                      short_term_memory_.last_four_bytes_15_bit_hash));
+  AddModel(new Direct(short_term_memory_, long_term_memory_, 2,
+                      short_term_memory_.last_five_bytes_15_bit_hash));
 }
 
 void Predictor::AddMixers() {
@@ -57,10 +57,10 @@ void Predictor::AddMixers() {
                      short_term_memory_.last_two_bytes_context,
                      short_term_memory_.predictions, 0.005, false));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_three_bytes_16_bit_hash,
+                     short_term_memory_.last_three_bytes_15_bit_hash,
                      short_term_memory_.predictions, 0.005, false));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_four_bytes_16_bit_hash,
+                     short_term_memory_.last_four_bytes_15_bit_hash,
                      short_term_memory_.predictions, 0.005, false));
 
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
