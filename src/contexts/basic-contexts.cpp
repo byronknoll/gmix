@@ -1,5 +1,7 @@
 #include "basic-contexts.h"
 
+#include "murmur-hash.h"
+
 void BasicContexts::Predict(ShortTermMemory& short_term_memory,
                             const LongTermMemory& long_term_memory) {
   if (first_prediction_) {
@@ -17,8 +19,12 @@ void BasicContexts::Predict(ShortTermMemory& short_term_memory,
         ((short_term_memory.last_two_bytes_context % 256) << 8) +
         short_term_memory.last_byte;
     short_term_memory.last_three_bytes_context =
-        ((short_term_memory.last_three_bytes_context % (256*256)) << 8) +
+        ((short_term_memory.last_three_bytes_context % (256 * 256)) << 8) +
         short_term_memory.last_byte;
+    unsigned int hash;
+    MurmurHash3_x86_32(&short_term_memory.last_three_bytes_context, 4,
+                       0XDEADBEEF, &hash);
+    short_term_memory.last_three_bytes_16_bit_hash = hash & 0xFFFF;
   }
   short_term_memory.bit_context = short_term_memory.recent_bits - 1;
 }

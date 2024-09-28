@@ -10,6 +10,7 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, last_byte_context);
   Serialize(s, last_two_bytes_context);
   Serialize(s, last_three_bytes_context);
+  Serialize(s, last_three_bytes_16_bit_hash);
   SerializeArray(s, mixer_outputs);
   Serialize(s, final_mixer_output);
 }
@@ -24,6 +25,7 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, last_byte_context);
   Serialize(s, last_two_bytes_context);
   Serialize(s, last_three_bytes_context);
+  Serialize(s, last_three_bytes_16_bit_hash);
   SerializeArray(s, mixer_outputs);
   Serialize(s, final_mixer_output);
 }
@@ -39,6 +41,7 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   last_byte_context = orig->last_byte_context;
   last_two_bytes_context = orig->last_two_bytes_context;
   last_three_bytes_context = orig->last_three_bytes_context;
+  last_three_bytes_16_bit_hash = orig->last_three_bytes_16_bit_hash;
   mixer_outputs = orig->mixer_outputs;
   final_mixer_output = orig->final_mixer_output;
 }
