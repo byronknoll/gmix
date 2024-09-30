@@ -51,6 +51,11 @@ struct LongTermMemory : MemoryInterface {
 
   std::valarray<std::valarray<std::valarray<float>>> lstm_output_layer;
   std::vector<std::unique_ptr<NeuronLayerWeights>> neuron_layer_weights;
+
+  // Pointer to start of PPM allocated memory.
+  unsigned char* ppmd_memory;
+  // Number of bytes of PPM allocated memory.
+  unsigned long long ppmd_memory_size;
 };
 
 #endif  // LONG_TERM_MEMORY_H_

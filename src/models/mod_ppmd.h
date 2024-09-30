@@ -7,7 +7,7 @@
 
 namespace PPMD {
 
-struct ppmd_Model;
+class ppmd_Model;
 
 class ModPPMD : public Model {
  public:
@@ -17,9 +17,9 @@ class ModPPMD : public Model {
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory);
-  void WriteToDisk(std::ofstream* s) {}
-  void ReadFromDisk(std::ifstream* s) {}
-  void Copy(const MemoryInterface* m) {}
+  void WriteToDisk(std::ofstream* s);
+  void ReadFromDisk(std::ifstream* s);
+  void Copy(const MemoryInterface* m);
 
  private:
   std::unique_ptr<ppmd_Model> ppmd_model_;

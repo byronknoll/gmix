@@ -7,6 +7,8 @@
 #include <cstring>
 #include <numeric>
 
+#include "../memory-interface.h"
+
 namespace PPMD {
 
 template <class T>
@@ -34,7 +36,8 @@ static signed char EscCoef[12] = {16, -10, 1,  51, 14,  89,
 static const byte ExpEscape[16] = {51, 43, 18, 12, 11, 9, 8, 7,
                                    6,  5,  4,  3,  3,  2, 2, 2};
 
-struct ppmd_Model {
+class ppmd_Model : public MemoryInterface {
+ public:
   typedef unsigned short word;
   typedef unsigned int uint;
   typedef unsigned char byte;
@@ -715,6 +718,7 @@ struct ppmd_Model {
 
   // model flush
   void RestoreModelRare(void) {
+    printf("model reset\n");
     STATE* p;
     pText = HeapStart;
     PPM_CONTEXT* pc = saved_pc;
@@ -788,6 +792,7 @@ struct ppmd_Model {
         p[0].Freq += (p[0].Freq < 14);
       }
     }
+    pc = MaxContext;
 
     // try increasing the order
     if (!OrderFall && iFSuccessor) {
@@ -1381,6 +1386,192 @@ struct ppmd_Model {
       }
     }
   }
+
+  void WriteToDisk(std::ofstream* s) {
+    for (int i = 0; i < N_INDEXES + 1; ++i) {
+      Serialize(s, BList[i]);
+    }
+    Serialize(s, GlueCount);
+    Serialize(s, GlueCount1);
+    Serialize(s, SubAllocatorSize);
+    unsigned long long offset = pText - HeapStart;
+    Serialize(s, offset);
+    offset = UnitsStart - HeapStart;
+    Serialize(s, offset);
+    offset = LoUnit - HeapStart;
+    Serialize(s, offset);
+    offset = HiUnit - HeapStart;
+    Serialize(s, offset);
+    offset = AuxUnit - HeapStart;
+    Serialize(s, offset);
+    offset = (byte*)FoundState - HeapStart;
+    Serialize(s, offset);
+    offset = (byte*)MaxContext - HeapStart;
+    Serialize(s, offset);
+    offset = (byte*)saved_pc - HeapStart;
+    Serialize(s, offset);
+    Serialize(s, OrderFall);
+    Serialize(s, EscCount);
+    for (int i = 0; i < 256; ++i) {
+      Serialize(s, CharMask[i]);
+    }
+    Serialize(s, BSumm);
+    Serialize(s, RunLength);
+    Serialize(s, InitRL);
+    Serialize(s, NumMasked);
+    Serialize(s, PrevSuccess);
+    for (int i = 0; i < 25; ++i) {
+      for (int j = 0; j < 64; ++j) {
+        Serialize(s, BinSumm[i][j]);
+      }
+    }
+    for (int i = 0; i < 23; ++i) {
+      for (int j = 0; j < 32; ++j) {
+        Serialize(s, SEE2Cont[i][j].Count);
+        Serialize(s, SEE2Cont[i][j].Shift);
+        Serialize(s, SEE2Cont[i][j].Summ);
+      }
+    }
+    Serialize(s, DummySEE2Cont.Count);
+    Serialize(s, DummySEE2Cont.Shift);
+    Serialize(s, DummySEE2Cont.Summ);
+    for (int i = 0; i < 1024; ++i) {
+      Serialize(s, SQ[i].freq);
+      Serialize(s, SQ[i].sym);
+      Serialize(s, SQ[i].total);
+    }
+    Serialize(s, SQ_ptr);
+    for (int i = 0; i < 256; ++i) {
+      Serialize(s, sqp[i]);
+      Serialize(s, trF[i]);
+      Serialize(s, trT[i]);
+    }
+    Serialize(s, cxt);
+    Serialize(s, y);
+  }
+
+  void ReadFromDisk(std::ifstream* s) {
+    for (int i = 0; i < N_INDEXES + 1; ++i) {
+      Serialize(s, BList[i]);
+    }
+    Serialize(s, GlueCount);
+    Serialize(s, GlueCount1);
+    Serialize(s, SubAllocatorSize);
+    unsigned long long offset;
+    Serialize(s, offset);
+    pText = HeapStart + offset;
+    Serialize(s, offset);
+    UnitsStart = HeapStart + offset;
+    Serialize(s, offset);
+    LoUnit = HeapStart + offset;
+    Serialize(s, offset);
+    HiUnit = HeapStart + offset;
+    Serialize(s, offset);
+    AuxUnit = HeapStart + offset;
+    Serialize(s, offset);
+    FoundState = (STATE*)(HeapStart + offset);
+    Serialize(s, offset);
+    MaxContext = (PPM_CONTEXT*)(HeapStart + offset);
+    Serialize(s, offset);
+    saved_pc = (PPM_CONTEXT*)(HeapStart + offset);
+    Serialize(s, OrderFall);
+    Serialize(s, EscCount);
+    for (int i = 0; i < 256; ++i) {
+      Serialize(s, CharMask[i]);
+    }
+    Serialize(s, BSumm);
+    Serialize(s, RunLength);
+    Serialize(s, InitRL);
+    Serialize(s, NumMasked);
+    Serialize(s, PrevSuccess);
+    for (int i = 0; i < 25; ++i) {
+      for (int j = 0; j < 64; ++j) {
+        Serialize(s, BinSumm[i][j]);
+      }
+    }
+    for (int i = 0; i < 23; ++i) {
+      for (int j = 0; j < 32; ++j) {
+        Serialize(s, SEE2Cont[i][j].Count);
+        Serialize(s, SEE2Cont[i][j].Shift);
+        Serialize(s, SEE2Cont[i][j].Summ);
+      }
+    }
+    Serialize(s, DummySEE2Cont.Count);
+    Serialize(s, DummySEE2Cont.Shift);
+    Serialize(s, DummySEE2Cont.Summ);
+    for (int i = 0; i < 1024; ++i) {
+      Serialize(s, SQ[i].freq);
+      Serialize(s, SQ[i].sym);
+      Serialize(s, SQ[i].total);
+    }
+    Serialize(s, SQ_ptr);
+    for (int i = 0; i < 256; ++i) {
+      Serialize(s, sqp[i]);
+      Serialize(s, trF[i]);
+      Serialize(s, trT[i]);
+    }
+    Serialize(s, cxt);
+    Serialize(s, y);
+  }
+
+  void Copy(const MemoryInterface* m) {
+    const ppmd_Model* orig = static_cast<const ppmd_Model*>(m);
+    for (int i = 0; i < N_INDEXES + 1; ++i) {
+      BList[i] = orig->BList[i];
+    }
+    GlueCount = orig->GlueCount;
+    GlueCount1 = orig->GlueCount1;
+    SubAllocatorSize = orig->SubAllocatorSize;
+    pText = HeapStart + (orig->pText - orig->HeapStart);
+    UnitsStart = HeapStart + (orig->UnitsStart - orig->HeapStart);
+    LoUnit = HeapStart + (orig->LoUnit - orig->HeapStart);
+    HiUnit = HeapStart + (orig->HiUnit - orig->HeapStart);
+    AuxUnit = HeapStart + (orig->AuxUnit - orig->HeapStart);
+    FoundState =
+        (STATE*)(HeapStart + ((byte*)orig->FoundState - orig->HeapStart));
+    MaxContext =
+        (PPM_CONTEXT*)(HeapStart + ((byte*)orig->MaxContext - orig->HeapStart));
+    saved_pc =
+        (PPM_CONTEXT*)(HeapStart + ((byte*)orig->saved_pc - orig->HeapStart));
+    OrderFall = orig->OrderFall;
+    EscCount = orig->EscCount;
+    for (int i = 0; i < 256; ++i) {
+      CharMask[i] = orig->CharMask[i];
+    }
+    BSumm = orig->BSumm;
+    RunLength = orig->RunLength;
+    InitRL = orig->InitRL;
+    NumMasked = orig->NumMasked;
+    PrevSuccess = orig->PrevSuccess;
+    for (int i = 0; i < 25; ++i) {
+      for (int j = 0; j < 64; ++j) {
+        BinSumm[i][j] = orig->BinSumm[i][j];
+      }
+    }
+    for (int i = 0; i < 23; ++i) {
+      for (int j = 0; j < 32; ++j) {
+        SEE2Cont[i][j].Count = orig->SEE2Cont[i][j].Count;
+        SEE2Cont[i][j].Shift = orig->SEE2Cont[i][j].Shift;
+        SEE2Cont[i][j].Summ = orig->SEE2Cont[i][j].Summ;
+      }
+    }
+    DummySEE2Cont.Count = orig->DummySEE2Cont.Count;
+    DummySEE2Cont.Shift = orig->DummySEE2Cont.Shift;
+    DummySEE2Cont.Summ = orig->DummySEE2Cont.Summ;
+    for (int i = 0; i < 1024; ++i) {
+      SQ[i].freq = orig->SQ[i].freq;
+      SQ[i].sym = orig->SQ[i].sym;
+      SQ[i].total = orig->SQ[i].total;
+    }
+    SQ_ptr = orig->SQ_ptr;
+    for (int i = 0; i < 256; ++i) {
+      sqp[i] = orig->sqp[i];
+      trF[i] = orig->trF[i];
+      trT[i] = orig->trT[i];
+    }
+    cxt = orig->cxt;
+    y = orig->y;
+  }
 };
 
 #pragma pack()
@@ -1391,12 +1582,15 @@ ModPPMD::ModPPMD(ShortTermMemory& short_term_memory,
   prediction_index_ = short_term_memory.num_predictions++;
   ppmd_model_.reset(new ppmd_Model());
   ppmd_model_->Init(order, memory, 1, 0);
+  long_term_memory.ppmd_memory = ppmd_model_->HeapStart;
+  long_term_memory.ppmd_memory_size = ppmd_model_->SubAllocatorSize;
 }
 
 void ModPPMD::Predict(ShortTermMemory& short_term_memory,
                       const LongTermMemory& long_term_memory) {
   if (short_term_memory.recent_bits == 1) {
     // A new byte has been observed. Update the byte-level predictions.
+    ppmd_model_->ppmd_UpdateByte(short_term_memory.last_byte);
     ppmd_model_->ppmd_PrepareByte();
     for (int i = 0; i < 256; ++i) {
       short_term_memory.ppm_predictions[i] = ppmd_model_->sqp[i];
@@ -1433,8 +1627,30 @@ void ModPPMD::Learn(const ShortTermMemory& short_term_memory,
   if (current_byte >= 256) {
     // A new byte has been observed.
     current_byte -= 256;
-    ppmd_model_->ppmd_UpdateByte(current_byte);
+    // TODO: fix Learn/Predict.
   }
+}
+
+void ModPPMD::WriteToDisk(std::ofstream* s) {
+  Serialize(s, top_);
+  Serialize(s, mid_);
+  Serialize(s, bot_);
+  ppmd_model_->WriteToDisk(s);
+}
+
+void ModPPMD::ReadFromDisk(std::ifstream* s) {
+  Serialize(s, top_);
+  Serialize(s, mid_);
+  Serialize(s, bot_);
+  ppmd_model_->ReadFromDisk(s);
+}
+
+void ModPPMD::Copy(const MemoryInterface* m) {
+  const ModPPMD* orig = static_cast<const ModPPMD*>(m);
+  top_ = orig->top_;
+  mid_ = orig->mid_;
+  bot_ = orig->bot_;
+  ppmd_model_->Copy(orig->ppmd_model_.get());
 }
 
 }  // namespace PPMD
