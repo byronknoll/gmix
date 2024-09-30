@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iterator>
 #include <string>
+#include <cstdlib>
 
 #include "../coder/decoder.h"
 #include "../coder/encoder.h"
@@ -232,6 +233,11 @@ bool RunDecompressionWithRestart(const std::string& input_path,
   return true;
 }
 
+void Fail() {
+  printf("Test failed.\n");
+  abort();
+}
+
 void TestCompression() {
   printf("TestCompression:\n");
   unsigned long long in, out;
@@ -244,6 +250,9 @@ void TestCompressionWithRestart() {
   unsigned long long in, out;
   RunCompressionWithRestart("./tester", "data/mid2", &in, &out);
   printf("\n");
+  if (!CompareFiles("data/mid", "data/mid2")) Fail();
+  if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) Fail();
+  if (!CompareFiles("data/checkpoint.short", "data/checkpoint3.short")) Fail();
 }
 
 void TestCompressionWithCopyRestart() {
@@ -251,6 +260,9 @@ void TestCompressionWithCopyRestart() {
   unsigned long long in, out;
   RunCompressionWithCopyRestart("./tester", "data/mid3", &in, &out);
   printf("\n");
+  if (!CompareFiles("data/mid", "data/mid3")) Fail();
+  if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) Fail();
+  if (!CompareFiles("data/checkpoint.short", "data/checkpoint3.short")) Fail();
 }
 
 void TestDecompressionWithRestart() {
@@ -258,6 +270,7 @@ void TestDecompressionWithRestart() {
   unsigned long long in, out;
   RunDecompressionWithRestart("data/mid", "data/end", &in, &out);
   printf("\n");
+  if (!CompareFiles("./tester", "data/end")) Fail();
 }
 
 void TestGeneration() {
@@ -266,23 +279,11 @@ void TestGeneration() {
   printf("\n");
 }
 
-int Fail() {
-  printf("Test failed.\n");
-  return -1;
-}
-
 int main(int argc, char* argv[]) {
   TestCompression();
   TestCompressionWithRestart();
-  if (!CompareFiles("data/mid", "data/mid2")) return Fail();
-  if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) return Fail();
-  if (!CompareFiles("data/checkpoint.short", "data/checkpoint3.short")) return Fail();
   TestCompressionWithCopyRestart();
-  if (!CompareFiles("data/mid", "data/mid3")) return Fail();
-  if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) return Fail();
-  if (!CompareFiles("data/checkpoint.short", "data/checkpoint3.short")) return Fail();
   TestDecompressionWithRestart();
-  if (!CompareFiles("./tester", "data/end")) return Fail();
   TestGeneration();
   printf("Tests passed.\n");
   return 0;

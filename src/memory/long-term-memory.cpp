@@ -141,7 +141,6 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
   for (unsigned long long i = 0; i < ppmd_memory_size; ++i) {
     if (sequence_pos < zero_sequence_counts.size() &&
         i == zero_sequence_starts[sequence_pos]) {
-      memset(ppmd_memory + i, 0, zero_sequence_counts[sequence_pos]);
       i += zero_sequence_counts[sequence_pos] - 1;
       ++sequence_pos;
       continue;
@@ -171,6 +170,8 @@ void LongTermMemory::Copy(const MemoryInterface* m) {
     neuron_layer_weights[i]->weights = orig->neuron_layer_weights[i]->weights;
   }
   for (unsigned long long i = 0; i < ppmd_memory_size; ++i) {
-    ppmd_memory[i] = orig->ppmd_memory[i];
+    if (orig->ppmd_memory[i] != 0 || ppmd_memory[i] != 0) {
+      ppmd_memory[i] = orig->ppmd_memory[i];
+    }
   }
 }
