@@ -4,7 +4,7 @@
 
 LstmModel::LstmModel(ShortTermMemory& short_term_memory,
                      LongTermMemory& long_term_memory)
-    : lstm_(256, 256, 20, 1, 100, 0.03, 10, long_term_memory),
+    : lstm_(256, 256, 50, 1, 100, 0.03, 10, long_term_memory),
       top_(255),
       mid_(127),
       bot_(0),
