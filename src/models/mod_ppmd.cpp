@@ -156,7 +156,10 @@ class ppmd_Model : public MemoryInterface {
   }
 
   void StopSubAllocator() {
-    if (SubAllocatorSize) SubAllocatorSize = 0, delete HeapStart;
+    if (SubAllocatorSize) {
+      SubAllocatorSize = 0;
+      delete[] HeapStart;
+    }
   }
 
   void GlueFreeBlocks() {
