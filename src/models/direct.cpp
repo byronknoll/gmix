@@ -14,9 +14,13 @@ Direct::Direct(ShortTermMemory& short_term_memory,
 void Direct::Predict(ShortTermMemory& short_term_memory,
                      const LongTermMemory& long_term_memory) {
   unsigned int context = (context_ << 8) + short_term_memory.bit_context;
-  short_term_memory.SetPrediction(
-      long_term_memory.direct[memory_index_]->predictions[context].prediction,
-      prediction_index_);
+  float p = 0.5;
+  const auto& pred_map = long_term_memory.direct[memory_index_]->predictions;
+  const auto& it = pred_map.find(context);
+  if (it != pred_map.end()) {
+    p = it->second.prediction;
+  }
+  short_term_memory.SetPrediction(p, prediction_index_);
 }
 
 void Direct::Learn(const ShortTermMemory& short_term_memory,

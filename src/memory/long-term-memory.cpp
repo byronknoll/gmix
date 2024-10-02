@@ -4,6 +4,7 @@
 #include <set>
 
 void LongTermMemory::WriteToDisk(std::ofstream* s) {
+  auto start = s->tellp();
   for (auto& mem_ptr : direct) {
     std::set<unsigned int> keys;  // use a set to get consistent key order.
     for (auto& it : mem_ptr->predictions) {
@@ -17,7 +18,9 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
       Serialize(s, mem_ptr->predictions[key].count);
     }
   }
+  printf("\nDirect model size: %ld\n", s->tellp() - start);
 
+  start = s->tellp();
   for (auto& ptr : mixers) {
     unsigned int mixer_size = ptr->mixer_map.size();
     Serialize(s, mixer_size);
@@ -34,7 +37,9 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
       SerializeArray(s, ptr->mixer_map[context]->weights);
     }
   }
+  printf("Mixers size: %ld\n", s->tellp() - start);
 
+  start = s->tellp();
   for (auto& x : lstm_output_layer) {
     for (auto& y : x) {
       SerializeArray(s, y);
@@ -45,6 +50,9 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
       SerializeArray(s, y);
     }
   }
+  printf("LSTM size: %ld\n", s->tellp() - start);
+
+  start = s->tellp();
   // PPM memory can have long "zero" sequences. We can reduce the serialization
   // size by storing the position/size of those.
   unsigned long long zero_sequence_count = 0;
@@ -81,6 +89,7 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
     }
     Serialize(s, ppmd_memory[i]);
   }
+  printf("PPM size: %ld\n", s->tellp() - start);
 }
 
 void LongTermMemory::ReadFromDisk(std::ifstream* s) {

@@ -13,7 +13,7 @@
 #include "../predictor.h"
 
 namespace runner_utils {
-inline float Rand() {
+float Rand() {
   return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 }
 

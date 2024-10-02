@@ -55,7 +55,7 @@ struct LongTermMemory : MemoryInterface {
   // Pointer to start of PPM allocated memory.
   unsigned char* ppmd_memory;
   // Number of bytes of PPM allocated memory.
-  unsigned long long ppmd_memory_size;
+  unsigned long long ppmd_memory_size = 0;
 };
 
 #endif  // LONG_TERM_MEMORY_H_

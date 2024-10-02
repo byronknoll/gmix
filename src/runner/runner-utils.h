@@ -5,7 +5,7 @@
 #include "../predictor.h"
 
 namespace runner_utils {
-inline float Rand();
+float Rand();
 
 void WriteHeader(unsigned long long length, std::ofstream* os);
 
