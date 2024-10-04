@@ -340,7 +340,7 @@ void TestDecompressionWithRestart() {
 
 void TestGeneration() {
   printf("TestGeneration:\n");
-  RunGenerationTest("data/test1", "data/test4", 100);
+  RunGenerationTest("data/test1", "data/test4", 100000);
   // Long term memory should remain the same during generation, but short term
   // memory should not.
   if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) Fail();

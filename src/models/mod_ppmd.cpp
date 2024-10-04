@@ -42,6 +42,7 @@ class ppmd_Model : public MemoryInterface {
   typedef unsigned int uint;
   typedef unsigned char byte;
   typedef unsigned long long qword;
+  bool enable_learn = true;
 
   enum { SCALE = 1 << 15 };
 
@@ -776,7 +777,7 @@ class ppmd_Model : public MemoryInterface {
     iFSuccessor = FoundState->iSuccessor;
 
     // partial update for the suffix context
-    if (MinContext->iSuffix) {
+    if (MinContext->iSuffix && enable_learn) {
       pc = suff(MinContext);
       // is it binary?
       if (pc[0].NumStats) {
@@ -798,7 +799,7 @@ class ppmd_Model : public MemoryInterface {
     pc = MaxContext;
 
     // try increasing the order
-    if (!OrderFall && iFSuccessor) {
+    if (!OrderFall && iFSuccessor && enable_learn) {
       FoundState->iSuccessor = CreateSuccessors(1, p, MinContext);
       if (!FoundState->iSuccessor) {
         saved_pc = pc;
@@ -808,7 +809,7 @@ class ppmd_Model : public MemoryInterface {
       return MaxContext;
     }
 
-    *pText++ = FSymbol;
+    if (enable_learn) *pText++ = FSymbol;
     iSuccessor = Ptr2Indx(pText);
     if (pText >= UnitsStart) {
       saved_pc = pc;
@@ -836,7 +837,7 @@ class ppmd_Model : public MemoryInterface {
     s0 = MinContext->SummFreq - FFreq;
     ns = MinContext->NumStats;
     Flag = 0x08 * (FSymbol >= 0x40);
-    for (pc = MaxContext; pc != MinContext; pc = suff(pc)) {
+    for (pc = MaxContext; enable_learn && pc != MinContext; pc = suff(pc)) {
       ns1 = pc[0].NumStats;
       // non-binary context?
       if (ns1) {
@@ -921,13 +922,17 @@ class ppmd_Model : public MemoryInterface {
         // find sym node
         for (p = getStats(pc); p[0].Symbol != sym; p++);
         // increment freq if limit allows
-        tmp = 2 * (p[0].Freq < MAX_FREQ - 1);
-        p[0].Freq += tmp;
-        pc[0].SummFreq += tmp;
+        if (enable_learn) {
+          tmp = 2 * (p[0].Freq < MAX_FREQ - 1);
+          p[0].Freq += tmp;
+          pc[0].SummFreq += tmp;
+        }
       } else {
         // binary context
         p = &(pc[0].oneState());
-        p[0].Freq += (!suff(pc)->NumStats & (p[0].Freq < 16));
+        if (enable_learn) {
+          p[0].Freq += (!suff(pc)->NumStats & (p[0].Freq < 16));
+        }
       }
 
     LOOP_ENTRY:
@@ -961,17 +966,19 @@ class ppmd_Model : public MemoryInterface {
       ct.oneState().Freq = pc[0].oneState().Freq;
     }
 
-    // attach the new node to all orders
-    do {
-      PPM_CONTEXT* pc1 = (PPM_CONTEXT*)AllocContext();
-      if (!pc1) return 0;
-      ((uint*)pc1)[0] = ((uint*)&ct)[0];
-      ((uint*)pc1)[1] = ((uint*)&ct)[1];
-      pc1->iSuffix = Ptr2Indx(pc);
-      pc = pc1;
-      pps--;
-      pps[0][0].iSuccessor = Ptr2Indx(pc);
-    } while (pps != ps);
+    if (enable_learn) {
+      // attach the new node to all orders
+      do {
+        PPM_CONTEXT* pc1 = (PPM_CONTEXT*)AllocContext();
+        if (!pc1) return 0;
+        ((uint*)pc1)[0] = ((uint*)&ct)[0];
+        ((uint*)pc1)[1] = ((uint*)&ct)[1];
+        pc1->iSuffix = Ptr2Indx(pc);
+        pc = pc1;
+        pps--;
+        pps[0][0].iSuccessor = Ptr2Indx(pc);
+      } while (pps != ps);
+    }
 
     return Ptr2Indx(pc);
   }
@@ -980,7 +987,7 @@ class ppmd_Model : public MemoryInterface {
     byte tmp;
     STATE* p1;
     PPM_CONTEXT* pc1 = pc;
-    FoundState->iSuccessor = Ptr2Indx(pText);
+    if (enable_learn) FoundState->iSuccessor = Ptr2Indx(pText);
     byte sym = FoundState->Symbol;
     uint iUpBranch = FoundState->iSuccessor;
     OrderFall++;
@@ -997,11 +1004,15 @@ class ppmd_Model : public MemoryInterface {
       if (pc->NumStats) {
         for (p = getStats(pc); p[0].Symbol != sym; p++);
         tmp = 2 * (p->Freq < MAX_FREQ - 3);
-        p->Freq += tmp;
-        pc->SummFreq += tmp;
+        if (enable_learn) {
+          p->Freq += tmp;
+          pc->SummFreq += tmp;
+        }
       } else {
         p = &(pc->oneState());
-        p->Freq += (p->Freq < 11);
+        if (enable_learn) {
+          p->Freq += (p->Freq < 11);
+        }
       }
 
     LOOP_ENTRY:
@@ -1013,7 +1024,7 @@ class ppmd_Model : public MemoryInterface {
     if (p->iSuccessor <= iUpBranch) {
       p1 = FoundState;
       FoundState = p;
-      p->iSuccessor = CreateSuccessors(0, 0, pc);
+      if (enable_learn) p->iSuccessor = CreateSuccessors(0, 0, pc);
       FoundState = p1;
     }
 
@@ -1046,7 +1057,7 @@ class ppmd_Model : public MemoryInterface {
       FoundState = 0;
     } else {
       bs += INTERVAL;
-      rs.Freq += (rs.Freq < 196);
+      if (enable_learn) rs.Freq += (rs.Freq < 196);
       RunLength++;
       PrevSuccess = 1;
       FoundState = &rs;
@@ -1074,9 +1085,10 @@ class ppmd_Model : public MemoryInterface {
 
     if (flag) {
       PrevSuccess = 0;  //(2*freq>1*total);
-      p[0].Freq += 4;
-      q.SummFreq += 4;
-
+      if (enable_learn) {
+        p[0].Freq += 4;
+        q.SummFreq += 4;
+      }
     } else {
       PrevSuccess = 0;
 
@@ -1088,9 +1100,11 @@ class ppmd_Model : public MemoryInterface {
       }
 
       if (flag) {
-        p[i].Freq += 4;
-        q.SummFreq += 4;
-        if (p[i].Freq > p[i - 1].Freq) SWAP(p[i], p[i - 1]), i--;
+        if (enable_learn) {
+          p[i].Freq += 4;
+          q.SummFreq += 4;
+          if (p[i].Freq > p[i - 1].Freq) SWAP(p[i], p[i - 1]), i--;
+        }
         p = &p[i];
       } else {
         if (q.iSuffix) PrefetchData(suff(&q));
@@ -1165,9 +1179,12 @@ class ppmd_Model : public MemoryInterface {
       psee2c->update();
 
       FoundState = p;
-      p[0].Freq += 4;
-      q.SummFreq += 4;
-      if (p[0].Freq > MAX_FREQ) FoundState = rescale(q, OrderFall, FoundState);
+      if (enable_learn) {
+        p[0].Freq += 4;
+        q.SummFreq += 4;
+        if (p[0].Freq > MAX_FREQ)
+          FoundState = rescale(q, OrderFall, FoundState);
+      }
       RunLength = InitRL;
       EscCount++;
 
@@ -1451,6 +1468,7 @@ class ppmd_Model : public MemoryInterface {
     }
     Serialize(s, cxt);
     Serialize(s, y);
+    Serialize(s, enable_learn);
   }
 
   void ReadFromDisk(std::ifstream* s) {
@@ -1515,6 +1533,7 @@ class ppmd_Model : public MemoryInterface {
     }
     Serialize(s, cxt);
     Serialize(s, y);
+    Serialize(s, enable_learn);
   }
 
   void Copy(const MemoryInterface* m) {
@@ -1574,6 +1593,7 @@ class ppmd_Model : public MemoryInterface {
     }
     cxt = orig->cxt;
     y = orig->y;
+    enable_learn = orig->enable_learn;
   }
 };
 
@@ -1611,6 +1631,7 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
       top_ = mid_;
     }
   }
+  ppmd_model_->enable_learn = false;
   mid_ = bot_ + ((top_ - bot_) / 2);
   float num =
       std::accumulate(&short_term_memory.ppm_predictions[mid_ + 1],
@@ -1625,13 +1646,7 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
 
 void ModPPMD::Learn(const ShortTermMemory& short_term_memory,
                     LongTermMemory& long_term_memory) {
-  int current_byte =
-      short_term_memory.recent_bits * 2 + short_term_memory.new_bit;
-  if (current_byte >= 256) {
-    // A new byte has been observed.
-    current_byte -= 256;
-    // TODO: fix Learn/Predict.
-  }
+  ppmd_model_->enable_learn = true;
 }
 
 void ModPPMD::WriteToDisk(std::ofstream* s) {
