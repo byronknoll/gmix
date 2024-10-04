@@ -56,19 +56,9 @@ class ppmd_Model : public MemoryInterface {
   };
 
   byte* HeapStart;
-
-  uint Ptr2Indx(void* p) {
-    qword addr = ((byte*)p) - HeapStart;
-    uint lim = (UnitsStart - HeapStart);
-    uint indx = (addr >= lim) ? (addr - lim) / UNIT_SIZE + lim : addr;
-    return indx;
-  }
-
-  void* Indx2Ptr(uint indx) {
-    uint lim = (UnitsStart - HeapStart);
-    qword addr = (indx >= lim) ? qword(indx - lim) * UNIT_SIZE + lim : indx;
-    return HeapStart + addr;
-  }
+  typedef byte* pbyte;
+  uint  Ptr2Indx( void* p ) { return pbyte(p)-HeapStart; }
+  void* Indx2Ptr(uint indx) { return indx + HeapStart; }
 
   struct _MEM_BLK {
     uint Stamp;
@@ -722,7 +712,6 @@ class ppmd_Model : public MemoryInterface {
 
   // model flush
   void RestoreModelRare(void) {
-    printf("model reset\n");
     STATE* p;
     pText = HeapStart;
     PPM_CONTEXT* pc = saved_pc;
