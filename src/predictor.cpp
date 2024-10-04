@@ -10,7 +10,6 @@
 
 Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   srand(0xDEADBEEF);
-  printf("%.8f\n", sigmoid_.Logit(0.5));
   AddModel(new BasicContexts());
   AddDirect();
   AddModel(new PPMD::ModPPMD(short_term_memory_, long_term_memory_, 20, 1000));

@@ -1,24 +1,22 @@
 CC = clang++-17
-LFLAGS = -std=c++14 -Wall
+LFLAGS = -std=c++14 -Wall -Ofast -march=native
 
-all: LFLAGS += -Ofast -march=native
-all: gmix
+all: gmix test prep
 
-debug: LFLAGS += -ggdb
-debug: gmix test
+debug: LFLAGS = -std=c++14 -Wall -ggdb
+debug: gmix test prep
 
-test: LFLAGS += -Ofast -march=native
-test: tester
+SRC_FILES := $(filter-out $(wildcard src/runner/*.cpp), $(wildcard src/*.cpp) $(wildcard src/*/*.cpp)) src/runner/runner-utils.cpp
+HDR_FILES := $(wildcard src/*.h) $(wildcard src/*/*.cpp) src/runner/runner-utils.h
 
-GMIX_SRC_FILES := $(filter-out src/runner/tester.cpp, $(wildcard src/*.cpp) $(wildcard src/*/*.cpp))
-TEST_SRC_FILES := $(filter-out src/runner/runner.cpp, $(wildcard src/*.cpp) $(wildcard src/*/*.cpp))
-HDR_FILES := $(wildcard src/*.h) $(wildcard src/*/*.cpp)
+gmix: $(SRC_FILES) $(HDR_FILES) src/runner/runner.cpp
+	$(CC) $(LFLAGS) $(SRC_FILES) src/runner/runner.cpp -o gmix
 
-gmix: $(GMIX_SRC_FILES) $(HDR_FILES)
-	$(CC) $(LFLAGS) $(GMIX_SRC_FILES) -o gmix
+test: $(SRC_FILES) $(HDR_FILES) src/runner/tester.cpp
+	$(CC) $(LFLAGS) $(SRC_FILES) src/runner/tester.cpp -o test
 
-tester: $(TEST_SRC_FILES) $(HDR_FILES)
-	$(CC) $(LFLAGS) $(TEST_SRC_FILES) -o tester
+prep: src/preprocess/dictionary.cpp src/preprocess/dictionary.h src/runner/prep.cpp
+	$(CC) $(LFLAGS) src/preprocess/dictionary.cpp src/runner/prep.cpp -o prep
 
 clean:
-	rm -f gmix tester
+	rm -f gmix test prep
