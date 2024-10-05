@@ -4,14 +4,14 @@
 
 #include "contexts/basic-contexts.h"
 #include "mixer/mixer.h"
-#include "models/direct.h"
+#include "models/indirect.h"
 #include "models/lstm-model.h"
 #include "models/mod_ppmd.h"
 
 Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   srand(0xDEADBEEF);
   AddModel(new BasicContexts());
-  AddDirect();
+  AddIndirect();
   AddModel(new PPMD::ModPPMD(short_term_memory_, long_term_memory_, 20, 1000));
   AddModel(new LstmModel(short_term_memory_, long_term_memory_));
   AddMixers();
@@ -33,19 +33,18 @@ void Predictor::AddModel(Model* model) {
   models_.push_back(std::unique_ptr<Model>(model));
 }
 
-void Predictor::AddDirect() {
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 20,
-                      short_term_memory_.always_zero));
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 10,
-                      short_term_memory_.last_byte_context));
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 5,
-                      short_term_memory_.last_two_bytes_context));
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 2,
-                      short_term_memory_.last_three_bytes_15_bit_hash));
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 2,
-                      short_term_memory_.last_four_bytes_15_bit_hash));
-  AddModel(new Direct(short_term_memory_, long_term_memory_, 2,
-                      short_term_memory_.last_five_bytes_15_bit_hash));
+void Predictor::AddIndirect() {
+  float learning_rate = 1.0f / 200;
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.last_byte_context));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.last_two_bytes_context));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.last_three_bytes_15_bit_hash));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.last_four_bytes_15_bit_hash));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.last_five_bytes_15_bit_hash));
 }
 
 void Predictor::AddMixers() {

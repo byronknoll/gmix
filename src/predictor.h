@@ -34,7 +34,7 @@ class Predictor {
   ShortTermMemory short_term_memory_;
   std::vector<std::unique_ptr<Model>> models_;
 
-  void AddDirect();
+  void AddIndirect();
   void AddMixers();
   void AddModel(Model* model);
 };

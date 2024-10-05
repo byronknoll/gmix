@@ -5,20 +5,19 @@
 
 void LongTermMemory::WriteToDisk(std::ofstream* s) {
   auto start = s->tellp();
-  for (auto& mem_ptr : direct) {
+  for (auto& mem_ptr : indirect) {
     std::set<unsigned int> keys;  // use a set to get consistent key order.
-    for (auto& it : mem_ptr->predictions) {
+    for (auto& it : mem_ptr->map) {
       keys.insert(it.first);
     }
     unsigned int size = keys.size();
     Serialize(s, size);
     for (unsigned int key : keys) {
       Serialize(s, key);
-      Serialize(s, mem_ptr->predictions[key].prediction);
-      Serialize(s, mem_ptr->predictions[key].count);
+      Serialize(s, mem_ptr->map[key]);
     }
   }
-  printf("\nDirect model size: %ld\n", s->tellp() - start);
+  printf("Indirect model size: %ld\n", s->tellp() - start);
 
   start = s->tellp();
   for (auto& ptr : mixers) {
@@ -93,18 +92,15 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
 }
 
 void LongTermMemory::ReadFromDisk(std::ifstream* s) {
-  for (auto& mem_ptr : direct) {
+  for (auto& mem_ptr : indirect) {
     unsigned int size;
     Serialize(s, size);
     for (int i = 0; i < size; ++i) {
       unsigned int key;
       Serialize(s, key);
-      float p;
-      Serialize(s, p);
-      unsigned char count;
-      Serialize(s, count);
-      mem_ptr->predictions[key].prediction = p;
-      mem_ptr->predictions[key].count = count;
+      unsigned char state;
+      Serialize(s, state);
+      mem_ptr->map[key] = state;
     }
   }
 
@@ -160,8 +156,8 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
 
 void LongTermMemory::Copy(const MemoryInterface* m) {
   const LongTermMemory* orig = static_cast<const LongTermMemory*>(m);
-  for (int i = 0; i < direct.size(); ++i) {
-    direct[i]->predictions = orig->direct[i]->predictions;
+  for (int i = 0; i < indirect.size(); ++i) {
+    indirect[i]->map = orig->indirect[i]->map;
   }
 
   for (int i = 0; i < mixers.size(); ++i) {

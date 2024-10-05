@@ -306,14 +306,14 @@ void Fail() {
 void TestCompression() {
   printf("TestCompression:\n");
   unsigned long long in, out;
-  runner_utils::RunCompression("./tester", "data/test1", &in, &out);
+  runner_utils::RunCompression("./test", "data/test1", &in, &out);
   printf("\n");
 }
 
 void TestCompressionWithRestart() {
   printf("TestCompressionWithRestart:\n");
   unsigned long long in, out;
-  RunCompressionWithRestart("./tester", "data/test2", &in, &out);
+  RunCompressionWithRestart("./test", "data/test2", &in, &out);
   printf("\n");
   if (!CompareFiles("data/test1", "data/test2")) Fail();
   if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) Fail();
@@ -323,7 +323,7 @@ void TestCompressionWithRestart() {
 void TestCompressionWithCopyRestart() {
   printf("TestCompressionWithCopyRestart:\n");
   unsigned long long in, out;
-  RunCompressionWithCopyRestart("./tester", "data/test3", &in, &out);
+  RunCompressionWithCopyRestart("./test", "data/test3", &in, &out);
   printf("\n");
   if (!CompareFiles("data/test1", "data/test3")) Fail();
   if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) Fail();
@@ -335,7 +335,7 @@ void TestDecompressionWithRestart() {
   unsigned long long in, out;
   RunDecompressionWithRestart("data/test1", "data/test4", &in, &out);
   printf("\n");
-  if (!CompareFiles("./tester", "data/test4")) Fail();
+  if (!CompareFiles("./test", "data/test4")) Fail();
 }
 
 void TestGeneration() {

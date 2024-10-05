@@ -9,15 +9,9 @@
 
 #include "../memory-interface.h"
 
-struct DirectPrediction {
-  // Prediction in the 0-1 range.
-  float prediction = 0.5;
-  // The number of times this context has been seen.
-  unsigned char count = 0;
-};
-
-struct DirectMemory {
-  std::unordered_map<unsigned int, DirectPrediction> predictions;
+struct IndirectMemory {
+  // Map from context to state (contexts/nonstationary.h).
+  std::unordered_map<unsigned int, unsigned char> map;
 };
 
 struct MixerData {
@@ -46,11 +40,12 @@ struct LongTermMemory : MemoryInterface {
   void ReadFromDisk(std::ifstream* s);
   void Copy(const MemoryInterface* m);
 
-  std::vector<std::unique_ptr<DirectMemory>> direct;
+  std::vector<std::unique_ptr<IndirectMemory>> indirect;
   std::vector<std::unique_ptr<MixerMemory>> mixers;
 
-  std::valarray<std::valarray<std::valarray<float>>> lstm_output_layer;
+  // LSTM weights.
   std::vector<std::unique_ptr<NeuronLayerWeights>> neuron_layer_weights;
+  std::valarray<std::valarray<std::valarray<float>>> lstm_output_layer;
 
   // Pointer to start of PPM allocated memory.
   unsigned char* ppmd_memory;

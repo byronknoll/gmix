@@ -5,6 +5,7 @@
 
 #include "../memory-interface.h"
 #include "../mixer/sigmoid.h"
+#include "../contexts/nonstationary.h"
 
 // ShortTermMemory contains "state" models need in order to make predictions,
 // but does not contain any data used for training/learning. Models can also
@@ -64,7 +65,9 @@ struct ShortTermMemory : MemoryInterface {
   int num_mixers = 0;
   float final_mixer_output = 0.5;
 
-  const Sigmoid& sigmoid;
+  const Sigmoid& sigmoid;  // Does not need serlialization.
+
+  Nonstationary nonstationary;  // Does not need serlialization.
 };
 
 #endif  // SHORT_TERM_MEMORY_H_
