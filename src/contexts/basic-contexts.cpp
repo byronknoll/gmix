@@ -39,6 +39,17 @@ void BasicContexts::Predict(ShortTermMemory& short_term_memory,
     short_term_memory.last_five_bytes_15_bit_hash = hash & 0x7FFF;
   }
   short_term_memory.bit_context = short_term_memory.recent_bits - 1;
+  short_term_memory.longest_match = 0;
+}
+
+void BasicContexts::Learn(const ShortTermMemory& short_term_memory,
+                          LongTermMemory& long_term_memory) {
+  int current_byte =
+      short_term_memory.recent_bits * 2 + short_term_memory.new_bit;
+  if (current_byte >= 256) {
+    // A new byte has been observed.
+    long_term_memory.history.push_back(current_byte);
+  }
 }
 
 void BasicContexts::WriteToDisk(std::ofstream* s) {

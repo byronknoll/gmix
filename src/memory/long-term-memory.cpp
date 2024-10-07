@@ -17,7 +17,7 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
       Serialize(s, mem_ptr->map[key]);
     }
   }
-  printf("Indirect model size: %ld\n", s->tellp() - start);
+  printf("\nIndirect model size: %ld\n", s->tellp() - start);
 
   start = s->tellp();
   for (auto& ptr : mixers) {
@@ -89,6 +89,28 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
     Serialize(s, ppmd_memory[i]);
   }
   printf("PPM size: %ld\n", s->tellp() - start);
+
+  start = s->tellp();
+  unsigned long long size = history.size();
+  Serialize(s, size);
+  for (unsigned long long i = 0; i < size; ++i) {
+    Serialize(s, history[i]);
+  }
+  for (auto& mem : match_memory) {
+    std::set<unsigned int> keys;  // use a set to get consistent key order.
+    for (auto& it : mem.map) {
+      keys.insert(it.first);
+    }
+    unsigned int size = keys.size();
+    Serialize(s, size);
+    for (unsigned int key : keys) {
+      Serialize(s, key);
+      SerializeArray(s, mem.map[key]);
+    }
+    SerializeArray(s, mem.predictions);
+    SerializeArray(s, mem.counts);
+  }
+  printf("Match size: %ld\n", s->tellp() - start);
 }
 
 void LongTermMemory::ReadFromDisk(std::ifstream* s) {
@@ -152,6 +174,26 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
     }
     Serialize(s, ppmd_memory[i]);
   }
+
+  unsigned long long size;
+  history.clear();
+  Serialize(s, size);
+  for (unsigned long long i = 0; i < size; ++i) {
+    unsigned char c;
+    Serialize(s, c);
+    history.push_back(c);
+  }
+  for (auto& mem : match_memory) {
+    unsigned int size;
+    Serialize(s, size);
+    for (unsigned int i = 0; i < size; ++i) {
+      unsigned int key;
+      Serialize(s, key);
+      SerializeArray(s, mem.map[key]);
+    }
+    SerializeArray(s, mem.predictions);
+    SerializeArray(s, mem.counts);
+  }
 }
 
 void LongTermMemory::Copy(const MemoryInterface* m) {
@@ -178,5 +220,11 @@ void LongTermMemory::Copy(const MemoryInterface* m) {
     if (orig->ppmd_memory[i] != 0 || ppmd_memory[i] != 0) {
       ppmd_memory[i] = orig->ppmd_memory[i];
     }
+  }
+  history = orig->history;
+  for (int i = 0; i < match_memory.size(); ++i) {
+    match_memory[i].map = orig->match_memory[i].map;
+    match_memory[i].predictions = orig->match_memory[i].predictions;
+    match_memory[i].counts = orig->match_memory[i].counts;
   }
 }

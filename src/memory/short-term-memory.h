@@ -68,6 +68,13 @@ struct ShortTermMemory : MemoryInterface {
   const Sigmoid& sigmoid;  // Does not need serlialization.
 
   Nonstationary nonstationary;  // Does not need serlialization.
+
+  // Longest match from Match models. Range is 0-7.
+  // 0 = 0-3 bytes matched.
+  // 1 = 4-7 bytes matched.
+  // ...
+  // 7 = Over 28 bytes matched.
+  unsigned long long longest_match = 0;
 };
 
 #endif  // SHORT_TERM_MEMORY_H_

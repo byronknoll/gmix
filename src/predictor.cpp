@@ -6,6 +6,7 @@
 #include "mixer/mixer.h"
 #include "models/indirect.h"
 #include "models/lstm-model.h"
+#include "models/match.h"
 #include "models/mod_ppmd.h"
 
 Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
@@ -14,6 +15,7 @@ Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   AddIndirect();
   AddModel(new PPMD::ModPPMD(short_term_memory_, long_term_memory_, 20, 1000));
   AddModel(new LstmModel(short_term_memory_, long_term_memory_));
+  AddMatch();
   AddMixers();
   short_term_memory_.predictions.resize(short_term_memory_.num_predictions);
   short_term_memory_.predictions = 0.5;
@@ -47,13 +49,26 @@ void Predictor::AddIndirect() {
                         short_term_memory_.last_five_bytes_15_bit_hash));
 }
 
+void Predictor::AddMatch() {
+  int limit = 200;
+  AddModel(new Match(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_byte_context, limit));
+  AddModel(new Match(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_three_bytes_15_bit_hash, limit));
+  AddModel(new Match(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_five_bytes_15_bit_hash, limit));
+}
+
 void Predictor::AddMixers() {
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_byte_context,
                      short_term_memory_.predictions, 0.005, false));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.longest_match,
+                     short_term_memory_.predictions, 0.0005, false));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.always_zero,
-                     short_term_memory_.predictions, 0.005, false));
+                     short_term_memory_.predictions, 0.0005, false));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_two_bytes_context,
                      short_term_memory_.predictions, 0.005, false));

@@ -35,6 +35,7 @@ class Predictor {
   std::vector<std::unique_ptr<Model>> models_;
 
   void AddIndirect();
+  void AddMatch();
   void AddMixers();
   void AddModel(Model* model);
 };
