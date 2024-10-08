@@ -1,8 +1,8 @@
 #include "match.h"
 
 Match::Match(ShortTermMemory& short_term_memory,
-             LongTermMemory& long_term_memory,
-             const unsigned long long& byte_context, int limit)
+             LongTermMemory& long_term_memory, const unsigned int& byte_context,
+             int limit)
     : byte_context_(byte_context),
       cur_match_(0),
       cur_byte_(0),
@@ -68,7 +68,7 @@ void Match::Predict(ShortTermMemory& short_term_memory,
   short_term_memory.SetPrediction(p, prediction_index_);
 
   // Update the longest match context (which is used externally).
-  unsigned long long match_context = match_length_ / 32;
+  unsigned int match_context = match_length_ / 32;
   short_term_memory.longest_match =
       std::max(short_term_memory.longest_match, match_context);
 }

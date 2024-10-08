@@ -15,7 +15,7 @@ class Match : public Model {
   // limit: as the match count gets closer to this limit, the learning rate
   // decreases.
   Match(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-        const unsigned long long& byte_context, int limit);
+        const unsigned int& byte_context, int limit);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
@@ -25,7 +25,7 @@ class Match : public Model {
   void Copy(const MemoryInterface* m);
 
  private:
-  const unsigned long long& byte_context_;
+  const unsigned int& byte_context_;
   // Pointer to current match in input history.
   unsigned long long cur_match_;
   // Current matched byte (from input history).

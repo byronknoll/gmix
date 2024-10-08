@@ -47,15 +47,15 @@ struct ShortTermMemory : MemoryInterface {
   // (i.e. recent_bits becomes "1").
   int last_byte = 0;
 
-  unsigned long long always_zero = 0;
-  unsigned long long last_byte_context = 0;
-  unsigned long long last_two_bytes_context = 0;
-  unsigned long long last_three_bytes_context = 0;
-  unsigned long long last_three_bytes_15_bit_hash = 0;
-  unsigned long long last_four_bytes_context = 0;
-  unsigned long long last_four_bytes_15_bit_hash = 0;
+  unsigned int always_zero = 0;
+  unsigned int last_byte_context = 0;
+  unsigned int last_two_bytes_context = 0;
+  unsigned int last_three_bytes_context = 0;
+  unsigned int last_three_bytes_15_bit_hash = 0;
+  unsigned int last_four_bytes_context = 0;
+  unsigned int last_four_bytes_15_bit_hash = 0;
   unsigned long long last_five_bytes_context = 0;
-  unsigned long long last_five_bytes_15_bit_hash = 0;
+  unsigned int last_five_bytes_15_bit_hash = 0;
 
   // Predictions for the next byte of data from PPM. Each prediction is in the
   // 0-1 range.
@@ -74,7 +74,7 @@ struct ShortTermMemory : MemoryInterface {
   // 1 = 4-7 bytes matched.
   // ...
   // 7 = Over 28 bytes matched.
-  unsigned long long longest_match = 0;
+  unsigned int longest_match = 0;
 };
 
 #endif  // SHORT_TERM_MEMORY_H_

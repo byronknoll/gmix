@@ -12,10 +12,12 @@
 struct IndirectMemory {
   // Map from context to state (contexts/nonstationary.h).
   std::unordered_map<unsigned int, unsigned char> map;
+  // Map from state to prediction.
+  std::array<float, 256> predictions;
 };
 
 struct MixerData {
-  MixerData(unsigned long long input_size) : steps(0), weights(input_size) {};
+  MixerData(unsigned int input_size) : steps(0), weights(input_size) {};
   unsigned long long steps;
   std::valarray<float> weights;
 };
@@ -50,11 +52,11 @@ struct LongTermMemory : MemoryInterface {
   void ReadFromDisk(std::ifstream* s);
   void Copy(const MemoryInterface* m);
 
-  std::vector<std::unique_ptr<IndirectMemory>> indirect;
-  std::vector<std::unique_ptr<MixerMemory>> mixers;
+  std::vector<IndirectMemory> indirect;
+  std::vector<MixerMemory> mixers;
 
   // LSTM weights.
-  std::vector<std::unique_ptr<NeuronLayerWeights>> neuron_layer_weights;
+  std::vector<NeuronLayerWeights> neuron_layer_weights;
   std::valarray<std::valarray<std::valarray<float>>> lstm_output_layer;
 
   // Pointer to start of PPM allocated memory.

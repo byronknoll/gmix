@@ -1,7 +1,7 @@
 #include "mixer.h"
 
 Mixer::Mixer(ShortTermMemory& short_term_memory,
-             LongTermMemory& long_term_memory, unsigned long long& context,
+             LongTermMemory& long_term_memory, unsigned int& context,
              const std::valarray<float>& inputs, float learning_rate,
              bool final_layer)
     : context_(context),
@@ -15,13 +15,12 @@ Mixer::Mixer(ShortTermMemory& short_term_memory,
     ++short_term_memory.num_mixers;
   }
   memory_index_ = long_term_memory.mixers.size();
-  long_term_memory.mixers.push_back(
-      std::unique_ptr<MixerMemory>(new MixerMemory()));
+  long_term_memory.mixers.push_back(MixerMemory());
 }
 
 MixerData* Mixer::FindMixerData(const LongTermMemory& long_term_memory) {
   MixerData* data = nullptr;
-  auto& mixer_map = long_term_memory.mixers[memory_index_]->mixer_map;
+  auto& mixer_map = long_term_memory.mixers[memory_index_].mixer_map;
   if (mixer_map.find(context_) != mixer_map.end()) {
     data = mixer_map.at(context_).get();
   }
@@ -32,7 +31,7 @@ MixerData* Mixer::FindMixerData(const LongTermMemory& long_term_memory) {
 MixerData* Mixer::FindOrCreateMixerData(
     const ShortTermMemory& short_term_memory,
     LongTermMemory& long_term_memory) {
-  auto& mixer_map = long_term_memory.mixers[memory_index_]->mixer_map;
+  auto& mixer_map = long_term_memory.mixers[memory_index_].mixer_map;
   MixerData* data = mixer_map[context_].get();
   if (data == nullptr) {
     mixer_map[context_] =

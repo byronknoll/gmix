@@ -10,7 +10,7 @@
 class Mixer : public Model {
  public:
   Mixer(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-        unsigned long long& context, const std::valarray<float>& inputs,
+        unsigned int& context, const std::valarray<float>& inputs,
         float learning_rate, bool final_layer);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
@@ -21,7 +21,7 @@ class Mixer : public Model {
   void Copy(const MemoryInterface* m);
 
  private:
-  unsigned long long& context_;
+  unsigned int& context_;
   unsigned long long max_steps_, steps_;
   int output_index_, memory_index_;
   float learning_rate_;

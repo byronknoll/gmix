@@ -12,20 +12,19 @@
 class Indirect : public Model {
  public:
   Indirect(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-           float learning_rate, unsigned long long& context);
+           float learning_rate, unsigned int& context);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory);
-  void WriteToDisk(std::ofstream* s);
-  void ReadFromDisk(std::ifstream* s);
-  void Copy(const MemoryInterface* m);
+  void WriteToDisk(std::ofstream* s) {}
+  void ReadFromDisk(std::ifstream* s) {}
+  void Copy(const MemoryInterface* m) {}
 
  private:
-  unsigned long long& context_;
+  unsigned int& context_;
   int prediction_index_, memory_index_;
   float learning_rate_;
-  std::array<float, 256> predictions_;
 };
 
 #endif  // MODELS_INDIRECT_H

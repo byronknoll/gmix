@@ -5,35 +5,36 @@
 
 void LongTermMemory::WriteToDisk(std::ofstream* s) {
   auto start = s->tellp();
-  for (auto& mem_ptr : indirect) {
+  for (auto& mem : indirect) {
     std::set<unsigned int> keys;  // use a set to get consistent key order.
-    for (auto& it : mem_ptr->map) {
+    for (auto& it : mem.map) {
       keys.insert(it.first);
     }
     unsigned int size = keys.size();
     Serialize(s, size);
     for (unsigned int key : keys) {
       Serialize(s, key);
-      Serialize(s, mem_ptr->map[key]);
+      Serialize(s, mem.map[key]);
     }
+    SerializeArray(s, mem.predictions);
   }
   printf("\nIndirect model size: %ld\n", s->tellp() - start);
 
   start = s->tellp();
-  for (auto& ptr : mixers) {
-    unsigned int mixer_size = ptr->mixer_map.size();
+  for (auto& mixer : mixers) {
+    unsigned int mixer_size = mixer.mixer_map.size();
     Serialize(s, mixer_size);
     if (mixer_size == 0) continue;
-    unsigned int input_size = ptr->mixer_map.begin()->second->weights.size();
+    unsigned int input_size = mixer.mixer_map.begin()->second->weights.size();
     Serialize(s, input_size);
     std::set<unsigned int> keys;  // use a set to get consistent key order.
-    for (auto& it : ptr->mixer_map) {
+    for (auto& it : mixer.mixer_map) {
       keys.insert(it.first);
     }
     for (unsigned int context : keys) {
       Serialize(s, context);
-      Serialize(s, ptr->mixer_map[context]->steps);
-      SerializeArray(s, ptr->mixer_map[context]->weights);
+      Serialize(s, mixer.mixer_map[context]->steps);
+      SerializeArray(s, mixer.mixer_map[context]->weights);
     }
   }
   printf("Mixers size: %ld\n", s->tellp() - start);
@@ -45,7 +46,7 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
     }
   }
   for (auto& x : neuron_layer_weights) {
-    for (auto& y : x->weights) {
+    for (auto& y : x.weights) {
       SerializeArray(s, y);
     }
   }
@@ -114,7 +115,7 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
 }
 
 void LongTermMemory::ReadFromDisk(std::ifstream* s) {
-  for (auto& mem_ptr : indirect) {
+  for (auto& mem : indirect) {
     unsigned int size;
     Serialize(s, size);
     for (int i = 0; i < size; ++i) {
@@ -122,12 +123,13 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
       Serialize(s, key);
       unsigned char state;
       Serialize(s, state);
-      mem_ptr->map[key] = state;
+      mem.map[key] = state;
     }
+    SerializeArray(s, mem.predictions);
   }
 
-  for (auto& ptr : mixers) {
-    ptr->mixer_map.clear();
+  for (auto& mixer : mixers) {
+    mixer.mixer_map.clear();
     unsigned int mixer_size;
     Serialize(s, mixer_size);
     unsigned int input_size;
@@ -135,10 +137,10 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
     for (int i = 0; i < mixer_size; ++i) {
       unsigned int context;
       Serialize(s, context);
-      ptr->mixer_map[context] =
+      mixer.mixer_map[context] =
           std::unique_ptr<MixerData>(new MixerData(input_size));
-      Serialize(s, ptr->mixer_map[context]->steps);
-      SerializeArray(s, ptr->mixer_map[context]->weights);
+      Serialize(s, mixer.mixer_map[context]->steps);
+      SerializeArray(s, mixer.mixer_map[context]->weights);
     }
   }
 
@@ -148,7 +150,7 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
     }
   }
   for (auto& x : neuron_layer_weights) {
-    for (auto& y : x->weights) {
+    for (auto& y : x.weights) {
       SerializeArray(s, y);
     }
   }
@@ -199,22 +201,23 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
 void LongTermMemory::Copy(const MemoryInterface* m) {
   const LongTermMemory* orig = static_cast<const LongTermMemory*>(m);
   for (int i = 0; i < indirect.size(); ++i) {
-    indirect[i]->map = orig->indirect[i]->map;
+    indirect[i].map = orig->indirect[i].map;
+    indirect[i].predictions = orig->indirect[i].predictions;
   }
 
   for (int i = 0; i < mixers.size(); ++i) {
-    mixers[i]->mixer_map.clear();
-    for (const auto& it : orig->mixers[i]->mixer_map) {
-      mixers[i]->mixer_map[it.first] =
+    mixers[i].mixer_map.clear();
+    for (const auto& it : orig->mixers[i].mixer_map) {
+      mixers[i].mixer_map[it.first] =
           std::unique_ptr<MixerData>(new MixerData(it.second->weights.size()));
-      mixers[i]->mixer_map[it.first]->steps = it.second->steps;
-      mixers[i]->mixer_map[it.first]->weights = it.second->weights;
+      mixers[i].mixer_map[it.first]->steps = it.second->steps;
+      mixers[i].mixer_map[it.first]->weights = it.second->weights;
     }
   }
 
   lstm_output_layer = orig->lstm_output_layer;
   for (int i = 0; i < neuron_layer_weights.size(); ++i) {
-    neuron_layer_weights[i]->weights = orig->neuron_layer_weights[i]->weights;
+    neuron_layer_weights[i].weights = orig->neuron_layer_weights[i].weights;
   }
   for (unsigned long long i = 0; i < ppmd_memory_size; ++i) {
     if (orig->ppmd_memory[i] != 0 || ppmd_memory[i] != 0) {

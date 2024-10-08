@@ -56,8 +56,7 @@ NeuronLayer::NeuronLayer(unsigned int input_size, unsigned int num_cells,
       norm_(std::valarray<float>(num_cells), horizon) {
   layer_index_ = long_term_memory.neuron_layer_weights.size();
   long_term_memory.neuron_layer_weights.push_back(
-      std::unique_ptr<NeuronLayerWeights>(
-          new NeuronLayerWeights(input_size, num_cells)));
+      NeuronLayerWeights(input_size, num_cells));
 }
 
 void NeuronLayer::WriteToDisk(std::ofstream* s) {
@@ -122,7 +121,6 @@ void NeuronLayer::ReadFromDisk(std::ifstream* s) {
   }
 }
 
-
 void NeuronLayer::Copy(const MemoryInterface* m) {
   const NeuronLayer* orig = static_cast<const NeuronLayer*>(m);
   error_ = orig->error_;
@@ -171,17 +169,17 @@ LstmLayer::LstmLayer(unsigned int input_size, unsigned int auxiliary_input_size,
   float range = 2 * val;
   for (unsigned int i = 0; i < num_cells_; ++i) {
     for (unsigned int j = 0;
-         j < long_term_memory.neuron_layer_weights[0]->weights[i].size(); ++j) {
-      long_term_memory.neuron_layer_weights[0]->weights[i][j] =
+         j < long_term_memory.neuron_layer_weights[0].weights[i].size(); ++j) {
+      long_term_memory.neuron_layer_weights[0].weights[i][j] =
           low + Rand() * range;
-      long_term_memory.neuron_layer_weights[1]->weights[i][j] =
+      long_term_memory.neuron_layer_weights[1].weights[i][j] =
           low + Rand() * range;
-      long_term_memory.neuron_layer_weights[2]->weights[i][j] =
+      long_term_memory.neuron_layer_weights[2].weights[i][j] =
           low + Rand() * range;
     }
 
     long_term_memory.neuron_layer_weights[forget_gate_.layer_index_]
-        ->weights[i][input_size - 1] = 1;
+        .weights[i][input_size - 1] = 1;
   }
 }
 
@@ -213,7 +211,7 @@ void LstmLayer::ForwardPass(NeuronLayer& neurons,
                             const std::valarray<float>& input, int input_symbol,
                             const LongTermMemory& long_term_memory) {
   const auto& weights =
-      long_term_memory.neuron_layer_weights[neurons.layer_index_]->weights;
+      long_term_memory.neuron_layer_weights[neurons.layer_index_].weights;
   for (unsigned int i = 0; i < num_cells_; ++i) {
     float f = weights[i][input_symbol];
     for (unsigned int j = 0; j < input.size(); ++j) {
@@ -290,7 +288,7 @@ void LstmLayer::BackwardPass(NeuronLayer& neurons,
                              std::valarray<float>* hidden_error,
                              LongTermMemory& long_term_memory) {
   auto& weights =
-      long_term_memory.neuron_layer_weights[neurons.layer_index_]->weights;
+      long_term_memory.neuron_layer_weights[neurons.layer_index_].weights;
   if (epoch == (int)horizon_ - 1) {
     neurons.gamma_u_ = 0;
     neurons.beta_u_ = 0;
