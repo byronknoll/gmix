@@ -974,6 +974,7 @@ class ppmd_Model : public MemoryInterface {
     if (enable_learn) FoundState->iSuccessor = Ptr2Indx(pText);
     byte sym = FoundState->Symbol;
     uint iUpBranch = FoundState->iSuccessor;
+    if (!enable_learn) iUpBranch = Ptr2Indx(pText);
     OrderFall++;
 
     if (p) {
@@ -1001,22 +1002,25 @@ class ppmd_Model : public MemoryInterface {
 
     LOOP_ENTRY:
       if (p->iSuccessor) break;
-      p->iSuccessor = iUpBranch;
+      if (enable_learn) p->iSuccessor = iUpBranch;
       OrderFall++;
     }
 
+    bool custom_return = false;
     if (p->iSuccessor <= iUpBranch) {
       p1 = FoundState;
       FoundState = p;
       if (enable_learn) p->iSuccessor = CreateSuccessors(0, 0, pc);
+      else custom_return = true;
       FoundState = p1;
     }
 
     if (OrderFall == 1 && pc1 == MaxContext) {
-      FoundState->iSuccessor = p->iSuccessor;
+      if (enable_learn) FoundState->iSuccessor = p->iSuccessor;
       pText--;
     }
 
+    if (custom_return) return CreateSuccessors(0, 0, pc);
     return p->iSuccessor;
   }
 
