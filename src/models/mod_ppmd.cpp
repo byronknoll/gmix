@@ -57,7 +57,7 @@ class ppmd_Model : public MemoryInterface {
 
   byte* HeapStart;
   typedef byte* pbyte;
-  uint  Ptr2Indx( void* p ) { return pbyte(p)-HeapStart; }
+  uint Ptr2Indx(void* p) { return pbyte(p) - HeapStart; }
   void* Indx2Ptr(uint indx) { return indx + HeapStart; }
 
   struct _MEM_BLK {
@@ -884,6 +884,7 @@ class ppmd_Model : public MemoryInterface {
   }
 
   uint CreateSuccessors(uint Skip, STATE* p, PPM_CONTEXT* pc) {
+    if (!enable_learn) return Ptr2Indx(pc);
     byte tmp;
     uint cf, s0;
     STATE* ps[MAX_O];
@@ -911,17 +912,13 @@ class ppmd_Model : public MemoryInterface {
         // find sym node
         for (p = getStats(pc); p[0].Symbol != sym; p++);
         // increment freq if limit allows
-        if (enable_learn) {
-          tmp = 2 * (p[0].Freq < MAX_FREQ - 1);
-          p[0].Freq += tmp;
-          pc[0].SummFreq += tmp;
-        }
+        tmp = 2 * (p[0].Freq < MAX_FREQ - 1);
+        p[0].Freq += tmp;
+        pc[0].SummFreq += tmp;
       } else {
         // binary context
         p = &(pc[0].oneState());
-        if (enable_learn) {
-          p[0].Freq += (!suff(pc)->NumStats & (p[0].Freq < 16));
-        }
+        p[0].Freq += (!suff(pc)->NumStats & (p[0].Freq < 16));
       }
 
     LOOP_ENTRY:
@@ -955,19 +952,17 @@ class ppmd_Model : public MemoryInterface {
       ct.oneState().Freq = pc[0].oneState().Freq;
     }
 
-    if (enable_learn) {
-      // attach the new node to all orders
-      do {
-        PPM_CONTEXT* pc1 = (PPM_CONTEXT*)AllocContext();
-        if (!pc1) return 0;
-        ((uint*)pc1)[0] = ((uint*)&ct)[0];
-        ((uint*)pc1)[1] = ((uint*)&ct)[1];
-        pc1->iSuffix = Ptr2Indx(pc);
-        pc = pc1;
-        pps--;
-        pps[0][0].iSuccessor = Ptr2Indx(pc);
-      } while (pps != ps);
-    }
+    // attach the new node to all orders
+    do {
+      PPM_CONTEXT* pc1 = (PPM_CONTEXT*)AllocContext();
+      if (!pc1) return 0;
+      ((uint*)pc1)[0] = ((uint*)&ct)[0];
+      ((uint*)pc1)[1] = ((uint*)&ct)[1];
+      pc1->iSuffix = Ptr2Indx(pc);
+      pc = pc1;
+      pps--;
+      pps[0][0].iSuccessor = Ptr2Indx(pc);
+    } while (pps != ps);
 
     return Ptr2Indx(pc);
   }

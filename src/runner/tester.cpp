@@ -349,6 +349,7 @@ void TestGeneration() {
 }
 
 int main(int argc, char* argv[]) {
+  srand(0xDEADBEEF);
   TestCompression();
   TestCompressionWithRestart();
   TestCompressionWithCopyRestart();

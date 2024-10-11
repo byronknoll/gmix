@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
       (argv[1][1] != 'c' && argv[1][1] != 'd' && argv[1][1] != 'g')) {
     return Help();
   }
-
+  srand(0xDEADBEEF);
   clock_t start = clock();
 
   std::string input_path = argv[2];
