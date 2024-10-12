@@ -1,5 +1,6 @@
 #include "predictor.h"
 
+#include <iomanip>
 #include <numeric>
 
 #include "contexts/basic-contexts.h"
@@ -19,8 +20,11 @@ Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   AddMixers();
   short_term_memory_.predictions.resize(short_term_memory_.num_predictions);
   short_term_memory_.predictions = 0.5;
-  short_term_memory_.mixer_outputs.resize(short_term_memory_.num_mixers);
+  short_term_memory_.mixer_outputs.resize(short_term_memory_.num_mixers - 1);
   short_term_memory_.mixer_outputs = 0.5;
+  short_term_memory_.entropy.resize(short_term_memory_.num_predictions +
+                                    short_term_memory_.num_mixers);
+  short_term_memory_.entropy = -1;
 }
 
 void Predictor::Copy(const Predictor& p) {
@@ -38,50 +42,62 @@ void Predictor::AddModel(Model* model) {
 void Predictor::AddIndirect() {
   float learning_rate = 1.0f / 200;
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.last_byte_context));
+                        short_term_memory_.last_byte_context,
+                        "Indirect(1 byte)"));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.last_two_bytes_context));
+                        short_term_memory_.last_two_bytes_context,
+                        "Indirect(2 bytes)"));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.last_three_bytes_15_bit_hash));
+                        short_term_memory_.last_three_bytes_15_bit_hash,
+                        "Indirect(3 byte hash)"));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.last_four_bytes_15_bit_hash));
+                        short_term_memory_.last_four_bytes_15_bit_hash,
+                        "Indirect(4 byte hash)"));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.last_five_bytes_15_bit_hash));
+                        short_term_memory_.last_five_bytes_15_bit_hash,
+                        "Indirect(5 byte hash)"));
 }
 
 void Predictor::AddMatch() {
   int limit = 200;
   AddModel(new Match(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_byte_context, limit));
+                     short_term_memory_.last_byte_context, limit,
+                     "Match(1 byte)"));
   AddModel(new Match(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_three_bytes_15_bit_hash, limit));
+                     short_term_memory_.last_three_bytes_15_bit_hash, limit,
+                     "Match(3 byte hash)"));
   AddModel(new Match(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_five_bytes_15_bit_hash, limit));
+                     short_term_memory_.last_five_bytes_15_bit_hash, limit,
+                     "Match(5 byte hash)"));
 }
 
 void Predictor::AddMixers() {
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_byte_context,
-                     short_term_memory_.predictions, 0.005, false));
-  AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.longest_match,
-                     short_term_memory_.predictions, 0.0005, false));
-  AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.always_zero,
-                     short_term_memory_.predictions, 0.0005, false));
+                     short_term_memory_.predictions, 0.005, false,
+                     "Mixer(1 byte)"));
+  AddModel(new Mixer(
+      short_term_memory_, long_term_memory_, short_term_memory_.longest_match,
+      short_term_memory_.predictions, 0.0005, false, "Mixer(longest match)"));
+  AddModel(new Mixer(
+      short_term_memory_, long_term_memory_, short_term_memory_.always_zero,
+      short_term_memory_.predictions, 0.0005, false, "Mixer(no context)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_two_bytes_context,
-                     short_term_memory_.predictions, 0.005, false));
+                     short_term_memory_.predictions, 0.005, false,
+                     "Mixer(2 bytes)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_three_bytes_15_bit_hash,
-                     short_term_memory_.predictions, 0.005, false));
+                     short_term_memory_.predictions, 0.005, false,
+                     "Mixer(3 byte hash)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_four_bytes_15_bit_hash,
-                     short_term_memory_.predictions, 0.005, false));
+                     short_term_memory_.predictions, 0.005, false,
+                     "Mixer(4 byte hash)"));
 
-  AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.always_zero,
-                     short_term_memory_.mixer_outputs, 0.005, true));
+  AddModel(new Mixer(
+      short_term_memory_, long_term_memory_, short_term_memory_.always_zero,
+      short_term_memory_.mixer_outputs, 0.005, true, "Mixer(final layer)"));
 }
 
 float Predictor::Predict() {
@@ -97,7 +113,10 @@ float Predictor::Predict() {
   return prob;
 }
 
-void Predictor::Perceive(int bit) { short_term_memory_.new_bit = bit; }
+void Predictor::Perceive(int bit) {
+  short_term_memory_.new_bit = bit;
+  if (sample_frequency_ > 0) RunAnalysis(bit);
+}
 
 void Predictor::Learn() {
   for (const auto& model : models_) {
@@ -136,4 +155,52 @@ void Predictor::ReadCheckpoint(std::string path) {
 
   data_in_short.close();
   data_in_long.close();
+}
+
+void Predictor::EnableAnalysis(int sample_frequency) {
+  sample_frequency_ = sample_frequency;
+  std::ofstream data("entropy.tsv", std::ios::out);
+  for (int i = 0; i < short_term_memory_.model_descriptions.size(); ++i) {
+    if (i != 0) data << "\t";
+    data << short_term_memory_.model_descriptions[i];
+  }
+  data << "\n";
+}
+
+void Predictor::RunAnalysis(int bit) {
+  for (int i = 0; i < short_term_memory_.entropy.size(); ++i) {
+    float entropy = 0;
+    float prob = 0.5;
+    if (i < short_term_memory_.num_predictions) {
+      prob = Sigmoid::Logistic(short_term_memory_.predictions[i]);
+    } else if (i != short_term_memory_.entropy.size() - 1) {
+      prob = Sigmoid::Logistic(
+          short_term_memory_
+              .mixer_outputs[i - short_term_memory_.num_predictions]);
+    } else {
+      prob = Sigmoid::Logistic(short_term_memory_.final_mixer_output);
+    }
+    float eps = 0.01;
+    if (prob < eps)
+      prob = eps;
+    else if (prob > 1 - eps)
+      prob = 1 - eps;
+    if (bit)
+      entropy = log2(prob);
+    else
+      entropy = log2(1 - prob);
+    double alpha = 0.00001;
+    short_term_memory_.entropy[i] =
+        (1 - alpha) * short_term_memory_.entropy[i] + alpha * entropy;
+  }
+  if (short_term_memory_.bits_seen % sample_frequency_ == 0 &&
+      short_term_memory_.bits_seen > 0) {
+    std::ofstream data("entropy.tsv", std::ios::app);
+    for (int i = 0; i < short_term_memory_.entropy.size(); ++i) {
+      if (i != 0) data << "\t";
+      data << std::fixed << std::setprecision(5)
+           << -short_term_memory_.entropy[i];
+    }
+    data << "\n";
+  }
 }

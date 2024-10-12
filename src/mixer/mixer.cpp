@@ -3,17 +3,14 @@
 Mixer::Mixer(ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory, unsigned int& context,
              const std::valarray<float>& inputs, float learning_rate,
-             bool final_layer)
+             bool final_layer, std::string description)
     : context_(context),
       max_steps_(1),
       steps_(0),
-      output_index_(short_term_memory.num_mixers),
       learning_rate_(learning_rate),
       inputs_(inputs),
       final_layer_(final_layer) {
-  if (!final_layer) {
-    ++short_term_memory.num_mixers;
-  }
+  output_index_ = short_term_memory.AddMixer(description);
   memory_index_ = long_term_memory.mixers.size();
   long_term_memory.mixers.push_back(MixerMemory());
 }

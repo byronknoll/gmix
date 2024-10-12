@@ -9,6 +9,7 @@ void BasicContexts::Predict(ShortTermMemory& short_term_memory,
     first_prediction_ = false;
     return;
   }
+  ++short_term_memory.bits_seen;
   short_term_memory.recent_bits +=
       short_term_memory.recent_bits + short_term_memory.new_bit;
   if (short_term_memory.recent_bits >= 256) {

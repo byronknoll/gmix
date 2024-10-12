@@ -18,6 +18,8 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   SerializeArray(s, mixer_outputs);
   Serialize(s, final_mixer_output);
   Serialize(s, longest_match);
+  Serialize(s, bits_seen);
+  SerializeArray(s, entropy);
 }
 
 void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
@@ -38,6 +40,8 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   SerializeArray(s, mixer_outputs);
   Serialize(s, final_mixer_output);
   Serialize(s, longest_match);
+  Serialize(s, bits_seen);
+  SerializeArray(s, entropy);
 }
 
 void ShortTermMemory::Copy(const MemoryInterface* m) {
@@ -59,4 +63,6 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   mixer_outputs = orig->mixer_outputs;
   final_mixer_output = orig->final_mixer_output;
   longest_match = orig->longest_match;
+  bits_seen = orig->bits_seen;
+  entropy = orig->entropy;
 }

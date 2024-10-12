@@ -42,6 +42,7 @@ void Compress(unsigned long long input_bytes, std::ifstream* is,
               std::ofstream* os, unsigned long long* output_bytes,
               Predictor* p) {
   Encoder e(os, p);
+  p->EnableAnalysis(8 * input_bytes / 1000);
   unsigned long long percent = 1 + (input_bytes / 10000);
   ClearOutput();
   for (unsigned long long pos = 0; pos < input_bytes; ++pos) {
@@ -135,6 +136,7 @@ bool RunGeneration(const std::string& input_path,
   data_in.seekg(0, std::ios::beg);
 
   Predictor p;
+  p.EnableAnalysis(8 * input_bytes / 1000);
   float prob = p.Predict();
   double entropy = 0;
   unsigned long long percent = 1 + (input_bytes / 100);

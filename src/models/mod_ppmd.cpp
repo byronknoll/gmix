@@ -1590,7 +1590,7 @@ class ppmd_Model : public MemoryInterface {
 ModPPMD::ModPPMD(ShortTermMemory& short_term_memory,
                  LongTermMemory& long_term_memory, int order, int memory)
     : top_(255), mid_(127), bot_(0) {
-  prediction_index_ = short_term_memory.num_predictions++;
+  prediction_index_ = short_term_memory.AddPrediction("PPM");
   ppmd_model_.reset(new ppmd_Model());
   ppmd_model_->Init(order, memory, 1, 0);
   long_term_memory.ppmd_memory = ppmd_model_->HeapStart;

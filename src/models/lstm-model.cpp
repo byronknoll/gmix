@@ -9,7 +9,7 @@ LstmModel::LstmModel(ShortTermMemory& short_term_memory,
       mid_(127),
       bot_(0),
       probs_(1.0 / 256, 256) {
-  prediction_index_ = short_term_memory.num_predictions++;
+  prediction_index_ = short_term_memory.AddPrediction("LSTM");
 }
 
 void LstmModel::Predict(ShortTermMemory& short_term_memory,

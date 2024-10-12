@@ -4,9 +4,9 @@
 
 Indirect::Indirect(ShortTermMemory& short_term_memory,
                    LongTermMemory& long_term_memory, float learning_rate,
-                   unsigned int& context)
+                   unsigned int& context, std::string description)
     : context_(context), learning_rate_(learning_rate) {
-  prediction_index_ = short_term_memory.num_predictions++;
+  prediction_index_ = short_term_memory.AddPrediction(description);
   memory_index_ = long_term_memory.indirect.size();
   long_term_memory.indirect.push_back(IndirectMemory());
   for (int i = 0; i < 256; ++i) {

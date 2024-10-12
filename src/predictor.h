@@ -27,17 +27,23 @@ class Predictor {
   void ReadCheckpoint(std::string path);
   // Makes this predictor a deep copy of the other Predictor.
   void Copy(const Predictor& p);
+  // This will output a file (entropy.tsv) with the recent cross entropy for
+  // each model. Every "sample_frequency" bits, a new entry will be output.
+  void EnableAnalysis(int sample_frequency);
 
  private:
   Sigmoid sigmoid_;
   LongTermMemory long_term_memory_;
   ShortTermMemory short_term_memory_;
   std::vector<std::unique_ptr<Model>> models_;
+  // If sample_frequency_ is >0, model analysis will be enabled.
+  int sample_frequency_ = 0;
 
   void AddIndirect();
   void AddMatch();
   void AddMixers();
   void AddModel(Model* model);
+  void RunAnalysis(int bit);
 };
 
 #endif  // PREDICTOR_H_

@@ -1,6 +1,7 @@
 gmix
 test
 prep
+entropy.tsv
 .vscode/
 data/
 scripts/

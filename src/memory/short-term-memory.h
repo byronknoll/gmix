@@ -2,6 +2,7 @@
 #define SHORT_TERM_MEMORY_H_
 
 #include <valarray>
+#include <vector>
 
 #include "../memory-interface.h"
 #include "../mixer/sigmoid.h"
@@ -20,13 +21,22 @@ struct ShortTermMemory : MemoryInterface {
   void ReadFromDisk(std::ifstream* s);
   void Copy(const MemoryInterface* m);
 
+  // Models should call this in their constructor.
+  // description: a short identifier for this model.
+  // returns: model prediction index.
+  int AddPrediction(std::string description) {
+    ++num_predictions;
+    model_descriptions.push_back(description);
+    return num_predictions - 1;
+  }
   // Predictions for the next bit of data. Each prediction should be a
   // probability between 0 to 1.
   void SetPrediction(float prediction, int index) {
     predictions[index] = sigmoid.Logit(prediction);
   }
   std::valarray<float> predictions;
-  int num_predictions = 0;
+   int num_predictions = 0;
+  std::vector<std::string> model_descriptions;
 
   // The most recently perceived bit.
   int new_bit = 0;
@@ -60,7 +70,15 @@ struct ShortTermMemory : MemoryInterface {
   // Predictions for the next byte of data from PPM. Each prediction is in the
   // 0-1 range.
   std::valarray<float> ppm_predictions;
-
+  
+  // Mixers should call this in their constructor.
+  // description: a short identifier for this mixer.
+  // returns: mixer index.
+  int AddMixer(std::string description) {
+    ++num_mixers;
+    model_descriptions.push_back(description);
+    return num_mixers - 1;
+  }
   std::valarray<float> mixer_outputs;
   int num_mixers = 0;
   float final_mixer_output = 0.5;
@@ -75,6 +93,12 @@ struct ShortTermMemory : MemoryInterface {
   // ...
   // 7 = Over 28 bytes matched.
   unsigned int longest_match = 0;
+
+  // Number of bits seen.
+  unsigned long long bits_seen = 0;
+
+  // This is the cross entropy for each model (used for analysis).
+  std::valarray<double> entropy;
 };
 
 #endif  // SHORT_TERM_MEMORY_H_
