@@ -83,9 +83,9 @@ struct ShortTermMemory : MemoryInterface {
   int num_mixers = 0;
   float final_mixer_output = 0.5;
 
-  const Sigmoid& sigmoid;  // Does not need serlialization.
+  const Sigmoid& sigmoid;  // Does not need serialization.
 
-  Nonstationary nonstationary;  // Does not need serlialization.
+  Nonstationary nonstationary;  // Does not need serialization.
 
   // Longest match from Match models. Range is 0-7.
   // 0 = 0-3 bytes matched.
