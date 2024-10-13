@@ -47,7 +47,7 @@ void CompressFirstHalf(unsigned long long input_bytes, std::ifstream* is,
     if (pos == input_bytes / 2) {
       // Checkpoint and return.
       p.WriteCheckpoint("data/checkpoint");
-      e.WriteCheckpoint("data/checkpoint2");
+      e.WriteCheckpoint("data/checkpoint.coder");
       return;
     }
   }
@@ -58,8 +58,8 @@ void CompressSecondHalf(unsigned long long input_bytes, std::ifstream* is,
   Predictor p;
   p.ReadCheckpoint("data/checkpoint");
   Encoder e(os, &p);
-  e.ReadCheckpoint("data/checkpoint2");
-  p.WriteCheckpoint("data/checkpoint3");
+  e.ReadCheckpoint("data/checkpoint.coder");
+  p.WriteCheckpoint("data/checkpoint2");
   unsigned long long percent = 1 + (input_bytes / 10000);
   runner_utils::ClearOutput();
   for (unsigned long long pos = (input_bytes / 2) + 1; pos < input_bytes;
@@ -126,7 +126,7 @@ bool RunCompressionWithCopyRestart(const std::string& input_path,
       e.Encode((c >> j) & 1);
     }
     if (pos == *input_bytes / 2) {
-      e.WriteCheckpoint("data/checkpoint2");
+      e.WriteCheckpoint("data/checkpoint.coder");
       break;
     }
     if (pos % percent == 0) {
@@ -138,8 +138,8 @@ bool RunCompressionWithCopyRestart(const std::string& input_path,
   Predictor p2;
   p2.Copy(p);
   Encoder e2(&data_out, &p2);
-  e2.ReadCheckpoint("data/checkpoint2");
-  p2.WriteCheckpoint("data/checkpoint3");
+  e2.ReadCheckpoint("data/checkpoint.coder");
+  p2.WriteCheckpoint("data/checkpoint2");
 
   for (unsigned long long pos = (*input_bytes / 2) + 1; pos < *input_bytes;
        ++pos) {
@@ -183,7 +183,7 @@ void DecompressFirstHalf(unsigned long long output_length, std::ifstream* is,
     if (pos == output_length / 2) {
       // Checkpoint and return.
       p.WriteCheckpoint("data/checkpoint");
-      d.WriteCheckpoint("data/checkpoint2");
+      d.WriteCheckpoint("data/checkpoint.coder");
       return;
     }
   }
@@ -194,7 +194,7 @@ void DecompressSecondHalf(unsigned long long output_length, std::ifstream* is,
   Predictor p;
   p.ReadCheckpoint("data/checkpoint");
   Decoder d(is, &p, true);
-  d.ReadCheckpoint("data/checkpoint2");
+  d.ReadCheckpoint("data/checkpoint.coder");
   unsigned long long percent = 1 + (output_length / 10000);
   runner_utils::ClearOutput();
   for (unsigned long long pos = (output_length / 2) + 1; pos < output_length;
@@ -293,7 +293,7 @@ bool RunGenerationTest(const std::string& input_path,
   printf("\rgeneration: 100%%\n");
 
   data_out.close();
-  p.WriteCheckpoint("data/checkpoint3");
+  p.WriteCheckpoint("data/checkpoint2");
 
   return true;
 }
@@ -316,8 +316,8 @@ void TestCompressionWithRestart() {
   RunCompressionWithRestart("./test", "data/test2", &in, &out);
   printf("\n");
   if (!CompareFiles("data/test1", "data/test2")) Fail();
-  if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) Fail();
-  if (!CompareFiles("data/checkpoint.short", "data/checkpoint3.short")) Fail();
+  if (!CompareFiles("data/checkpoint.long", "data/checkpoint2.long")) Fail();
+  if (!CompareFiles("data/checkpoint.short", "data/checkpoint2.short")) Fail();
 }
 
 void TestCompressionWithCopyRestart() {
@@ -326,8 +326,8 @@ void TestCompressionWithCopyRestart() {
   RunCompressionWithCopyRestart("./test", "data/test3", &in, &out);
   printf("\n");
   if (!CompareFiles("data/test1", "data/test3")) Fail();
-  if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) Fail();
-  if (!CompareFiles("data/checkpoint.short", "data/checkpoint3.short")) Fail();
+  if (!CompareFiles("data/checkpoint.long", "data/checkpoint2.long")) Fail();
+  if (!CompareFiles("data/checkpoint.short", "data/checkpoint2.short")) Fail();
 }
 
 void TestDecompressionWithRestart() {
@@ -343,8 +343,8 @@ void TestGeneration() {
   RunGenerationTest("data/test1", "data/test4", 100000);
   // Long term memory should remain the same during generation, but short term
   // memory should not.
-  if (!CompareFiles("data/checkpoint.long", "data/checkpoint3.long")) Fail();
-  if (CompareFiles("data/checkpoint.short", "data/checkpoint3.short")) Fail();
+  if (!CompareFiles("data/checkpoint.long", "data/checkpoint2.long")) Fail();
+  if (CompareFiles("data/checkpoint.short", "data/checkpoint2.short")) Fail();
   printf("\n");
 }
 

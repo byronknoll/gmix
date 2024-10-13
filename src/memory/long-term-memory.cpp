@@ -53,45 +53,6 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
   printf("LSTM size: %ld\n", s->tellp() - start);
 
   start = s->tellp();
-  // PPM memory can have long "zero" sequences. We can reduce the serialization
-  // size by storing the position/size of those.
-  unsigned long long zero_sequence_count = 0;
-  unsigned long long zero_sequence_start = 0;
-  std::vector<unsigned long long> zero_sequence_counts;
-  std::vector<unsigned long long> zero_sequence_starts;
-  for (unsigned long long i = 0; i < ppmd_memory_size; ++i) {
-    if (ppmd_memory[i] == 0) {
-      if (zero_sequence_count == 0) {
-        zero_sequence_start = i;
-      }
-      ++zero_sequence_count;
-    } else if (zero_sequence_count > 0) {
-      if (zero_sequence_count > 100) {
-        zero_sequence_counts.push_back(zero_sequence_count);
-        zero_sequence_starts.push_back(zero_sequence_start);
-      }
-      zero_sequence_count = 0;
-    }
-  }
-  int num_sequences = zero_sequence_counts.size();
-  Serialize(s, num_sequences);
-  for (int i = 0; i < num_sequences; ++i) {
-    Serialize(s, zero_sequence_counts[i]);
-    Serialize(s, zero_sequence_starts[i]);
-  }
-  int sequence_pos = 0;
-  for (unsigned long long i = 0; i < ppmd_memory_size; ++i) {
-    if (sequence_pos < zero_sequence_counts.size() &&
-        i == zero_sequence_starts[sequence_pos]) {
-      i += zero_sequence_counts[sequence_pos] - 1;
-      ++sequence_pos;
-      continue;
-    }
-    Serialize(s, ppmd_memory[i]);
-  }
-  printf("PPM size: %ld\n", s->tellp() - start);
-
-  start = s->tellp();
   unsigned long long size = history.size();
   Serialize(s, size);
   for (unsigned long long i = 0; i < size; ++i) {
@@ -154,28 +115,6 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
       SerializeArray(s, y);
     }
   }
-  int num_sequences;
-  Serialize(s, num_sequences);
-  unsigned long long zero_sequence_count = 0;
-  unsigned long long zero_sequence_start = 0;
-  std::vector<unsigned long long> zero_sequence_counts;
-  std::vector<unsigned long long> zero_sequence_starts;
-  for (int i = 0; i < num_sequences; ++i) {
-    Serialize(s, zero_sequence_count);
-    Serialize(s, zero_sequence_start);
-    zero_sequence_counts.push_back(zero_sequence_count);
-    zero_sequence_starts.push_back(zero_sequence_start);
-  }
-  int sequence_pos = 0;
-  for (unsigned long long i = 0; i < ppmd_memory_size; ++i) {
-    if (sequence_pos < zero_sequence_counts.size() &&
-        i == zero_sequence_starts[sequence_pos]) {
-      i += zero_sequence_counts[sequence_pos] - 1;
-      ++sequence_pos;
-      continue;
-    }
-    Serialize(s, ppmd_memory[i]);
-  }
 
   unsigned long long size;
   history.clear();
@@ -218,11 +157,6 @@ void LongTermMemory::Copy(const MemoryInterface* m) {
   lstm_output_layer = orig->lstm_output_layer;
   for (int i = 0; i < neuron_layer_weights.size(); ++i) {
     neuron_layer_weights[i].weights = orig->neuron_layer_weights[i].weights;
-  }
-  for (unsigned long long i = 0; i < ppmd_memory_size; ++i) {
-    if (orig->ppmd_memory[i] != 0 || ppmd_memory[i] != 0) {
-      ppmd_memory[i] = orig->ppmd_memory[i];
-    }
   }
   history = orig->history;
   for (int i = 0; i < match_memory.size(); ++i) {

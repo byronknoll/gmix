@@ -1,6 +1,8 @@
 // ppmd is written by Dmitry Shkarin.
 // mod_ppmd is adapted from ppmd by Eugene Shelwien.
 // This file is adapted from mod_ppmd_v2: http://encode.su/threads/2515-mod_ppmd
+// All memory for this model is considered "short term memory", since the model
+// memory occasionally resets when it grows to a certain limit.
 
 #include "mod_ppmd.h"
 
@@ -42,7 +44,6 @@ class ppmd_Model : public MemoryInterface {
   typedef unsigned int uint;
   typedef unsigned char byte;
   typedef unsigned long long qword;
-  bool enable_learn = true;
 
   enum { SCALE = 1 << 15 };
 
@@ -766,7 +767,7 @@ class ppmd_Model : public MemoryInterface {
     iFSuccessor = FoundState->iSuccessor;
 
     // partial update for the suffix context
-    if (MinContext->iSuffix && enable_learn) {
+    if (MinContext->iSuffix) {
       pc = suff(MinContext);
       // is it binary?
       if (pc[0].NumStats) {
@@ -788,7 +789,7 @@ class ppmd_Model : public MemoryInterface {
     pc = MaxContext;
 
     // try increasing the order
-    if (!OrderFall && iFSuccessor && enable_learn) {
+    if (!OrderFall && iFSuccessor) {
       FoundState->iSuccessor = CreateSuccessors(1, p, MinContext);
       if (!FoundState->iSuccessor) {
         saved_pc = pc;
@@ -798,7 +799,7 @@ class ppmd_Model : public MemoryInterface {
       return MaxContext;
     }
 
-    if (enable_learn) *pText++ = FSymbol;
+    *pText++ = FSymbol;
     iSuccessor = Ptr2Indx(pText);
     if (pText >= UnitsStart) {
       saved_pc = pc;
@@ -826,7 +827,7 @@ class ppmd_Model : public MemoryInterface {
     s0 = MinContext->SummFreq - FFreq;
     ns = MinContext->NumStats;
     Flag = 0x08 * (FSymbol >= 0x40);
-    for (pc = MaxContext; enable_learn && pc != MinContext; pc = suff(pc)) {
+    for (pc = MaxContext; pc != MinContext; pc = suff(pc)) {
       ns1 = pc[0].NumStats;
       // non-binary context?
       if (ns1) {
@@ -884,7 +885,6 @@ class ppmd_Model : public MemoryInterface {
   }
 
   uint CreateSuccessors(uint Skip, STATE* p, PPM_CONTEXT* pc) {
-    if (!enable_learn) return Ptr2Indx(pc);
     byte tmp;
     uint cf, s0;
     STATE* ps[MAX_O];
@@ -971,10 +971,9 @@ class ppmd_Model : public MemoryInterface {
     byte tmp;
     STATE* p1;
     PPM_CONTEXT* pc1 = pc;
-    if (enable_learn) FoundState->iSuccessor = Ptr2Indx(pText);
+    FoundState->iSuccessor = Ptr2Indx(pText);
     byte sym = FoundState->Symbol;
     uint iUpBranch = FoundState->iSuccessor;
-    if (!enable_learn) iUpBranch = Ptr2Indx(pText);
     OrderFall++;
 
     if (p) {
@@ -989,38 +988,31 @@ class ppmd_Model : public MemoryInterface {
       if (pc->NumStats) {
         for (p = getStats(pc); p[0].Symbol != sym; p++);
         tmp = 2 * (p->Freq < MAX_FREQ - 3);
-        if (enable_learn) {
-          p->Freq += tmp;
-          pc->SummFreq += tmp;
-        }
+        p->Freq += tmp;
+        pc->SummFreq += tmp;
       } else {
         p = &(pc->oneState());
-        if (enable_learn) {
-          p->Freq += (p->Freq < 11);
-        }
+        p->Freq += (p->Freq < 11);
       }
 
     LOOP_ENTRY:
       if (p->iSuccessor) break;
-      if (enable_learn) p->iSuccessor = iUpBranch;
+      p->iSuccessor = iUpBranch;
       OrderFall++;
     }
 
-    bool custom_return = false;
     if (p->iSuccessor <= iUpBranch) {
       p1 = FoundState;
       FoundState = p;
-      if (enable_learn) p->iSuccessor = CreateSuccessors(0, 0, pc);
-      else custom_return = true;
+      p->iSuccessor = CreateSuccessors(0, 0, pc);
       FoundState = p1;
     }
 
     if (OrderFall == 1 && pc1 == MaxContext) {
-      if (enable_learn) FoundState->iSuccessor = p->iSuccessor;
+      FoundState->iSuccessor = p->iSuccessor;
       pText--;
     }
 
-    if (custom_return) return CreateSuccessors(0, 0, pc);
     return p->iSuccessor;
   }
 
@@ -1045,7 +1037,7 @@ class ppmd_Model : public MemoryInterface {
       FoundState = 0;
     } else {
       bs += INTERVAL;
-      if (enable_learn) rs.Freq += (rs.Freq < 196);
+      rs.Freq += (rs.Freq < 196);
       RunLength++;
       PrevSuccess = 1;
       FoundState = &rs;
@@ -1073,10 +1065,8 @@ class ppmd_Model : public MemoryInterface {
 
     if (flag) {
       PrevSuccess = 0;  //(2*freq>1*total);
-      if (enable_learn) {
-        p[0].Freq += 4;
-        q.SummFreq += 4;
-      }
+      p[0].Freq += 4;
+      q.SummFreq += 4;
     } else {
       PrevSuccess = 0;
 
@@ -1088,11 +1078,9 @@ class ppmd_Model : public MemoryInterface {
       }
 
       if (flag) {
-        if (enable_learn) {
-          p[i].Freq += 4;
-          q.SummFreq += 4;
-          if (p[i].Freq > p[i - 1].Freq) SWAP(p[i], p[i - 1]), i--;
-        }
+        p[i].Freq += 4;
+        q.SummFreq += 4;
+        if (p[i].Freq > p[i - 1].Freq) SWAP(p[i], p[i - 1]), i--;
         p = &p[i];
       } else {
         if (q.iSuffix) PrefetchData(suff(&q));
@@ -1167,12 +1155,10 @@ class ppmd_Model : public MemoryInterface {
       psee2c->update();
 
       FoundState = p;
-      if (enable_learn) {
-        p[0].Freq += 4;
-        q.SummFreq += 4;
-        if (p[0].Freq > MAX_FREQ)
-          FoundState = rescale(q, OrderFall, FoundState);
-      }
+      p[0].Freq += 4;
+      q.SummFreq += 4;
+      if (p[0].Freq > MAX_FREQ)
+        FoundState = rescale(q, OrderFall, FoundState);
       RunLength = InitRL;
       EscCount++;
 
@@ -1456,7 +1442,43 @@ class ppmd_Model : public MemoryInterface {
     }
     Serialize(s, cxt);
     Serialize(s, y);
-    Serialize(s, enable_learn);
+
+    // PPM memory can have long "zero" sequences. We can reduce the serialization
+    // size by storing the position/size of those.
+    unsigned long long zero_sequence_count = 0;
+    unsigned long long zero_sequence_start = 0;
+    std::vector<unsigned long long> zero_sequence_counts;
+    std::vector<unsigned long long> zero_sequence_starts;
+    for (unsigned long long i = 0; i < SubAllocatorSize; ++i) {
+      if (HeapStart[i] == 0) {
+        if (zero_sequence_count == 0) {
+          zero_sequence_start = i;
+        }
+        ++zero_sequence_count;
+      } else if (zero_sequence_count > 0) {
+        if (zero_sequence_count > 100) {
+          zero_sequence_counts.push_back(zero_sequence_count);
+          zero_sequence_starts.push_back(zero_sequence_start);
+        }
+        zero_sequence_count = 0;
+      }
+    }
+    int num_sequences = zero_sequence_counts.size();
+    Serialize(s, num_sequences);
+    for (int i = 0; i < num_sequences; ++i) {
+      Serialize(s, zero_sequence_counts[i]);
+      Serialize(s, zero_sequence_starts[i]);
+    }
+    int sequence_pos = 0;
+    for (unsigned long long i = 0; i < SubAllocatorSize; ++i) {
+      if (sequence_pos < zero_sequence_counts.size() &&
+          i == zero_sequence_starts[sequence_pos]) {
+        i += zero_sequence_counts[sequence_pos] - 1;
+        ++sequence_pos;
+        continue;
+      }
+      Serialize(s, HeapStart[i]);
+    }
   }
 
   void ReadFromDisk(std::ifstream* s) {
@@ -1521,7 +1543,29 @@ class ppmd_Model : public MemoryInterface {
     }
     Serialize(s, cxt);
     Serialize(s, y);
-    Serialize(s, enable_learn);
+
+    int num_sequences;
+    Serialize(s, num_sequences);
+    unsigned long long zero_sequence_count = 0;
+    unsigned long long zero_sequence_start = 0;
+    std::vector<unsigned long long> zero_sequence_counts;
+    std::vector<unsigned long long> zero_sequence_starts;
+    for (int i = 0; i < num_sequences; ++i) {
+      Serialize(s, zero_sequence_count);
+      Serialize(s, zero_sequence_start);
+      zero_sequence_counts.push_back(zero_sequence_count);
+      zero_sequence_starts.push_back(zero_sequence_start);
+    }
+    int sequence_pos = 0;
+    for (unsigned long long i = 0; i < SubAllocatorSize; ++i) {
+      if (sequence_pos < zero_sequence_counts.size() &&
+          i == zero_sequence_starts[sequence_pos]) {
+        i += zero_sequence_counts[sequence_pos] - 1;
+        ++sequence_pos;
+        continue;
+      }
+      Serialize(s, HeapStart[i]);
+    }
   }
 
   void Copy(const MemoryInterface* m) {
@@ -1581,7 +1625,12 @@ class ppmd_Model : public MemoryInterface {
     }
     cxt = orig->cxt;
     y = orig->y;
-    enable_learn = orig->enable_learn;
+
+    for (unsigned long long i = 0; i < SubAllocatorSize; ++i) {
+      if (orig->HeapStart[i] != 0 || HeapStart[i] != 0) {
+        HeapStart[i] = orig->HeapStart[i];
+      }
+    }
   }
 };
 
@@ -1590,11 +1639,10 @@ class ppmd_Model : public MemoryInterface {
 ModPPMD::ModPPMD(ShortTermMemory& short_term_memory,
                  LongTermMemory& long_term_memory, int order, int memory)
     : top_(255), mid_(127), bot_(0) {
-  prediction_index_ = short_term_memory.AddPrediction("PPM");
+  prediction_index_ = short_term_memory.AddPrediction(
+      "mod_ppmd(" + std::to_string(order) + ")");
   ppmd_model_.reset(new ppmd_Model());
   ppmd_model_->Init(order, memory, 1, 0);
-  long_term_memory.ppmd_memory = ppmd_model_->HeapStart;
-  long_term_memory.ppmd_memory_size = ppmd_model_->SubAllocatorSize;
 }
 
 void ModPPMD::Predict(ShortTermMemory& short_term_memory,
@@ -1619,7 +1667,6 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
       top_ = mid_;
     }
   }
-  ppmd_model_->enable_learn = false;
   mid_ = bot_ + ((top_ - bot_) / 2);
   float num =
       std::accumulate(&short_term_memory.ppm_predictions[mid_ + 1],
@@ -1630,11 +1677,6 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
   float p = 0.5;
   if (denom != 0) p = num / denom;
   short_term_memory.SetPrediction(p, prediction_index_);
-}
-
-void ModPPMD::Learn(const ShortTermMemory& short_term_memory,
-                    LongTermMemory& long_term_memory) {
-  ppmd_model_->enable_learn = true;
 }
 
 void ModPPMD::WriteToDisk(std::ofstream* s) {
