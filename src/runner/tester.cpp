@@ -333,9 +333,9 @@ void TestCompressionWithCopyRestart() {
 void TestDecompressionWithRestart() {
   printf("TestDecompressionWithRestart:\n");
   unsigned long long in, out;
-  RunDecompressionWithRestart("data/test1", "data/test4", &in, &out);
+  RunDecompressionWithRestart("data/test1", "data/test2", &in, &out);
   printf("\n");
-  if (!CompareFiles("./test", "data/test4")) Fail();
+  if (!CompareFiles("./test", "data/test2")) Fail();
 }
 
 void TestGeneration() {

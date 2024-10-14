@@ -160,9 +160,9 @@ void Predictor::ReadCheckpoint(std::string path) {
 void Predictor::EnableAnalysis(int sample_frequency) {
   sample_frequency_ = sample_frequency;
   std::ofstream data("entropy.tsv", std::ios::out);
+  data << "bits seen";
   for (int i = 0; i < short_term_memory_.model_descriptions.size(); ++i) {
-    if (i != 0) data << "\t";
-    data << short_term_memory_.model_descriptions[i];
+    data << "\t" << short_term_memory_.model_descriptions[i];
   }
   data << "\n";
 }
@@ -196,9 +196,9 @@ void Predictor::RunAnalysis(int bit) {
   if (short_term_memory_.bits_seen % sample_frequency_ == 0 &&
       short_term_memory_.bits_seen > 0) {
     std::ofstream data("entropy.tsv", std::ios::app);
+    data << short_term_memory_.bits_seen;
     for (int i = 0; i < short_term_memory_.entropy.size(); ++i) {
-      if (i != 0) data << "\t";
-      data << std::fixed << std::setprecision(5)
+      data << std::fixed << std::setprecision(5) << "\t"
            << -short_term_memory_.entropy[i];
     }
     data << "\n";

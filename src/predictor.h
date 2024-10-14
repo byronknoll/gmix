@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "memory/long-term-memory.h"
+#include "memory/short-term-memory.h"
 #include "mixer/sigmoid.h"
 #include "model.h"
-#include "memory/short-term-memory.h"
 
 // This is the main predictor which runs all models to produce a final
 // prediction. The following functions should be called in order:
@@ -30,6 +30,11 @@ class Predictor {
   // This will output a file (entropy.tsv) with the recent cross entropy for
   // each model. Every "sample_frequency" bits, a new entry will be output.
   void EnableAnalysis(int sample_frequency);
+  // This changes the analysis frequency. Every "sample_frequency" bits, a
+  // new entry will be output. Set to zero to disable analysis.
+  void SetAnalysisFrequency(int sample_frequency) {
+    sample_frequency_ = sample_frequency;
+  }
 
  private:
   Sigmoid sigmoid_;
