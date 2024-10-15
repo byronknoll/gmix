@@ -33,4 +33,6 @@ bool RunDecompression(const std::string& input_path,
 bool RunGeneration(const std::string& input_path,
                    const std::string& output_path, int output_size);
 
+bool RunTraining(const std::string& train_path, const std::string& test_path);
+
 }  // namespace runner_utils

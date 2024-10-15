@@ -164,7 +164,7 @@ void Predictor::EnableAnalysis(int sample_frequency) {
   for (int i = 0; i < short_term_memory_.model_descriptions.size(); ++i) {
     data << "\t" << short_term_memory_.model_descriptions[i];
   }
-  data << "\n";
+  data << std::endl;
 }
 
 void Predictor::RunAnalysis(int bit) {
@@ -201,6 +201,6 @@ void Predictor::RunAnalysis(int bit) {
       data << std::fixed << std::setprecision(5) << "\t"
            << -short_term_memory_.entropy[i];
     }
-    data << "\n";
+    data << std::endl;
   }
 }

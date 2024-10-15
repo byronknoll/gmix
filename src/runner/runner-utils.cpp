@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
 #include <vector>
 
 #include "../coder/decoder.h"
@@ -183,6 +184,76 @@ bool RunGeneration(const std::string& input_path,
   printf("\rgeneration: 100%%\n");
 
   data_out.close();
+
+  return true;
+}
+
+bool RunTraining(const std::string& train_path, const std::string& test_path) {
+  std::ifstream data_train(train_path, std::ios::in | std::ios::binary);
+  if (!data_train.is_open()) return false;
+
+  std::ifstream data_test(test_path, std::ios::in | std::ios::binary);
+  if (!data_test.is_open()) return false;
+
+  data_train.seekg(0, std::ios::end);
+  unsigned long long train_bytes = data_train.tellg();
+  data_train.seekg(0, std::ios::beg);
+
+  data_test.seekg(0, std::ios::end);
+  unsigned long long test_bytes = data_test.tellg();
+  data_test.seekg(0, std::ios::beg);
+
+  std::ofstream metrics("metrics.tsv", std::ios::out);
+  metrics << "train_entropy\ttest_entropy" << std::endl;
+
+  Predictor p;
+  p.EnableAnalysis(8 * train_bytes / 1000);
+  float prob = p.Predict();
+  double train_entropy = 0;
+  unsigned long long percent = 1 + (train_bytes / 100);
+  for (unsigned int pos = 0; pos < train_bytes; ++pos) {
+    int c = data_train.get();
+    for (int j = 7; j >= 0; --j) {
+      int bit = (c >> j) & 1;
+      if (bit)
+        train_entropy += log2(prob);
+      else
+        train_entropy += log2(1 - prob);
+      p.Perceive(bit);
+      p.Learn();
+      prob = p.Predict();
+    }
+    if (pos % percent == 0) {
+      printf("\rtraining: %lld%%", pos / percent);
+      fflush(stdout);
+      if (pos == 0) continue;
+
+      Predictor p2;
+      p2.Copy(p);
+      data_test.seekg(0, std::ios::beg);
+      double test_entropy = 0;
+      float prob2 = prob;
+      for (unsigned int pos2 = 0; pos2 < test_bytes; ++pos2) {
+        int c2 = data_test.get();
+        for (int j = 7; j >= 0; --j) {
+          int bit = (c2 >> j) & 1;
+          if (bit)
+            test_entropy += log2(prob2);
+          else
+            test_entropy += log2(1 - prob2);
+          p2.Perceive(bit);
+          p2.Learn();
+          prob2 = p2.Predict();
+        }
+      }
+      metrics << std::fixed << std::setprecision(5) << -train_entropy / pos
+              << "\t" << -test_entropy / test_bytes << std::endl;
+    }
+  }
+  train_entropy = -train_entropy / train_bytes;
+  printf("\rtraining cross entropy: %.4f\n", train_entropy);
+
+  p.WriteCheckpoint("data/trained_checkpoint");
 
   return true;
 }

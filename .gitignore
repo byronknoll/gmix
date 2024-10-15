@@ -2,6 +2,7 @@ gmix
 test
 prep
 entropy.tsv
+metrics.tsv
 .vscode/
 data/
 scripts/

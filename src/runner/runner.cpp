@@ -16,12 +16,13 @@ int Help() {
   printf("Compress: gmix -c [input] [output]\n");
   printf("Decompress: gmix -d [input] [output]\n");
   printf("Generate: gmix -g [input] [output] [output_size]\n");
+  printf("Train: gmix -t [training file] [test file]\n");
   return -1;
 }
 
 int main(int argc, char* argv[]) {
   if (argc < 4 || argc > 5 || strlen(argv[1]) != 2 || argv[1][0] != '-' ||
-      (argv[1][1] != 'c' && argv[1][1] != 'd' && argv[1][1] != 'g')) {
+      (argv[1][1] != 'c' && argv[1][1] != 'd' && argv[1][1] != 'g' && argv[1][1] != 't')) {
     return Help();
   }
   srand(0xDEADBEEF);
@@ -36,9 +37,18 @@ int main(int argc, char* argv[]) {
     if (!runner_utils::RunGeneration(input_path, output_path, output_size)) {
       return Help();
     }
+    printf("%1.2f s.\n", ((double)clock() - start) / CLOCKS_PER_SEC);
     return 0;
   }
   if (argc != 4) return Help();
+
+if (argv[1][1] == 't') {
+    if (!runner_utils::RunTraining(input_path, output_path)) {
+      return Help();
+    }
+    printf("%1.2f s.\n", ((double)clock() - start) / CLOCKS_PER_SEC);
+    return 0;
+  }
 
   unsigned long long input_bytes = 0, output_bytes = 0;
 
@@ -47,12 +57,12 @@ int main(int argc, char* argv[]) {
                                       &output_bytes)) {
       return Help();
     }
-  } else {
+  } else if (argv[1][1] == 'd') {
     if (!runner_utils::RunDecompression(input_path, output_path, &input_bytes,
                                         &output_bytes)) {
       return Help();
     }
-  }
+  } else 
 
   printf("\r%lld bytes -> %lld bytes in %1.2f s.\n", input_bytes, output_bytes,
          ((double)clock() - start) / CLOCKS_PER_SEC);
