@@ -62,7 +62,7 @@ if (argv[1][1] == 't') {
                                         &output_bytes)) {
       return Help();
     }
-  } else 
+  }
 
   printf("\r%lld bytes -> %lld bytes in %1.2f s.\n", input_bytes, output_bytes,
          ((double)clock() - start) / CLOCKS_PER_SEC);
