@@ -203,7 +203,7 @@ bool RunTraining(const std::string& train_path, const std::string& test_path) {
   unsigned long long test_bytes = data_test.tellg();
   data_test.seekg(0, std::ios::beg);
 
-  std::ofstream metrics("metrics.tsv", std::ios::out);
+  std::ofstream metrics("training.tsv", std::ios::out);
   metrics << "train_entropy\ttest_entropy" << std::endl;
 
   Predictor p;
