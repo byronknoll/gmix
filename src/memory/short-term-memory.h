@@ -33,8 +33,10 @@ struct ShortTermMemory : MemoryInterface {
   // probability between 0 to 1.
   void SetPrediction(float prediction, int index) {
     predictions[index] = sigmoid.Logit(prediction);
+    active_models.push_back(index);
   }
   std::valarray<float> predictions;
+  std::vector<int> active_models;
    int num_predictions = 0;
   std::vector<std::string> model_descriptions;
 

@@ -17,13 +17,12 @@ Indirect::Indirect(ShortTermMemory& short_term_memory,
 void Indirect::Predict(ShortTermMemory& short_term_memory,
                        const LongTermMemory& long_term_memory) {
   unsigned int context = (context_ << 8) + short_term_memory.bit_context;
-  float p = 0.5;
   const auto& m = long_term_memory.indirect[memory_index_];
   const auto& it = m.map.find(context);
   if (it != m.map.end()) {
-    p = m.predictions[it->second];
+    float p = m.predictions[it->second];
+    short_term_memory.SetPrediction(p, prediction_index_);
   }
-  short_term_memory.SetPrediction(p, prediction_index_);
 }
 
 void Indirect::Learn(const ShortTermMemory& short_term_memory,

@@ -44,8 +44,14 @@ void Mixer::Predict(ShortTermMemory& short_term_memory,
   MixerData* data = FindMixerData(long_term_memory);
   float p = 0;
   if (data != nullptr) {
-    for (int i = 0; i < inputs_.size(); ++i) {
-      p += inputs_[i] * data->weights[i];
+    if (final_layer_) {
+      for (int i = 0; i < inputs_.size(); ++i) {
+        p += inputs_[i] * data->weights[i];
+      }
+    } else {
+      for (int i : short_term_memory.active_models) {
+        p += inputs_[i] * data->weights[i];
+      }
     }
   }
   if (final_layer_) {
@@ -72,7 +78,13 @@ void Mixer::Learn(const ShortTermMemory& short_term_memory,
   if (data->steps > max_steps_) {
     max_steps_ = data->steps;
   }
-  data->weights -= update * inputs_;
+  if (final_layer_) {
+    data->weights -= update * inputs_;
+  } else {
+      for (int i : short_term_memory.active_models) {
+        data->weights[i] -= update * inputs_[i];
+      }
+  }
   if ((data->steps & 1023) == 0) {
     data->weights *= 1.0f - 3.0e-6f;  // Weight regularization.
   }

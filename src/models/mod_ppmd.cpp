@@ -1674,9 +1674,10 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
   float denom =
       std::accumulate(&short_term_memory.ppm_predictions[bot_],
                       &short_term_memory.ppm_predictions[mid_ + 1], num);
-  float p = 0.5;
-  if (denom != 0) p = num / denom;
-  short_term_memory.SetPrediction(p, prediction_index_);
+  if (denom != 0) {
+    float p = num / denom;
+    short_term_memory.SetPrediction(p, prediction_index_);
+  }
 }
 
 void ModPPMD::WriteToDisk(std::ofstream* s) {

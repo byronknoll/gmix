@@ -30,9 +30,10 @@ void LstmModel::Predict(ShortTermMemory& short_term_memory,
   mid_ = bot_ + ((top_ - bot_) / 2);
   float num = std::accumulate(&probs_[mid_ + 1], &probs_[top_ + 1], 0.0f);
   float denom = std::accumulate(&probs_[bot_], &probs_[mid_ + 1], num);
-  float p = 0.5;
-  if (denom != 0) p = num / denom;
-  short_term_memory.SetPrediction(p, prediction_index_);
+  if (denom != 0) {
+    float p = num / denom;
+    short_term_memory.SetPrediction(p, prediction_index_);
+  }
 }
 
 void LstmModel::Learn(const ShortTermMemory& short_term_memory,

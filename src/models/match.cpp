@@ -60,12 +60,15 @@ void Match::Predict(ShortTermMemory& short_term_memory,
     bit_pos_ = 128;  // Reset the bit position.
   }
 
-  float p = 0.5;
-  if (cur_byte_ & bit_pos_)
-    p = match_memory.predictions[match_length_];
-  else
-    p = 1 - match_memory.predictions[match_length_];
-  short_term_memory.SetPrediction(p, prediction_index_);
+  // Only output a prediction for >2 match length.
+  if (match_length_ > 2) {
+    float p = 0.5;
+    if (cur_byte_ & bit_pos_)
+      p = match_memory.predictions[match_length_];
+    else
+      p = 1 - match_memory.predictions[match_length_];
+    short_term_memory.SetPrediction(p, prediction_index_);
+  }
 
   // Update the longest match context (which is used externally).
   unsigned int match_context = match_length_ / 32;
@@ -75,19 +78,22 @@ void Match::Predict(ShortTermMemory& short_term_memory,
 
 void Match::Learn(const ShortTermMemory& short_term_memory,
                   LongTermMemory& long_term_memory) {
-  int match = 0;
-  if (short_term_memory.new_bit == ((cur_byte_ & bit_pos_) != 0)) match = 1;
-  auto& match_memory = long_term_memory.match_memory[memory_index_];
-
-  float learning_rate = learning_rate_;
-  if (match_memory.counts[match_length_] < limit_) {
-    ++match_memory.counts[match_length_];
-    learning_rate = 1.0 / match_memory.counts[match_length_];
+  // Only update counts/predictions for >2 match length.
+  if (match_length_ > 2) {
+    int match = 0;
+    if (short_term_memory.new_bit == ((cur_byte_ & bit_pos_) != 0)) match = 1;
+    auto& match_memory = long_term_memory.match_memory[memory_index_];
+    float learning_rate = learning_rate_;
+    if (match_memory.counts[match_length_] < limit_) {
+      ++match_memory.counts[match_length_];
+      learning_rate = 1.0 / match_memory.counts[match_length_];
+    }
+    match_memory.predictions[match_length_] +=
+        (match - match_memory.predictions[match_length_]) * learning_rate;
   }
-  match_memory.predictions[match_length_] +=
-      (match - match_memory.predictions[match_length_]) * learning_rate;
 
   if (short_term_memory.recent_bits >= 128) {  // Byte boundary.
+    auto& match_memory = long_term_memory.match_memory[memory_index_];
     auto& loc = match_memory.map[byte_context_];
     unsigned long long pos = long_term_memory.history.size() - 1;
     // Encode the five byte history pointer.

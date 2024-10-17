@@ -101,6 +101,11 @@ void Predictor::AddMixers() {
 }
 
 float Predictor::Predict() {
+  short_term_memory_.active_models.clear();
+  if (sample_frequency_ > 0) {
+    // To compute cross entropy, set "inactive" model predictions to 0.5.
+    short_term_memory_.predictions = 0.5;
+  }
   for (const auto& model : models_) {
     model->Predict(short_term_memory_, long_term_memory_);
   }
