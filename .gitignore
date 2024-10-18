@@ -2,6 +2,7 @@ gmix
 test
 prep
 entropy.tsv
+memory.tsv
 training.tsv
 .vscode/
 data/

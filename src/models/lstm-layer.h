@@ -16,6 +16,7 @@ struct NeuronLayer : public MemoryInterface {
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
   void Copy(const MemoryInterface* m);
+  unsigned long long GetMemoryUsage();
 
   std::valarray<float> error_, ivar_, gamma_, gamma_u_, gamma_m_, gamma_v_,
       beta_, beta_u_, beta_m_, beta_v_;
@@ -42,6 +43,7 @@ class LstmLayer : public MemoryInterface {
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
   void Copy(const MemoryInterface* m);
+  unsigned long long GetMemoryUsage();
 
  private:
   std::valarray<float> state_, state_error_, stored_error_;

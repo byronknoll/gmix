@@ -24,6 +24,8 @@ class Match : public Model {
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
   void Copy(const MemoryInterface* m);
+  unsigned long long GetMemoryUsage(const ShortTermMemory& short_term_memory,
+                                    const LongTermMemory& long_term_memory);
 
  private:
   const unsigned int& byte_context_;

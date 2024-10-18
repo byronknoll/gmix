@@ -9,7 +9,7 @@ LstmModel::LstmModel(ShortTermMemory& short_term_memory,
       mid_(127),
       bot_(0),
       probs_(1.0 / 256, 256) {
-  prediction_index_ = short_term_memory.AddPrediction("LSTM");
+  prediction_index_ = short_term_memory.AddPrediction("LSTM", this);
 }
 
 void LstmModel::Predict(ShortTermMemory& short_term_memory,
@@ -70,4 +70,19 @@ void LstmModel::Copy(const MemoryInterface* m) {
   bot_ = orig->bot_;
   probs_ = orig->probs_;
   lstm_.Copy(&orig->lstm_);
+}
+
+unsigned long long LstmModel::GetMemoryUsage(
+    const ShortTermMemory& short_term_memory,
+    const LongTermMemory& long_term_memory) {
+  unsigned long long usage = 16;
+  usage += 256 * 4;  // probs_
+  usage += 4 * long_term_memory.lstm_output_layer.size() *
+           long_term_memory.lstm_output_layer[0].size() *
+           long_term_memory.lstm_output_layer[0][0].size();
+  for (const auto& layer : long_term_memory.neuron_layer_weights) {
+    usage += 4 * layer.weights.size() * layer.weights[0].size();
+  }
+  usage += lstm_.GetMemoryUsage();
+  return usage;
 }

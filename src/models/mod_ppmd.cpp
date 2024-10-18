@@ -1640,7 +1640,7 @@ ModPPMD::ModPPMD(ShortTermMemory& short_term_memory,
                  LongTermMemory& long_term_memory, int order, int memory)
     : top_(255), mid_(127), bot_(0) {
   prediction_index_ = short_term_memory.AddPrediction(
-      "mod_ppmd(" + std::to_string(order) + ")");
+      "mod_ppmd(" + std::to_string(order) + ")", this);
   ppmd_model_.reset(new ppmd_Model());
   ppmd_model_->Init(order, memory, 1, 0);
 }
@@ -1700,6 +1700,14 @@ void ModPPMD::Copy(const MemoryInterface* m) {
   mid_ = orig->mid_;
   bot_ = orig->bot_;
   ppmd_model_->Copy(orig->ppmd_model_.get());
+}
+
+unsigned long long ModPPMD::GetMemoryUsage(
+    const ShortTermMemory& short_term_memory,
+    const LongTermMemory& long_term_memory) {
+  unsigned long long usage = 16;
+  usage += ppmd_model_->GetUsedMemory();
+  return usage;
 }
 
 }  // namespace PPMD

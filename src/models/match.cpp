@@ -10,7 +10,7 @@ Match::Match(ShortTermMemory& short_term_memory,
       match_length_(0),
       limit_(limit),
       learning_rate_(1.0 / limit) {
-  prediction_index_ = short_term_memory.AddPrediction(description);
+  prediction_index_ = short_term_memory.AddPrediction(description, this);
   memory_index_ = long_term_memory.match_memory.size();
   long_term_memory.match_memory.push_back(MatchMemory());
   auto& memory = long_term_memory.match_memory.back();
@@ -125,4 +125,14 @@ void Match::Copy(const MemoryInterface* m) {
   cur_byte_ = orig->cur_byte_;
   bit_pos_ = orig->bit_pos_;
   match_length_ = orig->match_length_;
+}
+
+unsigned long long Match::GetMemoryUsage(
+    const ShortTermMemory& short_term_memory,
+    const LongTermMemory& long_term_memory) {
+  unsigned long long usage = 27;
+  usage += 256 * 4;  // predictions
+  usage += 256 * 4;  // counts
+  usage += 9 * long_term_memory.match_memory[memory_index_].map.size();
+  return usage;
 }

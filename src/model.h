@@ -30,6 +30,11 @@ class Model : public MemoryInterface {
   virtual void WriteToDisk(std::ofstream* s) = 0;
   virtual void ReadFromDisk(std::ifstream* s) = 0;
   virtual void Copy(const MemoryInterface* m) = 0;
+  // Returns an approximate estimate of the number of bytes of memory used by
+  // this model.
+  virtual unsigned long long GetMemoryUsage(
+      const ShortTermMemory& short_term_memory,
+      const LongTermMemory& long_term_memory) = 0;
 };
 
 #endif  // MODEL_H_

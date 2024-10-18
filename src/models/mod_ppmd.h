@@ -20,6 +20,8 @@ class ModPPMD : public Model {
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
   void Copy(const MemoryInterface* m);
+  unsigned long long GetMemoryUsage(const ShortTermMemory& short_term_memory,
+                                    const LongTermMemory& long_term_memory);
 
  private:
   std::unique_ptr<ppmd_Model> ppmd_model_;

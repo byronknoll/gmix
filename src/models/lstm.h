@@ -23,6 +23,7 @@ class Lstm : public MemoryInterface {
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
   void Copy(const MemoryInterface* m);
+  unsigned long long GetMemoryUsage();
 
  private:
   std::vector<std::unique_ptr<LstmLayer>> layers_;

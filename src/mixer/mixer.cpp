@@ -10,7 +10,7 @@ Mixer::Mixer(ShortTermMemory& short_term_memory,
       learning_rate_(learning_rate),
       inputs_(inputs),
       final_layer_(final_layer) {
-  output_index_ = short_term_memory.AddMixer(description);
+  output_index_ = short_term_memory.AddMixer(description, this);
   memory_index_ = long_term_memory.mixers.size();
   long_term_memory.mixers.push_back(MixerMemory());
 }
@@ -81,9 +81,9 @@ void Mixer::Learn(const ShortTermMemory& short_term_memory,
   if (final_layer_) {
     data->weights -= update * inputs_;
   } else {
-      for (int i : short_term_memory.active_models) {
-        data->weights[i] -= update * inputs_[i];
-      }
+    for (int i : short_term_memory.active_models) {
+      data->weights[i] -= update * inputs_[i];
+    }
   }
   if ((data->steps & 1023) == 0) {
     data->weights *= 1.0f - 3.0e-6f;  // Weight regularization.
@@ -104,4 +104,14 @@ void Mixer::Copy(const MemoryInterface* m) {
   const Mixer* orig = static_cast<const Mixer*>(m);
   steps_ = orig->steps_;
   max_steps_ = orig->max_steps_;
+}
+
+unsigned long long Mixer::GetMemoryUsage(
+    const ShortTermMemory& short_term_memory,
+    const LongTermMemory& long_term_memory) {
+  unsigned long long usage = 29;
+  int mixer_data_size = inputs_.size() * 4 + 8;
+  auto& mixer_map = long_term_memory.mixers[memory_index_].mixer_map;
+  usage += mixer_map.size() * mixer_data_size;
+  return usage;
 }

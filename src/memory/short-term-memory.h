@@ -3,10 +3,13 @@
 
 #include <valarray>
 #include <vector>
+#include <unordered_map>
 
 #include "../memory-interface.h"
 #include "../mixer/sigmoid.h"
 #include "../contexts/nonstationary.h"
+
+class Model;
 
 // ShortTermMemory contains "state" models need in order to make predictions,
 // but does not contain any data used for training/learning. Models can also
@@ -23,10 +26,12 @@ struct ShortTermMemory : MemoryInterface {
 
   // Models should call this in their constructor.
   // description: a short identifier for this model.
+  // ptr: a pointer to this model.
   // returns: model prediction index.
-  int AddPrediction(std::string description) {
+  int AddPrediction(std::string description, Model* ptr) {
     ++num_predictions;
     model_descriptions.push_back(description);
+    prediction_index_to_model_ptr[num_predictions - 1] = ptr;
     return num_predictions - 1;
   }
   // Predictions for the next bit of data. Each prediction should be a
@@ -39,6 +44,7 @@ struct ShortTermMemory : MemoryInterface {
   std::vector<int> active_models;
    int num_predictions = 0;
   std::vector<std::string> model_descriptions;
+  std::unordered_map<int, Model*> prediction_index_to_model_ptr;
 
   // The most recently perceived bit.
   int new_bit = 0;
@@ -75,15 +81,18 @@ struct ShortTermMemory : MemoryInterface {
   
   // Mixers should call this in their constructor.
   // description: a short identifier for this mixer.
+  // ptr: a pointer to this mixer.
   // returns: mixer index.
-  int AddMixer(std::string description) {
+  int AddMixer(std::string description, Model* ptr) {
     ++num_mixers;
     model_descriptions.push_back(description);
+    mixer_index_to_model_ptr[num_mixers - 1] = ptr;
     return num_mixers - 1;
   }
   std::valarray<float> mixer_outputs;
   int num_mixers = 0;
   float final_mixer_output = 0.5;
+  std::unordered_map<int, Model*> mixer_index_to_model_ptr;
 
   const Sigmoid& sigmoid;  // Does not need serialization.
 

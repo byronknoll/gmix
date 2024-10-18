@@ -141,6 +141,18 @@ void NeuronLayer::Copy(const MemoryInterface* m) {
   norm_ = orig->norm_;
 }
 
+unsigned long long NeuronLayer::GetMemoryUsage() {
+  unsigned long long usage = 4;
+  usage += 40 * error_.size();  // 10 valarrays of the same size
+  usage += 4 * state_.size() * state_[0].size();
+  usage += 4 * update_.size() * update_[0].size();
+  usage += 4 * m_.size() * m_[0].size();
+  usage += 4 * v_.size() * v_[0].size();
+  usage += 4 * transpose_.size() * transpose_[0].size();
+  usage += 4 * norm_.size() * norm_[0].size();
+  return usage;
+}
+
 LstmLayer::LstmLayer(unsigned int input_size, unsigned int auxiliary_input_size,
                      unsigned int output_size, unsigned int num_cells,
                      int horizon, float gradient_clip, float learning_rate,
@@ -394,4 +406,18 @@ void LstmLayer::Copy(const MemoryInterface* m) {
   forget_gate_.Copy(&orig->forget_gate_);
   input_node_.Copy(&orig->input_node_);
   output_gate_.Copy(&orig->output_gate_);
+}
+
+unsigned long long LstmLayer::GetMemoryUsage() {
+  unsigned long long usage = 44;
+  usage += 4 * state_.size();
+  usage += 4 * state_error_.size();
+  usage += 4 * stored_error_.size();
+  usage += 4 * tanh_state_.size() * tanh_state_[0].size();
+  usage += 4 * input_gate_state_.size() * input_gate_state_[0].size();
+  usage += 4 * last_state_.size() * last_state_[0].size();
+  usage += forget_gate_.GetMemoryUsage();
+  usage += input_node_.GetMemoryUsage();
+  usage += output_gate_.GetMemoryUsage();
+  return usage;
 }

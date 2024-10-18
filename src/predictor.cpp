@@ -164,12 +164,16 @@ void Predictor::ReadCheckpoint(std::string path) {
 
 void Predictor::EnableAnalysis(int sample_frequency) {
   sample_frequency_ = sample_frequency;
-  std::ofstream data("entropy.tsv", std::ios::out);
-  data << "bits seen";
+  std::ofstream entropy("entropy.tsv", std::ios::out);
+  std::ofstream memory("memory.tsv", std::ios::out);
+  entropy << "bits seen";
+  memory << "bits seen";
   for (int i = 0; i < short_term_memory_.model_descriptions.size(); ++i) {
-    data << "\t" << short_term_memory_.model_descriptions[i];
+    entropy << "\t" << short_term_memory_.model_descriptions[i];
+    memory << "\t" << short_term_memory_.model_descriptions[i];
   }
-  data << std::endl;
+  entropy << std::endl;
+  memory << std::endl;
 }
 
 void Predictor::RunAnalysis(int bit) {
@@ -200,12 +204,28 @@ void Predictor::RunAnalysis(int bit) {
   }
   if (short_term_memory_.bits_seen % sample_frequency_ == 0 &&
       short_term_memory_.bits_seen > 0) {
-    std::ofstream data("entropy.tsv", std::ios::app);
-    data << short_term_memory_.bits_seen;
+    std::ofstream entropy_file("entropy.tsv", std::ios::app);
+    std::ofstream memory_file("memory.tsv", std::ios::app);
+    entropy_file << short_term_memory_.bits_seen;
+    memory_file << short_term_memory_.bits_seen;
     for (int i = 0; i < short_term_memory_.entropy.size(); ++i) {
-      data << std::fixed << std::setprecision(5) << "\t"
-           << -short_term_memory_.entropy[i];
+      entropy_file << std::fixed << std::setprecision(5) << "\t"
+                   << -short_term_memory_.entropy[i];
+      if (i < short_term_memory_.num_predictions) {
+        memory_file << "\t"
+                    << short_term_memory_.prediction_index_to_model_ptr[i]
+                           ->GetMemoryUsage(short_term_memory_,
+                                            long_term_memory_);
+      } else {
+        memory_file
+            << "\t"
+            << short_term_memory_
+                   .mixer_index_to_model_ptr[i -
+                                             short_term_memory_.num_predictions]
+                   ->GetMemoryUsage(short_term_memory_, long_term_memory_);
+      }
     }
-    data << std::endl;
+    entropy_file << std::endl;
+    memory_file << std::endl;
   }
 }

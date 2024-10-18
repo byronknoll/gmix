@@ -27,8 +27,8 @@ class Predictor {
   void ReadCheckpoint(std::string path);
   // Makes this predictor a deep copy of the other Predictor.
   void Copy(const Predictor& p);
-  // This will output a file (entropy.tsv) with the recent cross entropy for
-  // each model. Every "sample_frequency" bits, a new entry will be output.
+  // This will output files (entropy.tsv and memory.tsv) with model metrics.
+  // Every "sample_frequency" bits, a new entry will be output.
   void EnableAnalysis(int sample_frequency);
   // This changes the analysis frequency. Every "sample_frequency" bits, a
   // new entry will be output. Set to zero to disable analysis.

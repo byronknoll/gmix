@@ -169,3 +169,16 @@ void Lstm::Copy(const MemoryInterface* m) {
     layers_[i]->Copy(orig->layers_[i].get());
   }
 }
+
+unsigned long long Lstm::GetMemoryUsage() {
+  unsigned long long usage = 24;
+  usage += 4 * input_history_.size();
+  usage += 4 * hidden_.size();
+  usage += 4 * hidden_error_.size();
+  usage += 4 * layer_input_.size() * layer_input_[0].size() * layer_input_[0][0].size();
+  usage += 4 * output_.size() * output_[0].size();
+  for (int i = 0; i < layers_.size(); ++i) {
+    usage += layers_[i]->GetMemoryUsage();
+  }
+  return usage;
+}
