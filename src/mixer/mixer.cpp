@@ -110,7 +110,7 @@ unsigned long long Mixer::GetMemoryUsage(
     const ShortTermMemory& short_term_memory,
     const LongTermMemory& long_term_memory) {
   unsigned long long usage = 29;
-  int mixer_data_size = inputs_.size() * 4 + 8;
+  int mixer_data_size = inputs_.size() * 4 + 12;
   auto& mixer_map = long_term_memory.mixers[memory_index_].mixer_map;
   usage += mixer_map.size() * mixer_data_size;
   return usage;

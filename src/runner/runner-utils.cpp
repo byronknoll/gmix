@@ -124,52 +124,25 @@ bool RunDecompression(const std::string& input_path,
   return true;
 }
 
-bool RunGeneration(const std::string& input_path,
-                   const std::string& output_path, int output_size) {
-  std::ifstream data_in(input_path, std::ios::in | std::ios::binary);
-  if (!data_in.is_open()) return false;
-
+bool RunGeneration(const std::string& checkpoint_path,
+                   const std::string& output_path, int output_size,
+                   float temperature) {
   std::ofstream data_out(output_path, std::ios::out | std::ios::binary);
   if (!data_out.is_open()) return false;
-
-  data_in.seekg(0, std::ios::end);
-  unsigned long long input_bytes = data_in.tellg();
-  data_in.seekg(0, std::ios::beg);
+  if (temperature < 0.001) temperature = 0.001;
 
   Predictor p;
-  p.EnableAnalysis(8 * input_bytes / 1000);
+  p.ReadCheckpoint(checkpoint_path);
+  p.EnableAnalysis(8 * output_size / 1000);
+
+  unsigned long long percent = 1 + (output_size / 100);
   float prob = p.Predict();
-  double entropy = 0;
-  unsigned long long percent = 1 + (input_bytes / 100);
-  for (unsigned int pos = 0; pos < input_bytes; ++pos) {
-    int c = data_in.get();
-    for (int j = 7; j >= 0; --j) {
-      int bit = (c >> j) & 1;
-      if (bit)
-        entropy += log2(prob);
-      else
-        entropy += log2(1 - prob);
-      p.Perceive(bit);
-      p.Learn();
-      prob = p.Predict();
-    }
-    if (pos % percent == 0) {
-      printf("\rtraining: %lld%%", pos / percent);
-      fflush(stdout);
-    }
-  }
-  entropy = -entropy / input_bytes;
-  printf("\rcross entropy: %.4f\n", entropy);
-
-  data_in.close();
-  p.SetAnalysisFrequency(8 * output_size / 1000);
-
-  percent = 1 + (output_size / 100);
   for (int i = 0; i < output_size; ++i) {
     int byte = 1;
     while (byte < 256) {
       int bit = 0;
       float r = Rand();
+      prob = Sigmoid::Logistic(Sigmoid::SlowLogit(prob) / temperature);
       if (r < prob) bit = 1;
       byte += byte + bit;
       p.Perceive(bit);
@@ -208,12 +181,13 @@ bool RunTraining(const std::string& train_path, const std::string& test_path) {
 
   Predictor p;
   p.EnableAnalysis(8 * train_bytes / 1000);
-  float prob = p.Predict();
+  float prob;
   double train_entropy = 0;
   unsigned long long percent = 1 + (train_bytes / 100);
   for (unsigned int pos = 0; pos < train_bytes; ++pos) {
     int c = data_train.get();
     for (int j = 7; j >= 0; --j) {
+      prob = p.Predict();
       int bit = (c >> j) & 1;
       if (bit)
         train_entropy += log2(prob);
@@ -221,7 +195,6 @@ bool RunTraining(const std::string& train_path, const std::string& test_path) {
         train_entropy += log2(1 - prob);
       p.Perceive(bit);
       p.Learn();
-      prob = p.Predict();
     }
     if (pos % percent == 0) {
       printf("\rtraining: %lld%%", pos / percent);
@@ -236,6 +209,7 @@ bool RunTraining(const std::string& train_path, const std::string& test_path) {
       for (unsigned int pos2 = 0; pos2 < test_bytes; ++pos2) {
         int c2 = data_test.get();
         for (int j = 7; j >= 0; --j) {
+          prob2 = p2.Predict();
           int bit = (c2 >> j) & 1;
           if (bit)
             test_entropy += log2(prob2);
@@ -243,7 +217,6 @@ bool RunTraining(const std::string& train_path, const std::string& test_path) {
             test_entropy += log2(1 - prob2);
           p2.Perceive(bit);
           p2.Learn();
-          prob2 = p2.Predict();
         }
       }
       metrics << std::fixed << std::setprecision(5) << -train_entropy / pos

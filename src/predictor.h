@@ -31,7 +31,8 @@ class Predictor {
   // Every "sample_frequency" bits, a new entry will be output.
   void EnableAnalysis(int sample_frequency);
   // This changes the analysis frequency. Every "sample_frequency" bits, a
-  // new entry will be output. Set to zero to disable analysis.
+  // new entry will be output. Set to zero to disable analysis. This should
+  // only be called after "EnableAnalysis" is run.
   void SetAnalysisFrequency(int sample_frequency) {
     sample_frequency_ = sample_frequency;
   }

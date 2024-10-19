@@ -8,9 +8,9 @@ class Sigmoid {
   Sigmoid(int logit_size);
   float Logit(float p) const;
   static float Logistic(float p);
+  static float SlowLogit(float p);
 
  private:
-  float SlowLogit(float p);
   int logit_size_;
   std::vector<float> logit_table_;
 };
