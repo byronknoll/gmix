@@ -1,6 +1,6 @@
 // ppmd is written by Dmitry Shkarin.
 // mod_ppmd is adapted from ppmd by Eugene Shelwien.
-// This file is adapted from mod_ppmd_v2: http://encode.su/threads/2515-mod_ppmd
+// This file is adapted from mod_ppmd_v3: http://encode.su/threads/2515-mod_ppmd
 // All memory for this model is considered "short term memory", since the model
 // memory occasionally resets when it grows to a certain limit.
 
