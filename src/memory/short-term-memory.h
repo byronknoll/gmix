@@ -74,6 +74,7 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int last_four_bytes_15_bit_hash = 0;
   unsigned long long last_five_bytes_context = 0;
   unsigned int last_five_bytes_15_bit_hash = 0;
+  unsigned int last_five_bytes_21_bit_hash = 0;
 
   // Predictions for the next byte of data from PPM. Each prediction is in the
   // 0-1 range.

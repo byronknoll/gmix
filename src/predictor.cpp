@@ -61,13 +61,13 @@ void Predictor::AddIndirect() {
 void Predictor::AddMatch() {
   int limit = 200;
   AddModel(new Match(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_byte_context, limit,
-                     "Match(1 byte)"));
+                     short_term_memory_.last_two_bytes_context, limit,
+                     "Match(2 bytes)"));
   AddModel(new Match(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_three_bytes_15_bit_hash, limit,
-                     "Match(3 byte hash)"));
+                     short_term_memory_.last_three_bytes_context, limit,
+                     "Match(3 bytes)"));
   AddModel(new Match(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_five_bytes_15_bit_hash, limit,
+                     short_term_memory_.last_five_bytes_21_bit_hash, limit,
                      "Match(5 byte hash)"));
 }
 
