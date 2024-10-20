@@ -56,6 +56,9 @@ void Predictor::AddIndirect() {
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.last_five_bytes_15_bit_hash,
                         "Indirect(5 byte hash)"));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.second_last_byte,
+                        "Indirect(2nd last byte)"));
 }
 
 void Predictor::AddMatch() {
@@ -76,6 +79,10 @@ void Predictor::AddMixers() {
                      short_term_memory_.last_byte_context,
                      short_term_memory_.predictions, 0.005, false,
                      "Mixer(1 byte)"));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.second_last_byte,
+                     short_term_memory_.predictions, 0.005, false,
+                     "Mixer(2nd last byte)"));
   AddModel(new Mixer(
       short_term_memory_, long_term_memory_, short_term_memory_.longest_match,
       short_term_memory_.predictions, 0.0005, false, "Mixer(longest match)"));
