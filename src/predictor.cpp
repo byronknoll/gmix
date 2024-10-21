@@ -4,6 +4,7 @@
 #include <numeric>
 
 #include "contexts/basic-contexts.h"
+#include "contexts/indirect-hash.h"
 #include "mixer/mixer.h"
 #include "models/indirect.h"
 #include "models/lstm-model.h"
@@ -17,6 +18,7 @@ Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   AddModel(new PPMD::ModPPMD(short_term_memory_, long_term_memory_, 20, 2000));
   AddModel(new LstmModel(short_term_memory_, long_term_memory_));
   AddMatch();
+  AddDoubleIndirect();
   AddMixers();
   short_term_memory_.predictions.resize(short_term_memory_.num_predictions);
   short_term_memory_.predictions = 0.5;
@@ -74,11 +76,47 @@ void Predictor::AddMatch() {
                      "Match(5 byte hash)"));
 }
 
+void Predictor::AddDoubleIndirect() {
+  float learning_rate = 1.0f / 200;
+  AddModel(new IndirectHash(1, 8, 1, 8, short_term_memory_.indirect_1_8_1_8));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.indirect_1_8_1_8,
+                        "Indirect(indirect_1_8_1_8)"));
+  AddModel(new IndirectHash(1, 8, 2, 16, short_term_memory_.indirect_1_8_2_16));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.indirect_1_8_2_16,
+                        "Indirect(indirect_1_8_2_16)"));
+  AddModel(new IndirectHash(1, 8, 3, 15, short_term_memory_.indirect_1_8_3_15));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.indirect_1_8_3_15,
+                        "Indirect(indirect_1_8_3_15)"));
+  AddModel(new IndirectHash(2, 16, 1, 8, short_term_memory_.indirect_2_16_1_8));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.indirect_2_16_1_8,
+                        "Indirect(indirect_2_16_1_8)"));
+  AddModel(new IndirectHash(2, 16, 2, 16, short_term_memory_.indirect_2_16_2_16));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.indirect_2_16_2_16,
+                        "Indirect(indirect_2_16_2_16)"));
+  AddModel(new IndirectHash(3, 24, 1, 8, short_term_memory_.indirect_3_24_1_8));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.indirect_3_24_1_8,
+                        "Indirect(indirect_3_24_1_8)"));
+  AddModel(new IndirectHash(4, 24, 2, 15, short_term_memory_.indirect_4_24_2_15));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.indirect_4_24_2_15,
+                        "Indirect(indirect_4_24_2_15)"));
+}
+
 void Predictor::AddMixers() {
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_byte_context,
                      short_term_memory_.predictions, 0.005, false,
                      "Mixer(1 byte)"));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.indirect_3_24_1_8,
+                     short_term_memory_.predictions, 0.005, false,
+                     "Mixer(indirect_3_24_1_8)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.second_last_byte,
                      short_term_memory_.predictions, 0.005, false,

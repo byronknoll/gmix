@@ -32,14 +32,14 @@ void BasicContexts::Predict(ShortTermMemory& short_term_memory,
     unsigned int hash;
     MurmurHash3_x86_32(&short_term_memory.last_three_bytes_context, 4,
                        0XDEADBEEF, &hash);
-    short_term_memory.last_three_bytes_15_bit_hash = hash & 0x7FFF;
+    short_term_memory.last_three_bytes_15_bit_hash = hash % (1 << 15);
     MurmurHash3_x86_32(&short_term_memory.last_four_bytes_context, 4,
                        0XDEADBEEF, &hash);
-    short_term_memory.last_four_bytes_15_bit_hash = hash & 0x7FFF;
+    short_term_memory.last_four_bytes_15_bit_hash = hash  % (1 << 15);
     MurmurHash3_x86_32(&short_term_memory.last_five_bytes_context, 8,
                        0XDEADBEEF, &hash);
-    short_term_memory.last_five_bytes_15_bit_hash = hash & 0x7FFF;
-    short_term_memory.last_five_bytes_21_bit_hash = hash & 0x1FFFFF;
+    short_term_memory.last_five_bytes_15_bit_hash = hash % (1 << 15);
+    short_term_memory.last_five_bytes_21_bit_hash = hash % (1 << 21);
   }
   short_term_memory.bit_context = short_term_memory.recent_bits - 1;
   short_term_memory.longest_match = 0;

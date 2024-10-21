@@ -1,8 +1,9 @@
 // ppmd is written by Dmitry Shkarin.
 // mod_ppmd is adapted from ppmd by Eugene Shelwien.
 // This file is adapted from mod_ppmd_v3: http://encode.su/threads/2515-mod_ppmd
-// All memory for this model is considered "short term memory", since the model
-// memory occasionally resets when it grows to a certain limit.
+// All memory for this model is considered "short term memory". Ideally the heap
+// allocated memory (starting at "HeapStart") should be long term memory, but
+// updating the code to prevent "learning" has been challenging.
 
 #include "mod_ppmd.h"
 
@@ -1157,8 +1158,7 @@ class ppmd_Model : public MemoryInterface {
       FoundState = p;
       p[0].Freq += 4;
       q.SummFreq += 4;
-      if (p[0].Freq > MAX_FREQ)
-        FoundState = rescale(q, OrderFall, FoundState);
+      if (p[0].Freq > MAX_FREQ) FoundState = rescale(q, OrderFall, FoundState);
       RunLength = InitRL;
       EscCount++;
 
@@ -1443,8 +1443,8 @@ class ppmd_Model : public MemoryInterface {
     Serialize(s, cxt);
     Serialize(s, y);
 
-    // PPM memory can have long "zero" sequences. We can reduce the serialization
-    // size by storing the position/size of those.
+    // PPM memory can have long "zero" sequences. We can reduce the
+    // serialization size by storing the position/size of those.
     unsigned long long zero_sequence_count = 0;
     unsigned long long zero_sequence_start = 0;
     std::vector<unsigned long long> zero_sequence_counts;

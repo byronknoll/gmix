@@ -65,6 +65,7 @@ struct ShortTermMemory : MemoryInterface {
   // (i.e. recent_bits becomes "1").
   int last_byte = 0;
 
+  // Basic contexts:
   unsigned int always_zero = 0;
   unsigned int last_byte_context = 0;
   unsigned int last_two_bytes_context = 0;
@@ -76,6 +77,15 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int last_five_bytes_15_bit_hash = 0;
   unsigned int last_five_bytes_21_bit_hash = 0;
   unsigned int second_last_byte = 0;
+
+  // Indirect hash contexts:
+  unsigned int indirect_1_8_1_8 = 0;
+  unsigned int indirect_1_8_2_16 = 0;
+  unsigned int indirect_1_8_3_15 = 0;
+  unsigned int indirect_2_16_1_8 = 0;
+  unsigned int indirect_2_16_2_16 = 0;
+  unsigned int indirect_3_24_1_8 = 0;
+  unsigned int indirect_4_24_2_15 = 0;
 
   // Predictions for the next byte of data from PPM. Each prediction is in the
   // 0-1 range.

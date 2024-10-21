@@ -47,6 +47,7 @@ class Predictor {
 
   void AddIndirect();
   void AddMatch();
+  void AddDoubleIndirect();
   void AddMixers();
   void AddModel(Model* model);
   void RunAnalysis(int bit);
