@@ -35,6 +35,8 @@ bool RunGeneration(const std::string& checkpoint_path,
                    const std::string& output_path, int output_size,
                    float temperature);
 
-bool RunTraining(const std::string& train_path, const std::string& test_path);
+bool RunTraining(const std::string& train_path, const std::string& test_path,
+                 unsigned long long* input_bytes,
+                 unsigned long long* output_bytes);
 
 }  // namespace runner_utils

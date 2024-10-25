@@ -52,17 +52,14 @@ int main(int argc, char* argv[]) {
   std::string input_path = argv[2];
   std::string output_path = argv[3];
 
-  if (argv[1][1] == 't') {
-    if (!runner_utils::RunTraining(input_path, output_path)) {
-      return Help();
-    }
-    printf("%1.2f s.\n", ((double)clock() - start) / CLOCKS_PER_SEC);
-    return 0;
-  }
-
   unsigned long long input_bytes = 0, output_bytes = 0;
 
-  if (argv[1][1] == 'c') {
+  if (argv[1][1] == 't') {
+    if (!runner_utils::RunTraining(input_path, output_path, &input_bytes,
+                                   &output_bytes)) {
+      return Help();
+    }
+  } else if (argv[1][1] == 'c') {
     if (!runner_utils::RunCompression(input_path, output_path, &input_bytes,
                                       &output_bytes)) {
       return Help();

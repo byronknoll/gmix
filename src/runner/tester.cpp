@@ -31,13 +31,17 @@ bool CompareFiles(const std::string& p1, const std::string& p2) {
 void CompressFirstHalf(unsigned long long input_bytes, std::ifstream* is,
                        std::ofstream* os, unsigned long long* output_bytes) {
   Predictor p;
-  Encoder e(os, &p);
+  Encoder e(os);
   unsigned long long percent = 1 + (input_bytes / 10000);
   runner_utils::ClearOutput();
   for (unsigned long long pos = 0; pos < input_bytes; ++pos) {
     char c = is->get();
     for (int j = 7; j >= 0; --j) {
-      e.Encode((c >> j) & 1);
+      int bit = (c >> j) & 1;
+      float pred = p.Predict();
+      e.Encode(bit, pred);
+      p.Perceive(bit);
+      p.Learn();
     }
     if (pos % percent == 0) {
       double frac = 100.0 * pos / input_bytes;
@@ -57,7 +61,7 @@ void CompressSecondHalf(unsigned long long input_bytes, std::ifstream* is,
                         std::ofstream* os, unsigned long long* output_bytes) {
   Predictor p;
   p.ReadCheckpoint("data/checkpoint");
-  Encoder e(os, &p);
+  Encoder e(os);
   e.ReadCheckpoint("data/checkpoint.coder");
   p.WriteCheckpoint("data/checkpoint2");
   unsigned long long percent = 1 + (input_bytes / 10000);
@@ -66,7 +70,11 @@ void CompressSecondHalf(unsigned long long input_bytes, std::ifstream* is,
        ++pos) {
     char c = is->get();
     for (int j = 7; j >= 0; --j) {
-      e.Encode((c >> j) & 1);
+      int bit = (c >> j) & 1;
+      float pred = p.Predict();
+      e.Encode(bit, pred);
+      p.Perceive(bit);
+      p.Learn();
     }
     if (pos % percent == 0) {
       double frac = 100.0 * pos / input_bytes;
@@ -117,13 +125,17 @@ bool RunCompressionWithCopyRestart(const std::string& input_path,
   runner_utils::WriteHeader(*input_bytes, &data_out);
 
   Predictor p;
-  Encoder e(&data_out, &p);
+  Encoder e(&data_out);
   unsigned long long percent = 1 + (*input_bytes / 10000);
   runner_utils::ClearOutput();
   for (unsigned long long pos = 0; pos < *input_bytes; ++pos) {
     char c = data_in.get();
     for (int j = 7; j >= 0; --j) {
-      e.Encode((c >> j) & 1);
+      int bit = (c >> j) & 1;
+      float pred = p.Predict();
+      e.Encode(bit, pred);
+      p.Perceive(bit);
+      p.Learn();
     }
     if (pos == *input_bytes / 2) {
       e.WriteCheckpoint("data/checkpoint.coder");
@@ -137,7 +149,7 @@ bool RunCompressionWithCopyRestart(const std::string& input_path,
   }
   Predictor p2;
   p2.Copy(p);
-  Encoder e2(&data_out, &p2);
+  Encoder e2(&data_out);
   e2.ReadCheckpoint("data/checkpoint.coder");
   p2.WriteCheckpoint("data/checkpoint2");
 
@@ -145,7 +157,11 @@ bool RunCompressionWithCopyRestart(const std::string& input_path,
        ++pos) {
     char c = data_in.get();
     for (int j = 7; j >= 0; --j) {
-      e2.Encode((c >> j) & 1);
+      int bit = (c >> j) & 1;
+      float pred = p2.Predict();
+      e2.Encode(bit, pred);
+      p2.Perceive(bit);
+      p2.Learn();
     }
     if (pos % percent == 0) {
       double frac = 100.0 * pos / *input_bytes;

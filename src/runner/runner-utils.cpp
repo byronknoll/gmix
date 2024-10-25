@@ -42,14 +42,18 @@ void ClearOutput() {
 void Compress(unsigned long long input_bytes, std::ifstream* is,
               std::ofstream* os, unsigned long long* output_bytes,
               Predictor* p) {
-  Encoder e(os, p);
+  Encoder e(os);
   p->EnableAnalysis(8 * input_bytes / 1000);
   unsigned long long percent = 1 + (input_bytes / 10000);
   ClearOutput();
   for (unsigned long long pos = 0; pos < input_bytes; ++pos) {
     char c = is->get();
     for (int j = 7; j >= 0; --j) {
-      e.Encode((c >> j) & 1);
+      int bit = (c >> j) & 1;
+      float prediction = p->Predict();
+      e.Encode(bit, prediction);
+      p->Perceive(bit);
+      p->Learn();
     }
     if (pos % percent == 0) {
       double frac = 100.0 * pos / input_bytes;
@@ -182,7 +186,28 @@ bool RunGeneration(const std::string& checkpoint_path,
   return true;
 }
 
-bool RunTraining(const std::string& train_path, const std::string& test_path) {
+/*
+  Encoder e(os, p);
+  p->EnableAnalysis(8 * input_bytes / 1000);
+  unsigned long long percent = 1 + (input_bytes / 10000);
+  ClearOutput();
+  for (unsigned long long pos = 0; pos < input_bytes; ++pos) {
+    char c = is->get();
+    for (int j = 7; j >= 0; --j) {
+      e.Encode((c >> j) & 1);
+    }
+    if (pos % percent == 0) {
+      double frac = 100.0 * pos / input_bytes;
+      fprintf(stderr, "\rprogress: %.2f%%", frac);
+      fflush(stderr);
+    }
+  }
+  e.Flush();
+  *output_bytes = os->tellp();*/
+
+bool RunTraining(const std::string& train_path, const std::string& test_path,
+                 unsigned long long* input_bytes,
+                 unsigned long long* output_bytes) {
   std::ifstream data_train(train_path, std::ios::in | std::ios::binary);
   if (!data_train.is_open()) return false;
 
@@ -190,7 +215,7 @@ bool RunTraining(const std::string& train_path, const std::string& test_path) {
   if (!data_test.is_open()) return false;
 
   data_train.seekg(0, std::ios::end);
-  unsigned long long train_bytes = data_train.tellg();
+  *input_bytes = data_train.tellg();
   data_train.seekg(0, std::ios::beg);
 
   data_test.seekg(0, std::ios::end);
@@ -198,18 +223,25 @@ bool RunTraining(const std::string& train_path, const std::string& test_path) {
   data_test.seekg(0, std::ios::beg);
 
   std::ofstream metrics("training.tsv", std::ios::out);
-  metrics << "train_entropy\ttest_entropy" << std::endl;
+  metrics << "bytes\ttrain_entropy\ttest_entropy" << std::endl;
+
+  std::ofstream data_out("data/tmp", std::ios::out | std::ios::binary);
+  if (!data_out.is_open()) return false;
+
+  WriteHeader(*input_bytes, &data_out);
 
   Predictor p;
-  p.EnableAnalysis(8 * train_bytes / 1000);
+  Encoder e(&data_out);
+  p.EnableAnalysis(8 * (*input_bytes) / 1000);
   float prob;
   double train_entropy = 0;
-  unsigned long long percent = 1 + (train_bytes / 100);
-  for (unsigned int pos = 0; pos < train_bytes; ++pos) {
+  unsigned long long percent = 1 + ((*input_bytes) / 100);
+  for (unsigned int pos = 0; pos < *input_bytes; ++pos) {
     int c = data_train.get();
     for (int j = 7; j >= 0; --j) {
       prob = p.Predict();
       int bit = (c >> j) & 1;
+      e.Encode(bit, prob);
       if (bit)
         train_entropy += log2(prob);
       else
@@ -240,12 +272,15 @@ bool RunTraining(const std::string& train_path, const std::string& test_path) {
           p2.Learn();
         }
       }
-      metrics << std::fixed << std::setprecision(5) << -train_entropy / pos
-              << "\t" << -test_entropy / test_bytes << std::endl;
+      metrics << std::fixed << std::setprecision(5) << pos << "\t"
+              << -train_entropy / pos << "\t" << -test_entropy / test_bytes
+              << std::endl;
     }
   }
-  train_entropy = -train_entropy / train_bytes;
+  train_entropy = -train_entropy / *input_bytes;
   printf("\rtraining cross entropy: %.4f\n", train_entropy);
+  e.Flush();
+  *output_bytes = data_out.tellp();
 
   p.WriteCheckpoint("data/trained_checkpoint");
 

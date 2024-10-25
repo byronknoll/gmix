@@ -7,8 +7,8 @@
 
 class Encoder {
  public:
-  Encoder(std::ofstream* os, Predictor* p);
-  void Encode(int bit);
+  Encoder(std::ofstream* os);
+  void Encode(int bit, float prediction);
   void Flush();
   void WriteCheckpoint(std::string path);
   void ReadCheckpoint(std::string path);
@@ -19,7 +19,6 @@ class Encoder {
 
   std::ofstream* os_;
   unsigned int x1_, x2_;
-  Predictor* p_;
 };
 
 #endif
