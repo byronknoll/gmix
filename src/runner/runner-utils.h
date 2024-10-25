@@ -31,6 +31,7 @@ bool RunDecompression(const std::string& input_path,
                       unsigned long long* output_bytes);
 
 bool RunGeneration(const std::string& checkpoint_path,
+                   const std::string& prompt_path,
                    const std::string& output_path, int output_size,
                    float temperature);
 

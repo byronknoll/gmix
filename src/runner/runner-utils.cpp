@@ -125,15 +125,36 @@ bool RunDecompression(const std::string& input_path,
 }
 
 bool RunGeneration(const std::string& checkpoint_path,
+                   const std::string& prompt_path,
                    const std::string& output_path, int output_size,
                    float temperature) {
+  std::ifstream data_in(prompt_path, std::ios::in | std::ios::binary);
+  if (!data_in.is_open()) return false;
   std::ofstream data_out(output_path, std::ios::out | std::ios::binary);
   if (!data_out.is_open()) return false;
   if (temperature < 0.001) temperature = 0.001;
 
   Predictor p;
+  printf("\rLoading checkpoint...");
+  fflush(stdout);
   p.ReadCheckpoint(checkpoint_path);
   p.EnableAnalysis(8 * output_size / 1000);
+
+  printf("\r                        ");
+  printf("\rRunning prompt...");
+  fflush(stdout);
+  data_in.seekg(0, std::ios::end);
+  unsigned long long input_bytes = data_in.tellg();
+  data_in.seekg(0, std::ios::beg);
+  for (unsigned long long pos = 0; pos < input_bytes; ++pos) {
+    char c = data_in.get();
+    for (int j = 7; j >= 0; --j) {
+      p.Predict();
+      p.Perceive((c >> j) & 1);
+      p.Learn();
+    }
+  }
+  printf("\r                        ");
 
   unsigned long long percent = 1 + (output_size / 100);
   float prob = p.Predict();
