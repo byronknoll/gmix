@@ -186,25 +186,6 @@ bool RunGeneration(const std::string& checkpoint_path,
   return true;
 }
 
-/*
-  Encoder e(os, p);
-  p->EnableAnalysis(8 * input_bytes / 1000);
-  unsigned long long percent = 1 + (input_bytes / 10000);
-  ClearOutput();
-  for (unsigned long long pos = 0; pos < input_bytes; ++pos) {
-    char c = is->get();
-    for (int j = 7; j >= 0; --j) {
-      e.Encode((c >> j) & 1);
-    }
-    if (pos % percent == 0) {
-      double frac = 100.0 * pos / input_bytes;
-      fprintf(stderr, "\rprogress: %.2f%%", frac);
-      fflush(stderr);
-    }
-  }
-  e.Flush();
-  *output_bytes = os->tellp();*/
-
 bool RunTraining(const std::string& train_path, const std::string& test_path,
                  unsigned long long* input_bytes,
                  unsigned long long* output_bytes) {
