@@ -59,15 +59,14 @@ struct ShortTermMemory : MemoryInterface {
   int recent_bits = 1;
 
   // This is equal to "recent_bits - 1", so has a range from 0 to 254.
-  int bit_context = 0;
+  unsigned int bit_context = 0;
 
   // The previous byte. This gets updated after eight bits have been perceived
   // (i.e. recent_bits becomes "1").
-  int last_byte = 0;
+  unsigned int last_byte = 0;
 
   // Basic contexts:
   unsigned int always_zero = 0;
-  unsigned int last_byte_context = 0;
   unsigned int last_two_bytes_context = 0;
   unsigned int last_three_bytes_context = 0;
   unsigned int last_three_bytes_15_bit_hash = 0;
@@ -93,18 +92,17 @@ struct ShortTermMemory : MemoryInterface {
   
   // Mixers should call this in their constructor.
   // description: a short identifier for this mixer.
+  // layer_number: 0: first layer, 1: second layer, 2: final layer
   // ptr: a pointer to this mixer.
   // returns: mixer index.
-  int AddMixer(std::string description, Model* ptr) {
-    ++num_mixers;
-    model_descriptions.push_back(description);
-    mixer_index_to_model_ptr[num_mixers - 1] = ptr;
-    return num_mixers - 1;
-  }
-  std::valarray<float> mixer_outputs;
-  int num_mixers = 0;
+  int AddMixer(std::string description, int layer_number, Model* ptr);
+  std::valarray<float> mixer_layer0_outputs;
+  int num_layer0_mixers = 0;
+  std::valarray<float> mixer_layer1_outputs;
+  int num_layer1_mixers = 0;
   float final_mixer_output = 0.5;
-  std::unordered_map<int, Model*> mixer_index_to_model_ptr;
+  // This is used for model analysis.
+  std::vector<Model*> mixer_index_to_model_ptr;
 
   const Sigmoid& sigmoid;  // Does not need serialization.
 

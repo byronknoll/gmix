@@ -11,12 +11,11 @@
 // context mixing to create a single output prediction.
 class Mixer : public Model {
  public:
-  // final_layer: Set this to true for the final mixer (which combines the
-  // outputs of the other mixers).
+  // layer_number: 0: first layer, 1: second layer, 2: final layer
   // description: a short identifier for this mixer.
   Mixer(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
         unsigned int& context, const std::valarray<float>& inputs,
-        float learning_rate, bool final_layer, std::string description);
+        float learning_rate, int layer_number, std::string description);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
@@ -33,7 +32,7 @@ class Mixer : public Model {
   int output_index_, memory_index_;
   float learning_rate_;
   const std::valarray<float>& inputs_;
-  bool final_layer_;
+  int layer_number_;
 
   MixerData* FindMixerData(const LongTermMemory& long_term_memory);
   MixerData* FindOrCreateMixerData(const ShortTermMemory& short_term_memory,

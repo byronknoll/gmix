@@ -16,7 +16,6 @@ void BasicContexts::Predict(ShortTermMemory& short_term_memory,
     short_term_memory.second_last_byte = short_term_memory.last_byte;
     short_term_memory.last_byte = short_term_memory.recent_bits - 256;
     short_term_memory.recent_bits = 1;
-    short_term_memory.last_byte_context = short_term_memory.last_byte;
     short_term_memory.last_two_bytes_context =
         ((short_term_memory.last_two_bytes_context % (1 << 8)) << 8) +
         short_term_memory.last_byte;

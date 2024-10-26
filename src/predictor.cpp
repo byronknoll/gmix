@@ -22,10 +22,15 @@ Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   AddMixers();
   short_term_memory_.predictions.resize(short_term_memory_.num_predictions);
   short_term_memory_.predictions = 0.5;
-  short_term_memory_.mixer_outputs.resize(short_term_memory_.num_mixers - 1);
-  short_term_memory_.mixer_outputs = 0.5;
+  short_term_memory_.mixer_layer0_outputs.resize(
+      short_term_memory_.num_layer0_mixers - 1);
+  short_term_memory_.mixer_layer0_outputs = 0.5;
+  short_term_memory_.mixer_layer1_outputs.resize(
+      short_term_memory_.num_layer1_mixers - 1);
+  short_term_memory_.mixer_layer1_outputs = 0.5;
   short_term_memory_.entropy.resize(short_term_memory_.num_predictions +
-                                    short_term_memory_.num_mixers);
+                                    short_term_memory_.num_layer0_mixers +
+                                    short_term_memory_.num_layer1_mixers + 1);
   short_term_memory_.entropy = -1;
 }
 
@@ -44,8 +49,7 @@ void Predictor::AddModel(Model* model) {
 void Predictor::AddIndirect() {
   float learning_rate = 1.0f / 200;
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.last_byte_context,
-                        "Indirect(1 byte)"));
+                        short_term_memory_.last_byte, "Indirect(1 byte)"));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.last_two_bytes_context,
                         "Indirect(2 bytes)"));
@@ -94,7 +98,8 @@ void Predictor::AddDoubleIndirect() {
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.indirect_2_16_1_8,
                         "Indirect(indirect_2_16_1_8)"));
-  AddModel(new IndirectHash(2, 16, 2, 16, short_term_memory_.indirect_2_16_2_16));
+  AddModel(
+      new IndirectHash(2, 16, 2, 16, short_term_memory_.indirect_2_16_2_16));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.indirect_2_16_2_16,
                         "Indirect(indirect_2_16_2_16)"));
@@ -102,47 +107,64 @@ void Predictor::AddDoubleIndirect() {
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.indirect_3_24_1_8,
                         "Indirect(indirect_3_24_1_8)"));
-  AddModel(new IndirectHash(4, 24, 2, 15, short_term_memory_.indirect_4_24_2_15));
+  AddModel(
+      new IndirectHash(4, 24, 2, 15, short_term_memory_.indirect_4_24_2_15));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.indirect_4_24_2_15,
                         "Indirect(indirect_4_24_2_15)"));
 }
 
 void Predictor::AddMixers() {
-  AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_byte_context,
-                     short_term_memory_.predictions, 0.005, false,
-                     "Mixer(1 byte)"));
+  // First layer.
+  AddModel(new Mixer(
+      short_term_memory_, long_term_memory_, short_term_memory_.last_byte,
+      short_term_memory_.predictions, 0.005, 0, "Mixer0(1 byte)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.indirect_3_24_1_8,
-                     short_term_memory_.predictions, 0.005, false,
-                     "Mixer(indirect_3_24_1_8)"));
+                     short_term_memory_.predictions, 0.005, 0,
+                     "Mixer0(indirect_3_24_1_8)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.second_last_byte,
-                     short_term_memory_.predictions, 0.005, false,
-                     "Mixer(2nd last byte)"));
+                     short_term_memory_.predictions, 0.005, 0,
+                     "Mixer0(2nd last byte)"));
   AddModel(new Mixer(
       short_term_memory_, long_term_memory_, short_term_memory_.longest_match,
-      short_term_memory_.predictions, 0.0005, false, "Mixer(longest match)"));
+      short_term_memory_.predictions, 0.0005, 0, "Mixer0(longest match)"));
   AddModel(new Mixer(
       short_term_memory_, long_term_memory_, short_term_memory_.always_zero,
-      short_term_memory_.predictions, 0.0005, false, "Mixer(no context)"));
+      short_term_memory_.predictions, 0.0005, 0, "Mixer0(no context)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_two_bytes_context,
-                     short_term_memory_.predictions, 0.005, false,
-                     "Mixer(2 bytes)"));
+                     short_term_memory_.predictions, 0.005, 0,
+                     "Mixer0(2 bytes)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_three_bytes_15_bit_hash,
-                     short_term_memory_.predictions, 0.005, false,
-                     "Mixer(3 byte hash)"));
+                     short_term_memory_.predictions, 0.005, 0,
+                     "Mixer0(3 byte hash)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_four_bytes_15_bit_hash,
-                     short_term_memory_.predictions, 0.005, false,
-                     "Mixer(4 byte hash)"));
+                     short_term_memory_.predictions, 0.005, 0,
+                     "Mixer0(4 byte hash)"));
 
+  // Second layer.
   AddModel(new Mixer(
       short_term_memory_, long_term_memory_, short_term_memory_.always_zero,
-      short_term_memory_.mixer_outputs, 0.005, true, "Mixer(final layer)"));
+      short_term_memory_.mixer_layer0_outputs, 0.005, 1, "Mixer1(no context)"));
+  AddModel(new Mixer(
+      short_term_memory_, long_term_memory_, short_term_memory_.always_zero,
+      short_term_memory_.mixer_layer0_outputs, 0.0005, 1, "Mixer1(no context)"));
+  AddModel(new Mixer(
+      short_term_memory_, long_term_memory_, short_term_memory_.bit_context,
+      short_term_memory_.mixer_layer0_outputs, 0.005, 1, "Mixer1(recent_bits)"));
+  AddModel(new Mixer(
+      short_term_memory_, long_term_memory_, short_term_memory_.last_byte,
+      short_term_memory_.mixer_layer0_outputs, 0.005, 1, "Mixer1(1 byte)"));
+
+  // Final layer.
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.always_zero,
+                     short_term_memory_.mixer_layer1_outputs, 0.0005, 2,
+                     "Mixer(final layer)"));
 }
 
 float Predictor::Predict() {
@@ -227,10 +249,15 @@ void Predictor::RunAnalysis(int bit) {
     float prob = 0.5;
     if (i < short_term_memory_.num_predictions) {
       prob = Sigmoid::Logistic(short_term_memory_.predictions[i]);
-    } else if (i != short_term_memory_.entropy.size() - 1) {
+    } else if (i - short_term_memory_.num_predictions <
+               short_term_memory_.num_layer0_mixers) {
       prob = Sigmoid::Logistic(
           short_term_memory_
-              .mixer_outputs[i - short_term_memory_.num_predictions]);
+              .mixer_layer0_outputs[i - short_term_memory_.num_predictions]);
+    } else if (i != short_term_memory_.entropy.size() - 1) {
+      int index = i - short_term_memory_.num_predictions -
+                  short_term_memory_.num_layer0_mixers;
+      prob = Sigmoid::Logistic(short_term_memory_.mixer_layer1_outputs[index]);
     } else {
       prob = Sigmoid::Logistic(short_term_memory_.final_mixer_output);
     }

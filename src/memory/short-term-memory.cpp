@@ -7,7 +7,6 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, bit_context);
   Serialize(s, last_byte);
   Serialize(s, always_zero);
-  Serialize(s, last_byte_context);
   Serialize(s, last_two_bytes_context);
   Serialize(s, last_three_bytes_context);
   Serialize(s, last_three_bytes_15_bit_hash);
@@ -24,7 +23,8 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, indirect_3_24_1_8);
   Serialize(s, indirect_4_24_2_15);
   Serialize(s, second_last_byte);
-  SerializeArray(s, mixer_outputs);
+  SerializeArray(s, mixer_layer0_outputs);
+  SerializeArray(s, mixer_layer1_outputs);
   Serialize(s, final_mixer_output);
   Serialize(s, longest_match);
   Serialize(s, bits_seen);
@@ -38,7 +38,6 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, bit_context);
   Serialize(s, last_byte);
   Serialize(s, always_zero);
-  Serialize(s, last_byte_context);
   Serialize(s, last_two_bytes_context);
   Serialize(s, last_three_bytes_context);
   Serialize(s, last_three_bytes_15_bit_hash);
@@ -55,7 +54,8 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, indirect_3_24_1_8);
   Serialize(s, indirect_4_24_2_15);
   Serialize(s, second_last_byte);
-  SerializeArray(s, mixer_outputs);
+  SerializeArray(s, mixer_layer0_outputs);
+  SerializeArray(s, mixer_layer1_outputs);
   Serialize(s, final_mixer_output);
   Serialize(s, longest_match);
   Serialize(s, bits_seen);
@@ -70,7 +70,6 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   bit_context = orig->bit_context;
   last_byte = orig->last_byte;
   always_zero = orig->always_zero;
-  last_byte_context = orig->last_byte_context;
   last_two_bytes_context = orig->last_two_bytes_context;
   last_three_bytes_context = orig->last_three_bytes_context;
   last_three_bytes_15_bit_hash = orig->last_three_bytes_15_bit_hash;
@@ -87,9 +86,25 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   indirect_3_24_1_8 = orig->indirect_3_24_1_8;
   indirect_4_24_2_15 = orig->indirect_4_24_2_15;
   second_last_byte = orig->second_last_byte;
-  mixer_outputs = orig->mixer_outputs;
+  mixer_layer0_outputs = orig->mixer_layer0_outputs;
+  mixer_layer1_outputs = orig->mixer_layer1_outputs;
   final_mixer_output = orig->final_mixer_output;
   longest_match = orig->longest_match;
   bits_seen = orig->bits_seen;
   entropy = orig->entropy;
+}
+
+int ShortTermMemory::AddMixer(std::string description, int layer_number,
+                              Model* ptr) {
+  int index = 0;
+  if (layer_number == 0) {
+    index = num_layer0_mixers++;
+  } else if (layer_number == 1) {
+    index = num_layer1_mixers++;
+  } else {
+    index = num_layer0_mixers + num_layer1_mixers + 1;
+  }
+  model_descriptions.push_back(description);
+  mixer_index_to_model_ptr.push_back(ptr);
+  return index;
 }
