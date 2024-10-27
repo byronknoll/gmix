@@ -23,10 +23,10 @@ Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   short_term_memory_.predictions.resize(short_term_memory_.num_predictions);
   short_term_memory_.predictions = 0.5;
   short_term_memory_.mixer_layer0_outputs.resize(
-      short_term_memory_.num_layer0_mixers - 1);
+      short_term_memory_.num_layer0_mixers);
   short_term_memory_.mixer_layer0_outputs = 0.5;
   short_term_memory_.mixer_layer1_outputs.resize(
-      short_term_memory_.num_layer1_mixers - 1);
+      short_term_memory_.num_layer1_mixers);
   short_term_memory_.mixer_layer1_outputs = 0.5;
   short_term_memory_.entropy.resize(short_term_memory_.num_predictions +
                                     short_term_memory_.num_layer0_mixers +
@@ -150,12 +150,14 @@ void Predictor::AddMixers() {
   AddModel(new Mixer(
       short_term_memory_, long_term_memory_, short_term_memory_.always_zero,
       short_term_memory_.mixer_layer0_outputs, 0.005, 1, "Mixer1(no context)"));
-  AddModel(new Mixer(
-      short_term_memory_, long_term_memory_, short_term_memory_.always_zero,
-      short_term_memory_.mixer_layer0_outputs, 0.0005, 1, "Mixer1(no context)"));
-  AddModel(new Mixer(
-      short_term_memory_, long_term_memory_, short_term_memory_.bit_context,
-      short_term_memory_.mixer_layer0_outputs, 0.005, 1, "Mixer1(recent_bits)"));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.always_zero,
+                     short_term_memory_.mixer_layer0_outputs, 0.0005, 1,
+                     "Mixer1(no context)"));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.bit_context,
+                     short_term_memory_.mixer_layer0_outputs, 0.005, 1,
+                     "Mixer1(recent_bits)"));
   AddModel(new Mixer(
       short_term_memory_, long_term_memory_, short_term_memory_.last_byte,
       short_term_memory_.mixer_layer0_outputs, 0.005, 1, "Mixer1(1 byte)"));

@@ -31,8 +31,12 @@ MixerData* Mixer::FindOrCreateMixerData(
   auto& mixer_map = long_term_memory.mixers[memory_index_].mixer_map;
   MixerData* data = mixer_map[context_].get();
   if (data == nullptr) {
-    mixer_map[context_] =
-        std::unique_ptr<MixerData>(new MixerData(inputs_.size()));
+    int size = inputs_.size();
+    if (layer_number_ < 2) {
+      // This is for previous mixers within the same layer.
+      size += output_index_;
+    }
+    mixer_map[context_] = std::unique_ptr<MixerData>(new MixerData(size));
     data = mixer_map[context_].get();
   }
 
@@ -47,6 +51,20 @@ void Mixer::Predict(ShortTermMemory& short_term_memory,
     if (layer_number_ == 0) {
       for (int i : short_term_memory.active_models) {
         p += inputs_[i] * data->weights[i];
+      }
+      // Use the previous mixers in the same layer.
+      for (int i = 0; i < output_index_; ++i) {
+        p += short_term_memory.mixer_layer0_outputs[i] *
+             data->weights[inputs_.size() + i];
+      }
+    } else if (layer_number_ == 1) {
+      for (int i = 0; i < inputs_.size(); ++i) {
+        p += inputs_[i] * data->weights[i];
+      }
+      // Use the previous mixers in the same layer.
+      for (int i = 0; i < output_index_; ++i) {
+        p += short_term_memory.mixer_layer1_outputs[i] *
+             data->weights[inputs_.size() + i];
       }
     } else {
       for (int i = 0; i < inputs_.size(); ++i) {
@@ -72,9 +90,11 @@ void Mixer::Learn(const ShortTermMemory& short_term_memory,
   if (layer_number_ == 2) {
     p = Sigmoid::Logistic(short_term_memory.final_mixer_output);
   } else if (layer_number_ == 1) {
-    p = Sigmoid::Logistic(short_term_memory.mixer_layer1_outputs[output_index_]);
+    p = Sigmoid::Logistic(
+        short_term_memory.mixer_layer1_outputs[output_index_]);
   } else {
-    p = Sigmoid::Logistic(short_term_memory.mixer_layer0_outputs[output_index_]);
+    p = Sigmoid::Logistic(
+        short_term_memory.mixer_layer0_outputs[output_index_]);
   }
   float update = decay * learning_rate_ * (p - short_term_memory.new_bit);
   ++steps_;
@@ -85,6 +105,20 @@ void Mixer::Learn(const ShortTermMemory& short_term_memory,
   if (layer_number_ == 0) {
     for (int i : short_term_memory.active_models) {
       data->weights[i] -= update * inputs_[i];
+    }
+    // Use the previous mixers in the same layer.
+    for (int i = 0; i < output_index_; ++i) {
+      data->weights[i + inputs_.size()] -=
+          update * short_term_memory.mixer_layer0_outputs[i];
+    }
+  } else if (layer_number_ == 1) {
+    for (int i = 0; i < inputs_.size(); ++i) {
+      data->weights[i] -= update * inputs_[i];
+    }
+    // Use the previous mixers in the same layer.
+    for (int i = 0; i < output_index_; ++i) {
+      data->weights[i + inputs_.size()] -=
+          update * short_term_memory.mixer_layer1_outputs[i];
     }
   } else {
     data->weights -= update * inputs_;
@@ -114,7 +148,11 @@ unsigned long long Mixer::GetMemoryUsage(
     const ShortTermMemory& short_term_memory,
     const LongTermMemory& long_term_memory) {
   unsigned long long usage = 29;
-  int mixer_data_size = inputs_.size() * 4 + 12;
+  int weight_size = inputs_.size();
+  if (layer_number_ < 2) {
+    weight_size += output_index_;
+  }
+  int mixer_data_size = weight_size * 4 + 12;
   auto& mixer_map = long_term_memory.mixers[memory_index_].mixer_map;
   usage += mixer_map.size() * mixer_data_size;
   return usage;
