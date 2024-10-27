@@ -1,13 +1,13 @@
 #ifndef SHORT_TERM_MEMORY_H_
 #define SHORT_TERM_MEMORY_H_
 
+#include <unordered_map>
 #include <valarray>
 #include <vector>
-#include <unordered_map>
 
+#include "../contexts/nonstationary.h"
 #include "../memory-interface.h"
 #include "../mixer/sigmoid.h"
-#include "../contexts/nonstationary.h"
 
 class Model;
 
@@ -41,10 +41,17 @@ struct ShortTermMemory : MemoryInterface {
     active_models.push_back(index);
   }
   std::valarray<float> predictions;
+  // This stores the index of models that are "active". Models which don't make
+  // a prediction automatically will be considered inactive (skipped by the
+  // mixer).
   std::vector<int> active_models;
-   int num_predictions = 0;
+  int num_predictions = 0;
   std::vector<std::string> model_descriptions;
   std::unordered_map<int, Model*> prediction_index_to_model_ptr;
+
+  // Models with valuable predictions can be used for the second and third layer
+  // mixers via skip connections.
+  std::vector<int> models_with_skip_connection;
 
   // The most recently perceived bit.
   int new_bit = 0;
@@ -89,7 +96,7 @@ struct ShortTermMemory : MemoryInterface {
   // Predictions for the next byte of data from PPM. Each prediction is in the
   // 0-1 range.
   std::valarray<float> ppm_predictions;
-  
+
   // Mixers should call this in their constructor.
   // description: a short identifier for this mixer.
   // layer_number: 0: first layer, 1: second layer, 2: final layer

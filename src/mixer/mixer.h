@@ -14,8 +14,8 @@ class Mixer : public Model {
   // layer_number: 0: first layer, 1: second layer, 2: final layer
   // description: a short identifier for this mixer.
   Mixer(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-        unsigned int& context, const std::valarray<float>& inputs,
-        float learning_rate, int layer_number, std::string description);
+        unsigned int& context, float learning_rate, int layer_number,
+        std::string description);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
@@ -29,9 +29,8 @@ class Mixer : public Model {
  private:
   unsigned int& context_;
   unsigned long long max_steps_, steps_;
-  int output_index_, memory_index_;
+  int output_index_, memory_index_, weight_size_;
   float learning_rate_;
-  const std::valarray<float>& inputs_;
   int layer_number_;
 
   MixerData* FindMixerData(const LongTermMemory& long_term_memory);

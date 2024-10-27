@@ -116,56 +116,46 @@ void Predictor::AddDoubleIndirect() {
 
 void Predictor::AddMixers() {
   // First layer.
-  AddModel(new Mixer(
-      short_term_memory_, long_term_memory_, short_term_memory_.last_byte,
-      short_term_memory_.predictions, 0.005, 0, "Mixer0(1 byte)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.indirect_3_24_1_8,
-                     short_term_memory_.predictions, 0.005, 0,
+                     short_term_memory_.last_byte, 0.005, 0, "Mixer0(1 byte)"));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.indirect_3_24_1_8, 0.005, 0,
                      "Mixer0(indirect_3_24_1_8)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.second_last_byte,
-                     short_term_memory_.predictions, 0.005, 0,
+                     short_term_memory_.second_last_byte, 0.005, 0,
                      "Mixer0(2nd last byte)"));
-  AddModel(new Mixer(
-      short_term_memory_, long_term_memory_, short_term_memory_.longest_match,
-      short_term_memory_.predictions, 0.0005, 0, "Mixer0(longest match)"));
-  AddModel(new Mixer(
-      short_term_memory_, long_term_memory_, short_term_memory_.always_zero,
-      short_term_memory_.predictions, 0.0005, 0, "Mixer0(no context)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_two_bytes_context,
-                     short_term_memory_.predictions, 0.005, 0,
+                     short_term_memory_.longest_match, 0.0005, 0,
+                     "Mixer0(longest match)"));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.always_zero, 0.0005, 0,
+                     "Mixer0(no context)"));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_two_bytes_context, 0.005, 0,
                      "Mixer0(2 bytes)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_three_bytes_15_bit_hash,
-                     short_term_memory_.predictions, 0.005, 0,
+                     short_term_memory_.last_three_bytes_15_bit_hash, 0.005, 0,
                      "Mixer0(3 byte hash)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_four_bytes_15_bit_hash,
-                     short_term_memory_.predictions, 0.005, 0,
+                     short_term_memory_.last_four_bytes_15_bit_hash, 0.005, 0,
                      "Mixer0(4 byte hash)"));
 
   // Second layer.
-  AddModel(new Mixer(
-      short_term_memory_, long_term_memory_, short_term_memory_.always_zero,
-      short_term_memory_.mixer_layer0_outputs, 0.005, 1, "Mixer1(no context)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.always_zero,
-                     short_term_memory_.mixer_layer0_outputs, 0.0005, 1,
+                     short_term_memory_.always_zero, 0.005, 1,
                      "Mixer1(no context)"));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.bit_context,
-                     short_term_memory_.mixer_layer0_outputs, 0.005, 1,
+                     short_term_memory_.always_zero, 0.0005, 1,
+                     "Mixer1(no context)"));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.bit_context, 0.005, 1,
                      "Mixer1(recent_bits)"));
-  AddModel(new Mixer(
-      short_term_memory_, long_term_memory_, short_term_memory_.last_byte,
-      short_term_memory_.mixer_layer0_outputs, 0.005, 1, "Mixer1(1 byte)"));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_byte, 0.005, 1, "Mixer1(1 byte)"));
 
   // Final layer.
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.always_zero,
-                     short_term_memory_.mixer_layer1_outputs, 0.0005, 2,
+                     short_term_memory_.always_zero, 0.0005, 2,
                      "Mixer(final layer)"));
 }
 
