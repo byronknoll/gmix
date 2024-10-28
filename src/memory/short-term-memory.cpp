@@ -23,6 +23,10 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, indirect_3_24_1_8);
   Serialize(s, indirect_4_24_2_15);
   Serialize(s, second_last_byte);
+  Serialize(s, third_last_byte);
+  Serialize(s, fourth_last_byte);
+  Serialize(s, last_byte_plus_recent);
+  Serialize(s, second_last_plus_recent);
   SerializeArray(s, mixer_layer0_outputs);
   SerializeArray(s, mixer_layer1_outputs);
   Serialize(s, final_mixer_output);
@@ -54,6 +58,10 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, indirect_3_24_1_8);
   Serialize(s, indirect_4_24_2_15);
   Serialize(s, second_last_byte);
+  Serialize(s, third_last_byte);
+  Serialize(s, fourth_last_byte);
+  Serialize(s, last_byte_plus_recent);
+  Serialize(s, second_last_plus_recent);
   SerializeArray(s, mixer_layer0_outputs);
   SerializeArray(s, mixer_layer1_outputs);
   Serialize(s, final_mixer_output);
@@ -86,6 +94,10 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   indirect_3_24_1_8 = orig->indirect_3_24_1_8;
   indirect_4_24_2_15 = orig->indirect_4_24_2_15;
   second_last_byte = orig->second_last_byte;
+  third_last_byte = orig->third_last_byte;
+  fourth_last_byte = orig->fourth_last_byte;
+  last_byte_plus_recent = orig->last_byte_plus_recent;
+  second_last_plus_recent = orig->second_last_plus_recent;
   mixer_layer0_outputs = orig->mixer_layer0_outputs;
   mixer_layer1_outputs = orig->mixer_layer1_outputs;
   final_mixer_output = orig->final_mixer_output;

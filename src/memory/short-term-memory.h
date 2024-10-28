@@ -83,6 +83,10 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int last_five_bytes_15_bit_hash = 0;
   unsigned int last_five_bytes_21_bit_hash = 0;
   unsigned int second_last_byte = 0;
+  unsigned int third_last_byte = 0;
+  unsigned int fourth_last_byte = 0;
+  unsigned int last_byte_plus_recent = 0;
+  unsigned int second_last_plus_recent = 0;
 
   // Indirect hash contexts:
   unsigned int indirect_1_8_1_8 = 0;
