@@ -150,7 +150,8 @@ bool RunGeneration(const std::string& checkpoint_path,
   data_in.seekg(0, std::ios::end);
   unsigned long long input_bytes = data_in.tellg();
   data_in.seekg(0, std::ios::beg);
-  for (unsigned long long pos = 0; pos < input_bytes; ++pos) {
+  // Skip the last byte ('\n' for text files).
+  for (unsigned long long pos = 0; pos < input_bytes - 1; ++pos) {
     char c = data_in.get();
     for (int j = 7; j >= 0; --j) {
       p.Predict();
@@ -234,6 +235,7 @@ bool RunTraining(const std::string& train_path, const std::string& test_path,
       printf("\rtraining: %lld%%", pos / percent);
       fflush(stdout);
       if (pos == 0) continue;
+      if ((pos / percent % 2) != 0) continue;
 
       Predictor p2;
       p2.Copy(p);
