@@ -16,7 +16,8 @@ class Match : public Model {
   // decreases.
   // description: a short identifier for this model.
   Match(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-        const unsigned int& byte_context, int limit, std::string description);
+        const unsigned int& byte_context, int limit, std::string description,
+        bool enable_analysis);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,

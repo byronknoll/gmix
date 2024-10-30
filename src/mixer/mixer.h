@@ -15,7 +15,7 @@ class Mixer : public Model {
   // description: a short identifier for this mixer.
   Mixer(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
         unsigned int& context, float learning_rate, int layer_number,
-        std::string description);
+        std::string description, bool enable_analysis);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,

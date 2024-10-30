@@ -51,6 +51,7 @@ class Predictor {
   void AddMixers();
   void AddModel(Model* model);
   void RunAnalysis(int bit);
+  void UpdateEntropy(int bit, int index);
 };
 
 #endif  // PREDICTOR_H_

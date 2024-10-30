@@ -106,8 +106,22 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   entropy = orig->entropy;
 }
 
+int ShortTermMemory::AddPrediction(std::string description,
+                                   bool enable_analysis, Model* ptr) {
+  ++num_predictions;
+  model_descriptions.push_back(description);
+  model_enable_analysis.push_back(enable_analysis);
+  prediction_index_to_model_ptr[num_predictions - 1] = ptr;
+  return num_predictions - 1;
+}
+
+void ShortTermMemory::SetPrediction(float prediction, int index) {
+  predictions[index] = sigmoid.Logit(prediction);
+  active_models.push_back(index);
+}
+
 int ShortTermMemory::AddMixer(std::string description, int layer_number,
-                              Model* ptr) {
+                              bool enable_analysis, Model* ptr) {
   int index = 0;
   if (layer_number == 0) {
     index = num_layer0_mixers++;
@@ -117,6 +131,7 @@ int ShortTermMemory::AddMixer(std::string description, int layer_number,
     index = num_layer0_mixers + num_layer1_mixers + 1;
   }
   model_descriptions.push_back(description);
+  model_enable_analysis.push_back(enable_analysis);
   mixer_index_to_model_ptr.push_back(ptr);
   return index;
 }

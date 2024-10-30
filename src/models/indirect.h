@@ -13,7 +13,8 @@
 class Indirect : public Model {
  public:
   Indirect(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-           float learning_rate, unsigned int& context, std::string description);
+           float learning_rate, unsigned int& context, std::string description,
+           bool enable_analysis);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,

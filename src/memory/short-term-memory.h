@@ -28,18 +28,12 @@ struct ShortTermMemory : MemoryInterface {
   // description: a short identifier for this model.
   // ptr: a pointer to this model.
   // returns: model prediction index.
-  int AddPrediction(std::string description, Model* ptr) {
-    ++num_predictions;
-    model_descriptions.push_back(description);
-    prediction_index_to_model_ptr[num_predictions - 1] = ptr;
-    return num_predictions - 1;
-  }
+  int AddPrediction(std::string description, bool enable_analysis, Model* ptr);
+
   // Predictions for the next bit of data. Each prediction should be a
   // probability between 0 to 1.
-  void SetPrediction(float prediction, int index) {
-    predictions[index] = sigmoid.Logit(prediction);
-    active_models.push_back(index);
-  }
+  void SetPrediction(float prediction, int index);
+
   std::valarray<float> predictions;
   // This stores the index of models that are "active". Models which don't make
   // a prediction automatically will be considered inactive (skipped by the
@@ -47,6 +41,7 @@ struct ShortTermMemory : MemoryInterface {
   std::vector<int> active_models;
   int num_predictions = 0;
   std::vector<std::string> model_descriptions;
+  std::vector<bool> model_enable_analysis;
   std::unordered_map<int, Model*> prediction_index_to_model_ptr;
 
   // Models with valuable predictions can be used for the second and third layer
@@ -106,7 +101,8 @@ struct ShortTermMemory : MemoryInterface {
   // layer_number: 0: first layer, 1: second layer, 2: final layer
   // ptr: a pointer to this mixer.
   // returns: mixer index.
-  int AddMixer(std::string description, int layer_number, Model* ptr);
+  int AddMixer(std::string description, int layer_number, bool enable_analysis,
+               Model* ptr);
   std::valarray<float> mixer_layer0_outputs;
   int num_layer0_mixers = 0;
   std::valarray<float> mixer_layer1_outputs;

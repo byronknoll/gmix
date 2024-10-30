@@ -3,13 +3,14 @@
 #include <numeric>
 
 LstmModel::LstmModel(ShortTermMemory& short_term_memory,
-                     LongTermMemory& long_term_memory)
+                     LongTermMemory& long_term_memory, bool enable_analysis)
     : lstm_(256, 256, 50, 1, 100, 0.03, 10, long_term_memory),
       top_(255),
       mid_(127),
       bot_(0),
       probs_(1.0 / 256, 256) {
-  prediction_index_ = short_term_memory.AddPrediction("LSTM", this);
+  prediction_index_ =
+      short_term_memory.AddPrediction("LSTM", enable_analysis, this);
   short_term_memory.models_with_skip_connection.push_back(prediction_index_);
 }
 

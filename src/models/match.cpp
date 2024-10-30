@@ -2,7 +2,7 @@
 
 Match::Match(ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory, const unsigned int& byte_context,
-             int limit, std::string description)
+             int limit, std::string description, bool enable_analysis)
     : byte_context_(byte_context),
       cur_match_(0),
       cur_byte_(0),
@@ -10,7 +10,8 @@ Match::Match(ShortTermMemory& short_term_memory,
       match_length_(0),
       limit_(limit),
       learning_rate_(1.0 / limit) {
-  prediction_index_ = short_term_memory.AddPrediction(description, this);
+  prediction_index_ =
+      short_term_memory.AddPrediction(description, enable_analysis, this);
   memory_index_ = long_term_memory.match_memory.size();
   long_term_memory.match_memory.push_back(MatchMemory());
   auto& memory = long_term_memory.match_memory.back();

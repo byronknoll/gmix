@@ -2,13 +2,15 @@
 
 Mixer::Mixer(ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory, unsigned int& context,
-             float learning_rate, int layer_number, std::string description)
+             float learning_rate, int layer_number, std::string description,
+             bool enable_analysis)
     : context_(context),
       max_steps_(1),
       steps_(0),
       learning_rate_(learning_rate),
       layer_number_(layer_number) {
-  output_index_ = short_term_memory.AddMixer(description, layer_number, this);
+  output_index_ = short_term_memory.AddMixer(description, layer_number,
+                                             enable_analysis, this);
   memory_index_ = long_term_memory.mixers.size();
   long_term_memory.mixers.push_back(MixerMemory());
 

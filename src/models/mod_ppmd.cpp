@@ -1637,10 +1637,11 @@ class ppmd_Model : public MemoryInterface {
 #pragma pack()
 
 ModPPMD::ModPPMD(ShortTermMemory& short_term_memory,
-                 LongTermMemory& long_term_memory, int order, int memory)
+                 LongTermMemory& long_term_memory, int order, int memory,
+                 bool enable_analysis)
     : top_(255), mid_(127), bot_(0) {
   prediction_index_ = short_term_memory.AddPrediction(
-      "mod_ppmd(" + std::to_string(order) + ")", this);
+      "mod_ppmd(" + std::to_string(order) + ")", enable_analysis, this);
   ppmd_model_.reset(new ppmd_Model());
   ppmd_model_->Init(order, memory, 1, 0);
 }
