@@ -84,7 +84,8 @@ void Decompress(unsigned long long output_length, std::ifstream* is,
   }
 }
 
-bool RunCompression(const std::string& input_path,
+bool RunCompression(const std::string& checkpoint_path,
+                    const std::string& input_path,
                     const std::string& output_path,
                     unsigned long long* input_bytes,
                     unsigned long long* output_bytes) {
@@ -100,13 +101,20 @@ bool RunCompression(const std::string& input_path,
 
   WriteHeader(*input_bytes, &data_out);
   Predictor p;
+  if (!checkpoint_path.empty()) {
+    printf("\rLoading checkpoint...");
+    fflush(stdout);
+    p.ReadCheckpoint(checkpoint_path);
+    printf("\r                        ");
+  }
   Compress(*input_bytes, &data_in, &data_out, output_bytes, &p);
   data_in.close();
   data_out.close();
   return true;
 }
 
-bool RunDecompression(const std::string& input_path,
+bool RunDecompression(const std::string& checkpoint_path,
+                      const std::string& input_path,
                       const std::string& output_path,
                       unsigned long long* input_bytes,
                       unsigned long long* output_bytes) {
@@ -118,6 +126,12 @@ bool RunDecompression(const std::string& input_path,
   data_in.seekg(0, std::ios::beg);
   ReadHeader(&data_in, output_bytes);
   Predictor p;
+  if (!checkpoint_path.empty()) {
+    printf("\rLoading checkpoint...");
+    fflush(stdout);
+    p.ReadCheckpoint(checkpoint_path);
+    printf("\r                        ");
+  }
 
   std::ofstream data_out(output_path, std::ios::out | std::ios::binary);
   if (!data_out.is_open()) return false;
@@ -187,7 +201,8 @@ bool RunGeneration(const std::string& checkpoint_path,
   return true;
 }
 
-bool RunTraining(const std::string& train_path, const std::string& test_path,
+bool RunTraining(const std::string& checkpoint_path,
+                 const std::string& train_path, const std::string& test_path,
                  unsigned long long* input_bytes,
                  unsigned long long* output_bytes) {
   std::ifstream data_train(train_path, std::ios::in | std::ios::binary);
@@ -213,6 +228,12 @@ bool RunTraining(const std::string& train_path, const std::string& test_path,
   WriteHeader(*input_bytes, &data_out);
 
   Predictor p;
+  if (!checkpoint_path.empty()) {
+    printf("\rLoading checkpoint...");
+    fflush(stdout);
+    p.ReadCheckpoint(checkpoint_path);
+    printf("\r                        ");
+  }
   Encoder e(&data_out);
   p.EnableAnalysis(8 * (*input_bytes) / 1000);
   float prob;

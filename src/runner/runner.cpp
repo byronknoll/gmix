@@ -13,13 +13,18 @@
 
 int Help() {
   printf("gmix version 1\n");
-  printf("Compress: gmix -c [input] [output]\n");
-  printf("Decompress: gmix -d [input] [output]\n");
+  printf("Without pretrained model:\n");
+  printf("    Compress: gmix -c [input] [output]\n");
+  printf("    Decompress: gmix -d [input] [output]\n");
+  printf("    Train: gmix -t [training file] [test file]\n");
+  printf("With pretrained model:\n");
+  printf("    Compress: gmix -c [checkpoint_path] [input] [output]\n");
+  printf("    Decompress: gmix -d [checkpoint_path] [input] [output]\n");
+  printf("    Train: gmix -t [checkpoint_path] [training file] [test file]\n");
   printf(
-      "Generate: gmix -g [checkpoint_path] [prompt_path] [output] "
+      "    Generate: gmix -g [checkpoint_path] [prompt file] [output] "
       "[output_size] "
       "[temperature]\n");
-  printf("Train: gmix -t [training file] [test file]\n");
   return -1;
 }
 
@@ -47,25 +52,33 @@ int main(int argc, char* argv[]) {
     printf("%1.2f s.\n", ((double)clock() - start) / CLOCKS_PER_SEC);
     return 0;
   }
-  if (argc != 4) return Help();
+  if (argc != 4 && argc != 5) return Help();
 
+  std::string checkpoing_path = "";
   std::string input_path = argv[2];
   std::string output_path = argv[3];
+
+  if (argc == 5) {
+    checkpoing_path = argv[2];
+    input_path = argv[3];
+    output_path = argv[4];
+  }
 
   unsigned long long input_bytes = 0, output_bytes = 0;
 
   if (argv[1][1] == 't') {
-    if (!runner_utils::RunTraining(input_path, output_path, &input_bytes,
-                                   &output_bytes)) {
+    if (!runner_utils::RunTraining(checkpoing_path, input_path, output_path,
+                                   &input_bytes, &output_bytes)) {
       return Help();
     }
   } else if (argv[1][1] == 'c') {
-    if (!runner_utils::RunCompression(input_path, output_path, &input_bytes,
-                                      &output_bytes)) {
+    if (!runner_utils::RunCompression(checkpoing_path, input_path, output_path,
+                                      &input_bytes, &output_bytes)) {
       return Help();
     }
   } else if (argv[1][1] == 'd') {
-    if (!runner_utils::RunDecompression(input_path, output_path, &input_bytes,
+    if (!runner_utils::RunDecompression(checkpoing_path, input_path,
+                                        output_path, &input_bytes,
                                         &output_bytes)) {
       return Help();
     }

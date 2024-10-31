@@ -322,7 +322,7 @@ void Fail() {
 void TestCompression() {
   printf("TestCompression:\n");
   unsigned long long in, out;
-  runner_utils::RunCompression("./test", "data/test1", &in, &out);
+  runner_utils::RunCompression("", "./test", "data/test1", &in, &out);
   printf("\n");
 }
 
