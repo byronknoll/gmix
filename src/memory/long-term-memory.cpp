@@ -14,9 +14,11 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
     Serialize(s, size);
     for (unsigned int key : keys) {
       Serialize(s, key);
-      Serialize(s, mem.map[key]);
+      Serialize(s, mem.map[key][0]);
+      Serialize(s, mem.map[key][1]);
     }
-    SerializeArray(s, mem.predictions);
+    SerializeArray(s, mem.nonstationary_predictions);
+    SerializeArray(s, mem.run_map_predictions);
   }
   printf("\nIndirect model size: %ld\n", s->tellp() - start);
 
@@ -84,9 +86,12 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
       Serialize(s, key);
       unsigned char state;
       Serialize(s, state);
-      mem.map[key] = state;
+      mem.map[key][0] = state;
+      Serialize(s, state);
+      mem.map[key][1] = state;
     }
-    SerializeArray(s, mem.predictions);
+    SerializeArray(s, mem.nonstationary_predictions);
+    SerializeArray(s, mem.run_map_predictions);
   }
 
   for (auto& mixer : mixers) {
@@ -141,7 +146,8 @@ void LongTermMemory::Copy(const MemoryInterface* m) {
   const LongTermMemory* orig = static_cast<const LongTermMemory*>(m);
   for (int i = 0; i < indirect.size(); ++i) {
     indirect[i].map = orig->indirect[i].map;
-    indirect[i].predictions = orig->indirect[i].predictions;
+    indirect[i].nonstationary_predictions = orig->indirect[i].nonstationary_predictions;
+    indirect[i].run_map_predictions = orig->indirect[i].run_map_predictions;
   }
 
   for (int i = 0; i < mixers.size(); ++i) {

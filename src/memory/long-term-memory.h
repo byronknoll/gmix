@@ -10,10 +10,13 @@
 #include "../memory-interface.h"
 
 struct IndirectMemory {
-  // Map from context to state (contexts/nonstationary.h).
-  std::unordered_map<unsigned int, unsigned char> map;
+  // Map from context to two (one byte) states:
+  // first is contexts/nonstationary.h
+  // second is contexts/run-map.h
+  std::unordered_map<unsigned int, std::array<unsigned char, 2>> map;
   // Map from state to prediction.
-  std::array<float, 256> predictions;
+  std::array<float, 256> nonstationary_predictions;
+  std::array<float, 256> run_map_predictions;
 };
 
 struct MixerData {

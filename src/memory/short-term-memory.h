@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../contexts/nonstationary.h"
+#include "../contexts/run-map.h"
 #include "../memory-interface.h"
 #include "../mixer/sigmoid.h"
 
@@ -114,6 +115,7 @@ struct ShortTermMemory : MemoryInterface {
   const Sigmoid& sigmoid;  // Does not need serialization.
 
   Nonstationary nonstationary;  // Does not need serialization.
+  RunMap run_map;  // Does not need serialization.
 
   // Longest match from Match models. Range is 0-7.
   // 0 = 0-3 bytes matched.

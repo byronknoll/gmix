@@ -27,7 +27,7 @@ class Indirect : public Model {
 
  private:
   unsigned int& context_;
-  int prediction_index_, memory_index_;
+  int prediction_index_indirect_, prediction_index_run_map_, memory_index_;
   float learning_rate_;
 };
 
