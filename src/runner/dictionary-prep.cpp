@@ -10,8 +10,8 @@
 
 int Help() {
   printf("This tool runs dictionary preprocessing.\n");
-  printf("Encode: prep -e [dictionary] [input] [output]\n");
-  printf("Decode: prep -d [dictionary] [input] [output]\n");
+  printf("Encode: dictionary-prep -e [dictionary] [input] [output]\n");
+  printf("Decode: dictionary-prep -d [dictionary] [input] [output]\n");
   return -1;
 }
 

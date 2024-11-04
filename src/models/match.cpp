@@ -94,6 +94,12 @@ void Match::Learn(const ShortTermMemory& short_term_memory,
   }
 
   if (short_term_memory.recent_bits >= 128) {  // Byte boundary.
+    if (short_term_memory.longest_match >= 2) {
+      // When there is a long match, the byte history (in short term memory) is
+      // not updated. Here we should only replace the context if the history is
+      // updated.
+      return;
+    }
     auto& match_memory = long_term_memory.match_memory[memory_index_];
     auto& loc = match_memory.map[byte_context_];
     unsigned long long pos = long_term_memory.history.size() - 1;

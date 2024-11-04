@@ -5,10 +5,10 @@
 
 /*
 Instructions for enwik9 preprocessing:
-1) Copy enwik9-preproc and article_order/enwik9_article_order to a new folder.
-2) Run: ./enwik9-preproc c path_to_enwik9
+1) Copy enwik9-prep and article_order/enwik9_article_order to a new folder.
+2) Run: ./enwik9-prep c path_to_enwik9
 3) .ready4cmix is the preprocessed file. To reproduce enwik9, run:
-./enwik9-preproc d .ready4cmix
+./enwik9-prep d .ready4cmix
 */
 
 #include <assert.h>

@@ -20,6 +20,8 @@ class BasicContexts : public Model {
   }
 
  private:
+  void ByteUpdate(ShortTermMemory& short_term_memory,
+                  const LongTermMemory& long_term_memory);
   bool first_prediction_ = true;
 };
 

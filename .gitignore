@@ -1,7 +1,7 @@
 gmix
 test
-prep
-enwik9-preproc
+dictionary-prep
+enwik9-prep
 entropy.tsv
 memory.tsv
 training.tsv

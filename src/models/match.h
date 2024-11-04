@@ -30,7 +30,7 @@ class Match : public Model {
 
  private:
   const unsigned int& byte_context_;
-  // Pointer to current match in input history.
+  // Position of current match in input history.
   unsigned long long cur_match_;
   // Current matched byte (from input history).
   unsigned char cur_byte_;
