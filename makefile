@@ -1,9 +1,9 @@
 CC = clang++-17
-LFLAGS = -std=c++14 -Wall -Ofast -march=native
+LFLAGS = -std=c++17 -Wall -Ofast -march=native
 
 all: gmix test dictionary-prep enwik9-prep
 
-debug: LFLAGS = -std=c++14 -Wall -ggdb
+debug: LFLAGS = -std=c++17 -Wall -ggdb
 debug: gmix test dictionary-prep enwik9-prep
 
 SRC_FILES := $(filter-out $(wildcard src/runner/*.cpp) $(wildcard src/preprocess/*.cpp), $(wildcard src/*.cpp) $(wildcard src/*/*.cpp) $(wildcard src/*/*/*.cpp)) src/runner/runner-utils.cpp

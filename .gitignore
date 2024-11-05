@@ -2,9 +2,7 @@ gmix
 test
 dictionary-prep
 enwik9-prep
-entropy.tsv
-memory.tsv
-training.tsv
 .vscode/
 data/
 scripts/
+analysis/

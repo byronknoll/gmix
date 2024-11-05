@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iomanip>
 #include <vector>
+#include <filesystem>
 
 #include "../coder/decoder.h"
 #include "../coder/encoder.h"
@@ -219,7 +220,8 @@ bool RunTraining(const std::string& checkpoint_path,
   unsigned long long test_bytes = data_test.tellg();
   data_test.seekg(0, std::ios::beg);
 
-  std::ofstream metrics("training.tsv", std::ios::out);
+  std::filesystem::create_directory("analysis");
+  std::ofstream metrics("analysis/training.tsv", std::ios::out);
   metrics << "bytes\ttrain_entropy\ttest_entropy" << std::endl;
 
   std::ofstream data_out("data/tmp", std::ios::out | std::ios::binary);
