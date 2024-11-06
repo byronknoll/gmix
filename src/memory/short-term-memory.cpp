@@ -117,11 +117,13 @@ int ShortTermMemory::AddPrediction(std::string description,
 
 void ShortTermMemory::SetPrediction(float prediction, int index) {
   predictions[index] = sigmoid.Logit(prediction);
+  if (prediction == 0.5) return;
   active_models.push_back(index);
 }
 
 void ShortTermMemory::SetLogitPrediction(float prediction, int index) {
   predictions[index] = prediction;
+  if (prediction == 0) return;
   active_models.push_back(index);
 }
 

@@ -23,13 +23,13 @@ Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
   AddDoubleIndirect();
   AddMixers();
   short_term_memory_.predictions.resize(short_term_memory_.num_predictions);
-  short_term_memory_.predictions = 0.5;
+  short_term_memory_.predictions = 0;
   short_term_memory_.mixer_layer0_outputs.resize(
       short_term_memory_.num_layer0_mixers);
-  short_term_memory_.mixer_layer0_outputs = 0.5;
+  short_term_memory_.mixer_layer0_outputs = 0;
   short_term_memory_.mixer_layer1_outputs.resize(
       short_term_memory_.num_layer1_mixers);
-  short_term_memory_.mixer_layer1_outputs = 0.5;
+  short_term_memory_.mixer_layer1_outputs = 0;
   short_term_memory_.entropy.resize(
       short_term_memory_.model_descriptions.size());
   short_term_memory_.entropy = -1;
@@ -199,7 +199,7 @@ float Predictor::Predict() {
   short_term_memory_.active_models.clear();
   if (sample_frequency_ > 0) {
     // To compute cross entropy, set "inactive" model predictions to 0.5.
-    short_term_memory_.predictions = 0.5;
+    short_term_memory_.predictions = 0;
   }
   for (const auto& model : models_) {
     model->Predict(short_term_memory_, long_term_memory_);

@@ -107,11 +107,11 @@ struct ShortTermMemory : MemoryInterface {
   // returns: mixer index.
   int AddMixer(std::string description, int layer_number, bool enable_analysis,
                Model* ptr);
-  std::valarray<float> mixer_layer0_outputs;
+  std::valarray<float> mixer_layer0_outputs;  // In logit space.
   int num_layer0_mixers = 0;
-  std::valarray<float> mixer_layer1_outputs;
+  std::valarray<float> mixer_layer1_outputs;  // In logit space.
   int num_layer1_mixers = 0;
-  float final_mixer_output = 0.5;
+  float final_mixer_output = 0;  // In logit space.
   // This is used for model analysis.
   std::vector<Model*> mixer_index_to_model_ptr;
 
