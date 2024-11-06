@@ -28,9 +28,9 @@ void Indirect::Predict(ShortTermMemory& short_term_memory,
   const auto& it = m.map.find(context);
   if (it != m.map.end()) {
     float p = m.nonstationary_predictions[it->second[0]];
-    short_term_memory.SetPrediction(p, prediction_index_indirect_);
+    short_term_memory.SetLogitPrediction(p, prediction_index_indirect_);
     p = m.run_map_predictions[it->second[1]];
-    short_term_memory.SetPrediction(p, prediction_index_run_map_);
+    short_term_memory.SetLogitPrediction(p, prediction_index_run_map_);
   }
 }
 
@@ -41,13 +41,14 @@ void Indirect::Learn(const ShortTermMemory& short_term_memory,
   int nonstationary_state = m.map[context][0];
   m.nonstationary_predictions[nonstationary_state] +=
       (short_term_memory.new_bit -
-       m.nonstationary_predictions[nonstationary_state]) *
+       Sigmoid::Logistic(m.nonstationary_predictions[nonstationary_state])) *
       learning_rate_;
   m.map[context][0] = short_term_memory.nonstationary.Next(
       nonstationary_state, short_term_memory.new_bit);
   int run_map_state = m.map[context][1];
   m.run_map_predictions[run_map_state] +=
-      (short_term_memory.new_bit - m.run_map_predictions[run_map_state]) *
+      (short_term_memory.new_bit -
+       Sigmoid::Logistic(m.run_map_predictions[run_map_state])) *
       learning_rate_;
   m.map[context][1] =
       short_term_memory.run_map.Next(run_map_state, short_term_memory.new_bit);

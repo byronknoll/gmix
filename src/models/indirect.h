@@ -6,9 +6,9 @@
 
 #include "../model.h"
 
-// This model maps contexts to a one byte "state" (see
-// contexts/nonstationary.h). The state is then mapped to a 0-1 probability.
-// This model only supports contexts up to 24 bits.
+// This model maps contexts to two one byte "states" (see
+// contexts/nonstationary.h and contexts/run-map.h). The state is then mapped to
+// a 0-1 probability. This model only supports contexts up to 24 bits.
 // description: a short identifier for this model.
 class Indirect : public Model {
  public:

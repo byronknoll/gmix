@@ -120,6 +120,11 @@ void ShortTermMemory::SetPrediction(float prediction, int index) {
   active_models.push_back(index);
 }
 
+void ShortTermMemory::SetLogitPrediction(float prediction, int index) {
+  predictions[index] = prediction;
+  active_models.push_back(index);
+}
+
 int ShortTermMemory::AddMixer(std::string description, int layer_number,
                               bool enable_analysis, Model* ptr) {
   int index = 0;

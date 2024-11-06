@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iterator>
 #include <string>
+#include <filesystem>
 
 #include "../coder/decoder.h"
 #include "../coder/encoder.h"
@@ -366,6 +367,7 @@ void TestGeneration() {
 
 int main(int argc, char* argv[]) {
   srand(0xDEADBEEF);
+  std::filesystem::create_directory("data");
   TestCompression();
   TestCompressionWithRestart();
   TestCompressionWithCopyRestart();

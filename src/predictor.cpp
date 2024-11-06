@@ -48,7 +48,7 @@ void Predictor::AddModel(Model* model) {
 }
 
 void Predictor::AddIndirect() {
-  float learning_rate = 1.0f / 200;
+  float learning_rate = 0.02;
   bool enable_analysis = true;
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.last_byte, "Indirect(1 byte)",

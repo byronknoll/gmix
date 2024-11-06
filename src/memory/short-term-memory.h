@@ -34,7 +34,10 @@ struct ShortTermMemory : MemoryInterface {
   // Predictions for the next bit of data. Each prediction should be a
   // probability between 0 to 1.
   void SetPrediction(float prediction, int index);
+  // Predictions for the next bit of data (in logit space).
+  void SetLogitPrediction(float prediction, int index);
 
+  // This stores the model predictions for the next bit (in logit space).
   std::valarray<float> predictions;
   // This stores the index of models that are "active". Models which don't make
   // a prediction automatically will be considered inactive (skipped by the

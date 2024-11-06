@@ -14,7 +14,7 @@ struct IndirectMemory {
   // first is contexts/nonstationary.h
   // second is contexts/run-map.h
   std::unordered_map<unsigned int, std::array<unsigned char, 2>> map;
-  // Map from state to prediction.
+  // Map from state to prediction (in logit space).
   std::array<float, 256> nonstationary_predictions;
   std::array<float, 256> run_map_predictions;
 };
