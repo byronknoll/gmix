@@ -18,8 +18,7 @@ class Model;
 // this struct is as a way to share inputs/outputs between models.
 struct ShortTermMemory : MemoryInterface {
  public:
-  ShortTermMemory(const Sigmoid& sigmoid)
-      : ppm_predictions(1.0 / 256, 256), sigmoid(sigmoid) {}
+  ShortTermMemory() : ppm_predictions(1.0 / 256, 256) {}
   ~ShortTermMemory() {}
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
@@ -115,10 +114,8 @@ struct ShortTermMemory : MemoryInterface {
   // This is used for model analysis.
   std::vector<Model*> mixer_index_to_model_ptr;
 
-  const Sigmoid& sigmoid;  // Does not need serialization.
-
   Nonstationary nonstationary;  // Does not need serialization.
-  RunMap run_map;  // Does not need serialization.
+  RunMap run_map;               // Does not need serialization.
 
   // Longest match from Match models. Range is 0-7.
   // 0 = 0-3 bytes matched.

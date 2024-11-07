@@ -12,7 +12,7 @@
 #include "models/match.h"
 #include "models/mod_ppmd.h"
 
-Predictor::Predictor() : sigmoid_(100001), short_term_memory_(sigmoid_) {
+Predictor::Predictor() {
   srand(0xDEADBEEF);
   AddModel(new BasicContexts());
   AddIndirect();

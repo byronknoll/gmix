@@ -183,7 +183,7 @@ bool RunGeneration(const std::string& checkpoint_path,
     while (byte < 256) {
       int bit = 0;
       float r = Rand();
-      prob = Sigmoid::Logistic(Sigmoid::SlowLogit(prob) / temperature);
+      prob = Sigmoid::Logistic(Sigmoid::Logit(prob) / temperature);
       if (r < prob) bit = 1;
       byte += byte + bit;
       p.Perceive(bit);
