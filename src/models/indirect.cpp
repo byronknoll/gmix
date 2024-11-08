@@ -14,10 +14,10 @@ Indirect::Indirect(ShortTermMemory& short_term_memory,
   memory_index_ = long_term_memory.indirect.size();
   long_term_memory.indirect.push_back(IndirectMemory());
   for (int i = 0; i < 256; ++i) {
-    long_term_memory.indirect.back().nonstationary_predictions[i] = 0.5;
+    long_term_memory.indirect.back().nonstationary_predictions[i] = 0;
   }
   for (int i = 0; i < 256; ++i) {
-    long_term_memory.indirect.back().run_map_predictions[i] = 0.5;
+    long_term_memory.indirect.back().run_map_predictions[i] = 0;
   }
 }
 

@@ -32,8 +32,8 @@ struct MixerMemory {
 struct MatchMemory {
   // Map from context to "history" pointers. Each pointer is five bytes.
   std::unordered_map<unsigned int, std::array<unsigned char, 5>> map;
-  // Index is the match length, value is the probability. Longer match = more
-  // probability.
+  // Index is the match length, value is the probability (in logit space).
+  // Longer match = more probability.
   std::array<float, 256> predictions;
   // The number of times this match length has been observed.
   std::array<int, 256> counts;

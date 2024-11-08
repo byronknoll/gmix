@@ -58,7 +58,10 @@ void Predictor::AddIndirect() {
                         "Indirect(2 bytes)", enable_analysis));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.last_three_bytes_15_bit_hash,
-                        "Indirect(3 byte hash)", enable_analysis));
+                        "Indirect(3_15 byte hash)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.last_three_bytes_16_bit_hash,
+                        "Indirect(3_16 byte hash)", enable_analysis));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.last_four_bytes_15_bit_hash,
                         "Indirect(4 byte hash)", enable_analysis));
@@ -66,13 +69,25 @@ void Predictor::AddIndirect() {
                         short_term_memory_.last_five_bytes_15_bit_hash,
                         "Indirect(5 byte hash)", enable_analysis));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.last_six_bytes_15_bit_hash,
+                        "Indirect(6 byte hash)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.second_last_byte,
                         "Indirect(2nd last byte)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.third_last_byte,
+                        "Indirect(3rd last byte)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.fourth_last_byte,
+                        "Indirect(4th last byte)", enable_analysis));
 }
 
 void Predictor::AddMatch() {
-  int limit = 200;
+  int limit = 400;
   bool enable_analysis = true;
+  AddModel(new Match(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_byte, limit,
+                     "Match(1 byte)", enable_analysis));
   AddModel(new Match(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_two_bytes_context, limit,
                      "Match(2 bytes)", enable_analysis));
@@ -80,8 +95,14 @@ void Predictor::AddMatch() {
                      short_term_memory_.last_three_bytes_context, limit,
                      "Match(3 bytes)", enable_analysis));
   AddModel(new Match(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_four_bytes_21_bit_hash, limit,
+                     "Match(4 byte hash)", enable_analysis));
+  AddModel(new Match(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_five_bytes_21_bit_hash, limit,
                      "Match(5 byte hash)", enable_analysis));
+  AddModel(new Match(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_six_bytes_21_bit_hash, limit,
+                     "Match(6 byte hash)", enable_analysis));
 }
 
 void Predictor::AddDoubleIndirect() {
