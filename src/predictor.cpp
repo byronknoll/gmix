@@ -17,10 +17,10 @@ Predictor::Predictor() {
   srand(0xDEADBEEF);
   AddModel(new BasicContexts());
   AddIntervalContexts();
-  AddIndirect();
   AddModel(
       new PPMD::ModPPMD(short_term_memory_, long_term_memory_, 20, 2000, true));
   AddModel(new LstmModel(short_term_memory_, long_term_memory_, true));
+  AddIndirect();
   AddMatch();
   AddDoubleIndirect();
   AddMixers();
@@ -107,6 +107,27 @@ void Predictor::AddIndirect() {
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.fourth_last_byte,
                         "Indirect(4th last byte)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.fifth_last_byte,
+                        "Indirect(5th last byte)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.sixth_last_byte,
+                        "Indirect(6th last byte)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.seventh_last_byte,
+                        "Indirect(7th last byte)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.eighth_last_byte,
+                        "Indirect(8th last byte)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.ninth_last_byte,
+                        "Indirect(9th last byte)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.tenth_last_byte,
+                        "Indirect(10th last byte)", enable_analysis));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.lstm_prediction_context,
+                        "Indirect(lstm_prediction_context)", enable_analysis));
 }
 
 void Predictor::AddMatch() {
@@ -156,15 +177,25 @@ void Predictor::AddDoubleIndirect() {
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.indirect_2_16_2_16,
                         "Indirect(indirect_2_16_2_16)", enable_analysis));
+  AddModel(
+      new IndirectHash(2, 16, 3, 15, short_term_memory_.indirect_2_16_3_15));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.indirect_2_16_3_15,
+                        "Indirect(indirect_2_16_3_15)", enable_analysis));
   AddModel(new IndirectHash(3, 24, 1, 8, short_term_memory_.indirect_3_24_1_8));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.indirect_3_24_1_8,
                         "Indirect(indirect_3_24_1_8)", enable_analysis));
   AddModel(
-      new IndirectHash(4, 24, 2, 15, short_term_memory_.indirect_4_24_2_15));
+      new IndirectHash(4, 24, 2, 16, short_term_memory_.indirect_4_24_2_16));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.indirect_4_24_2_15,
-                        "Indirect(indirect_4_24_2_15)", enable_analysis));
+                        short_term_memory_.indirect_4_24_2_16,
+                        "Indirect(indirect_4_24_2_16)", enable_analysis));
+  AddModel(
+      new IndirectHash(4, 24, 3, 15, short_term_memory_.indirect_4_24_3_15));
+  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                        short_term_memory_.indirect_4_24_3_15,
+                        "Indirect(indirect_4_24_3_15)", enable_analysis));
 }
 
 void Predictor::AddMixers() {
@@ -236,6 +267,9 @@ void Predictor::AddMixers() {
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.interval_64_12, 0.005, 0,
                      "Mixer0(interval_64_12)", enable_analysis));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.lstm_prediction_context, 0.005, 0,
+                     "Mixer0(lstm_prediction)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.always_zero, 0.0005, 0,
                      "Mixer0(no context)", enable_analysis));

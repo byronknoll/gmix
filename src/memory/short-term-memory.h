@@ -88,6 +88,12 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int second_last_byte = 0;
   unsigned int third_last_byte = 0;
   unsigned int fourth_last_byte = 0;
+  unsigned int fifth_last_byte = 0;
+  unsigned int sixth_last_byte = 0;
+  unsigned int seventh_last_byte = 0;
+  unsigned int eighth_last_byte = 0;
+  unsigned int ninth_last_byte = 0;
+  unsigned int tenth_last_byte = 0;
   unsigned int last_byte_plus_recent = 0;
   unsigned int second_last_plus_recent = 0;
 
@@ -97,8 +103,10 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int indirect_1_8_3_15 = 0;
   unsigned int indirect_2_16_1_8 = 0;
   unsigned int indirect_2_16_2_16 = 0;
+  unsigned int indirect_2_16_3_15 = 0;
   unsigned int indirect_3_24_1_8 = 0;
-  unsigned int indirect_4_24_2_15 = 0;
+  unsigned int indirect_4_24_2_16 = 0;
+  unsigned int indirect_4_24_3_15 = 0;
 
   // Interval contexts:
   unsigned int interval_16_4 = 0;
@@ -146,6 +154,9 @@ struct ShortTermMemory : MemoryInterface {
 
   // This is the cross entropy for each model (used for analysis).
   std::valarray<double> entropy;
+
+  // Most likely next byte, according to LSTM.
+  unsigned int lstm_prediction_context = 0;
 };
 
 #endif  // SHORT_TERM_MEMORY_H_

@@ -22,6 +22,15 @@ void LstmModel::Predict(ShortTermMemory& short_term_memory,
     probs_ = lstm_.Predict(short_term_memory.last_byte, long_term_memory);
     top_ = 255;
     bot_ = 0;
+    // Update the "lstm_prediction" context.
+    float max_pred = 0;
+    short_term_memory.lstm_prediction_context = 0;
+    for (int i = 0; i < 256; ++i) {
+      if (probs_[i] > max_pred) {
+        max_pred = probs_[i];
+        short_term_memory.lstm_prediction_context = i;
+      }
+    }
   } else {
     if (short_term_memory.new_bit) {
       bot_ = mid_ + 1;

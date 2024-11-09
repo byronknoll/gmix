@@ -4,6 +4,12 @@
 
 void BasicContexts::ByteUpdate(ShortTermMemory& short_term_memory,
                                const LongTermMemory& long_term_memory) {
+  short_term_memory.tenth_last_byte = short_term_memory.ninth_last_byte;
+  short_term_memory.ninth_last_byte = short_term_memory.eighth_last_byte;
+  short_term_memory.eighth_last_byte = short_term_memory.seventh_last_byte;
+  short_term_memory.seventh_last_byte = short_term_memory.sixth_last_byte;
+  short_term_memory.sixth_last_byte = short_term_memory.fifth_last_byte;
+  short_term_memory.fifth_last_byte = short_term_memory.fourth_last_byte;
   short_term_memory.fourth_last_byte = short_term_memory.third_last_byte;
   short_term_memory.third_last_byte = short_term_memory.second_last_byte;
   short_term_memory.second_last_byte = short_term_memory.last_byte;

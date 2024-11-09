@@ -25,8 +25,10 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, indirect_1_8_3_15);
   Serialize(s, indirect_2_16_1_8);
   Serialize(s, indirect_2_16_2_16);
+  Serialize(s, indirect_2_16_3_15);
   Serialize(s, indirect_3_24_1_8);
-  Serialize(s, indirect_4_24_2_15);
+  Serialize(s, indirect_4_24_2_16);
+  Serialize(s, indirect_4_24_3_15);
   Serialize(s, interval_16_4);
   Serialize(s, interval_16_8);
   Serialize(s, interval_16_12);
@@ -40,6 +42,12 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, second_last_byte);
   Serialize(s, third_last_byte);
   Serialize(s, fourth_last_byte);
+  Serialize(s, fifth_last_byte);
+  Serialize(s, sixth_last_byte);
+  Serialize(s, seventh_last_byte);
+  Serialize(s, eighth_last_byte);
+  Serialize(s, ninth_last_byte);
+  Serialize(s, tenth_last_byte);
   Serialize(s, last_byte_plus_recent);
   Serialize(s, second_last_plus_recent);
   SerializeArray(s, mixer_layer0_outputs);
@@ -48,6 +56,7 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, longest_match);
   Serialize(s, bits_seen);
   SerializeArray(s, entropy);
+  Serialize(s, lstm_prediction_context);
 }
 
 void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
@@ -75,8 +84,10 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, indirect_1_8_3_15);
   Serialize(s, indirect_2_16_1_8);
   Serialize(s, indirect_2_16_2_16);
+  Serialize(s, indirect_2_16_3_15);
   Serialize(s, indirect_3_24_1_8);
-  Serialize(s, indirect_4_24_2_15);
+  Serialize(s, indirect_4_24_2_16);
+  Serialize(s, indirect_4_24_3_15);
   Serialize(s, interval_16_4);
   Serialize(s, interval_16_8);
   Serialize(s, interval_16_12);
@@ -90,6 +101,12 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, second_last_byte);
   Serialize(s, third_last_byte);
   Serialize(s, fourth_last_byte);
+  Serialize(s, fifth_last_byte);
+  Serialize(s, sixth_last_byte);
+  Serialize(s, seventh_last_byte);
+  Serialize(s, eighth_last_byte);
+  Serialize(s, ninth_last_byte);
+  Serialize(s, tenth_last_byte);
   Serialize(s, last_byte_plus_recent);
   Serialize(s, second_last_plus_recent);
   SerializeArray(s, mixer_layer0_outputs);
@@ -98,6 +115,7 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, longest_match);
   Serialize(s, bits_seen);
   SerializeArray(s, entropy);
+  Serialize(s, lstm_prediction_context);
 }
 
 void ShortTermMemory::Copy(const MemoryInterface* m) {
@@ -126,8 +144,10 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   indirect_1_8_3_15 = orig->indirect_1_8_3_15;
   indirect_2_16_1_8 = orig->indirect_2_16_1_8;
   indirect_2_16_2_16 = orig->indirect_2_16_2_16;
+  indirect_2_16_3_15 = orig->indirect_2_16_3_15;
   indirect_3_24_1_8 = orig->indirect_3_24_1_8;
-  indirect_4_24_2_15 = orig->indirect_4_24_2_15;
+  indirect_4_24_2_16 = orig->indirect_4_24_2_16;
+  indirect_4_24_3_15 = orig->indirect_4_24_3_15;
   interval_16_4 = orig->interval_16_4;
   interval_16_8 = orig->interval_16_8;
   interval_16_12 = orig->interval_16_12;
@@ -141,6 +161,12 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   second_last_byte = orig->second_last_byte;
   third_last_byte = orig->third_last_byte;
   fourth_last_byte = orig->fourth_last_byte;
+  fifth_last_byte = orig->fifth_last_byte;
+  sixth_last_byte = orig->sixth_last_byte;
+  seventh_last_byte = orig->seventh_last_byte;
+  eighth_last_byte = orig->eighth_last_byte;
+  ninth_last_byte = orig->ninth_last_byte;
+  tenth_last_byte = orig->tenth_last_byte;
   last_byte_plus_recent = orig->last_byte_plus_recent;
   second_last_plus_recent = orig->second_last_plus_recent;
   mixer_layer0_outputs = orig->mixer_layer0_outputs;
@@ -149,6 +175,7 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   longest_match = orig->longest_match;
   bits_seen = orig->bits_seen;
   entropy = orig->entropy;
+  lstm_prediction_context = orig->lstm_prediction_context;
 }
 
 int ShortTermMemory::AddPrediction(std::string description,
