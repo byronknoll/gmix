@@ -48,6 +48,7 @@ class Predictor {
   void AddMatch();
   void AddDoubleIndirect();
   void AddMixers();
+  void AddIntervalContexts();
   void AddModel(Model* model);
   void RunAnalysis(int bit);
   void UpdateEntropy(int bit, int index);

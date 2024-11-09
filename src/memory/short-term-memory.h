@@ -100,6 +100,18 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int indirect_3_24_1_8 = 0;
   unsigned int indirect_4_24_2_15 = 0;
 
+  // Interval contexts:
+  unsigned int interval_16_4 = 0;
+  unsigned int interval_16_8 = 0;
+  unsigned int interval_16_12 = 0;
+  unsigned int interval_32_3 = 0;
+  unsigned int interval_32_6 = 0;
+  unsigned int interval_32_9 = 0;
+  unsigned int interval_32_12 = 0;
+  unsigned int interval_64_4 = 0;
+  unsigned int interval_64_8 = 0;
+  unsigned int interval_64_12 = 0;
+
   // Predictions for the next byte of data from PPM. Each prediction is in the
   // 0-1 range.
   std::valarray<float> ppm_predictions;
