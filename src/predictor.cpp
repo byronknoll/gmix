@@ -98,33 +98,12 @@ void Predictor::AddIndirect() {
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.last_six_bytes_15_bit_hash,
                         "Indirect(6 byte hash)", enable_analysis));
-  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.second_last_byte,
-                        "Indirect(2nd last byte)", enable_analysis));
-  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.third_last_byte,
-                        "Indirect(3rd last byte)", enable_analysis));
-  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.fourth_last_byte,
-                        "Indirect(4th last byte)", enable_analysis));
-  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.fifth_last_byte,
-                        "Indirect(5th last byte)", enable_analysis));
-  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.sixth_last_byte,
-                        "Indirect(6th last byte)", enable_analysis));
-  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.seventh_last_byte,
-                        "Indirect(7th last byte)", enable_analysis));
-  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.eighth_last_byte,
-                        "Indirect(8th last byte)", enable_analysis));
-  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.ninth_last_byte,
-                        "Indirect(9th last byte)", enable_analysis));
-  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        short_term_memory_.tenth_last_byte,
-                        "Indirect(10th last byte)", enable_analysis));
+  for (int i = 1; i < 10; ++i) {
+    AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
+                          short_term_memory_.recent_bytes[i],
+                          "Indirect(recent byte(" + std::to_string(i) + "))",
+                          enable_analysis));
+  }
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         short_term_memory_.lstm_prediction_context,
                         "Indirect(lstm_prediction_context)", enable_analysis));
@@ -205,7 +184,7 @@ void Predictor::AddMixers() {
                      short_term_memory_.last_byte, 0.005, 0,
                      "Mixer0(last byte)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.fourth_last_byte, 0.005, 0,
+                     short_term_memory_.recent_bytes[3], 0.005, 0,
                      "Mixer0(4th last byte)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.second_last_plus_recent, 0.003, 0,
@@ -217,7 +196,7 @@ void Predictor::AddMixers() {
                      short_term_memory_.indirect_3_24_1_8, 0.005, 0,
                      "Mixer0(indirect_3_24_1_8)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.second_last_byte, 0.005, 0,
+                     short_term_memory_.recent_bytes[1], 0.005, 0,
                      "Mixer0(2nd last byte)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.longest_match, 0.0005, 0,
@@ -226,7 +205,7 @@ void Predictor::AddMixers() {
                      short_term_memory_.last_two_bytes_context, 0.005, 0,
                      "Mixer0(2 bytes)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.third_last_byte, 0.005, 0,
+                     short_term_memory_.recent_bytes[2], 0.005, 0,
                      "Mixer0(3rd last byte)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_three_bytes_15_bit_hash, 0.005, 0,
@@ -276,7 +255,7 @@ void Predictor::AddMixers() {
 
   // Second layer.
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.second_last_byte, 0.005, 1,
+                     short_term_memory_.recent_bytes[1], 0.005, 1,
                      "Mixer1(2nd last byte)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.always_zero, 0.005, 1,
@@ -285,7 +264,7 @@ void Predictor::AddMixers() {
                      short_term_memory_.bit_context, 0.005, 1,
                      "Mixer1(recent_bits)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.third_last_byte, 0.005, 1,
+                     short_term_memory_.recent_bytes[2], 0.005, 1,
                      "Mixer1(3rd last byte)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_byte, 0.005, 1,

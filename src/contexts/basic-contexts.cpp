@@ -4,16 +4,17 @@
 
 void BasicContexts::ByteUpdate(ShortTermMemory& short_term_memory,
                                const LongTermMemory& long_term_memory) {
-  short_term_memory.tenth_last_byte = short_term_memory.ninth_last_byte;
-  short_term_memory.ninth_last_byte = short_term_memory.eighth_last_byte;
-  short_term_memory.eighth_last_byte = short_term_memory.seventh_last_byte;
-  short_term_memory.seventh_last_byte = short_term_memory.sixth_last_byte;
-  short_term_memory.sixth_last_byte = short_term_memory.fifth_last_byte;
-  short_term_memory.fifth_last_byte = short_term_memory.fourth_last_byte;
-  short_term_memory.fourth_last_byte = short_term_memory.third_last_byte;
-  short_term_memory.third_last_byte = short_term_memory.second_last_byte;
-  short_term_memory.second_last_byte = short_term_memory.last_byte;
   short_term_memory.last_byte = short_term_memory.recent_bits - 256;
+  ++short_term_memory.rotating_history_pos;
+  if (short_term_memory.rotating_history_pos ==
+      short_term_memory.rotating_history.size()) {
+    short_term_memory.rotating_history_pos = 0;
+  }
+  short_term_memory.rotating_history[short_term_memory.rotating_history_pos] =
+      short_term_memory.last_byte;
+  for (int i = 0; i < short_term_memory.recent_bytes.size(); ++i) {
+    short_term_memory.recent_bytes[i] = short_term_memory.GetRecentByte(i);
+  }
   short_term_memory.recent_bits = 1;
   short_term_memory.last_two_bytes_context =
       ((short_term_memory.last_two_bytes_context % (1 << 8)) << 8) +
@@ -66,7 +67,7 @@ void BasicContexts::Predict(ShortTermMemory& short_term_memory,
   short_term_memory.last_byte_plus_recent =
       (short_term_memory.last_byte << 8) + short_term_memory.bit_context;
   short_term_memory.second_last_plus_recent =
-      (short_term_memory.second_last_byte << 8) + short_term_memory.bit_context;
+      (short_term_memory.recent_bytes[1] << 8) + short_term_memory.bit_context;
   short_term_memory.longest_match = 0;
 }
 

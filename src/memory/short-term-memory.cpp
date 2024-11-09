@@ -39,15 +39,6 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, interval_64_4);
   Serialize(s, interval_64_8);
   Serialize(s, interval_64_12);
-  Serialize(s, second_last_byte);
-  Serialize(s, third_last_byte);
-  Serialize(s, fourth_last_byte);
-  Serialize(s, fifth_last_byte);
-  Serialize(s, sixth_last_byte);
-  Serialize(s, seventh_last_byte);
-  Serialize(s, eighth_last_byte);
-  Serialize(s, ninth_last_byte);
-  Serialize(s, tenth_last_byte);
   Serialize(s, last_byte_plus_recent);
   Serialize(s, second_last_plus_recent);
   SerializeArray(s, mixer_layer0_outputs);
@@ -57,6 +48,9 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, bits_seen);
   SerializeArray(s, entropy);
   Serialize(s, lstm_prediction_context);
+  SerializeArray(s, rotating_history);
+  Serialize(s, rotating_history_pos);
+  SerializeArray(s, recent_bytes);
 }
 
 void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
@@ -98,15 +92,6 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, interval_64_4);
   Serialize(s, interval_64_8);
   Serialize(s, interval_64_12);
-  Serialize(s, second_last_byte);
-  Serialize(s, third_last_byte);
-  Serialize(s, fourth_last_byte);
-  Serialize(s, fifth_last_byte);
-  Serialize(s, sixth_last_byte);
-  Serialize(s, seventh_last_byte);
-  Serialize(s, eighth_last_byte);
-  Serialize(s, ninth_last_byte);
-  Serialize(s, tenth_last_byte);
   Serialize(s, last_byte_plus_recent);
   Serialize(s, second_last_plus_recent);
   SerializeArray(s, mixer_layer0_outputs);
@@ -116,6 +101,9 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, bits_seen);
   SerializeArray(s, entropy);
   Serialize(s, lstm_prediction_context);
+  SerializeArray(s, rotating_history);
+  Serialize(s, rotating_history_pos);
+  SerializeArray(s, recent_bytes);
 }
 
 void ShortTermMemory::Copy(const MemoryInterface* m) {
@@ -158,15 +146,6 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   interval_64_4 = orig->interval_64_4;
   interval_64_8 = orig->interval_64_8;
   interval_64_12 = orig->interval_64_12;
-  second_last_byte = orig->second_last_byte;
-  third_last_byte = orig->third_last_byte;
-  fourth_last_byte = orig->fourth_last_byte;
-  fifth_last_byte = orig->fifth_last_byte;
-  sixth_last_byte = orig->sixth_last_byte;
-  seventh_last_byte = orig->seventh_last_byte;
-  eighth_last_byte = orig->eighth_last_byte;
-  ninth_last_byte = orig->ninth_last_byte;
-  tenth_last_byte = orig->tenth_last_byte;
   last_byte_plus_recent = orig->last_byte_plus_recent;
   second_last_plus_recent = orig->second_last_plus_recent;
   mixer_layer0_outputs = orig->mixer_layer0_outputs;
@@ -176,6 +155,9 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   bits_seen = orig->bits_seen;
   entropy = orig->entropy;
   lstm_prediction_context = orig->lstm_prediction_context;
+  rotating_history = orig->rotating_history;
+  rotating_history_pos = orig->rotating_history_pos;
+  recent_bytes = orig->recent_bytes;
 }
 
 int ShortTermMemory::AddPrediction(std::string description,
@@ -213,4 +195,10 @@ int ShortTermMemory::AddMixer(std::string description, int layer_number,
   model_enable_analysis.push_back(enable_analysis);
   mixer_index_to_model_ptr.push_back(ptr);
   return index;
+}
+
+unsigned int ShortTermMemory::GetRecentByte(int num_bytes_ago) {
+  int pos = rotating_history_pos - num_bytes_ago;
+  if (pos < 0) pos += rotating_history.size();
+  return rotating_history[pos];
 }

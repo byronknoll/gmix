@@ -18,7 +18,10 @@ class Model;
 // this struct is as a way to share inputs/outputs between models.
 struct ShortTermMemory : MemoryInterface {
  public:
-  ShortTermMemory() : ppm_predictions(1.0 / 256, 256) {}
+  ShortTermMemory()
+      : ppm_predictions(1.0 / 256, 256),
+        rotating_history(1000),
+        recent_bytes(10) {}
   ~ShortTermMemory() {}
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
@@ -85,15 +88,6 @@ struct ShortTermMemory : MemoryInterface {
   unsigned long long last_six_bytes_context = 0;
   unsigned int last_six_bytes_15_bit_hash = 0;
   unsigned int last_six_bytes_21_bit_hash = 0;
-  unsigned int second_last_byte = 0;
-  unsigned int third_last_byte = 0;
-  unsigned int fourth_last_byte = 0;
-  unsigned int fifth_last_byte = 0;
-  unsigned int sixth_last_byte = 0;
-  unsigned int seventh_last_byte = 0;
-  unsigned int eighth_last_byte = 0;
-  unsigned int ninth_last_byte = 0;
-  unsigned int tenth_last_byte = 0;
   unsigned int last_byte_plus_recent = 0;
   unsigned int second_last_plus_recent = 0;
 
@@ -157,6 +151,18 @@ struct ShortTermMemory : MemoryInterface {
 
   // Most likely next byte, according to LSTM.
   unsigned int lstm_prediction_context = 0;
+
+  std::vector<unsigned char> rotating_history;
+  unsigned int rotating_history_pos = 0;
+  // Returns recent bytes from the input history. Limit =
+  // rotating_history.size().
+  // num_bytes_ago=0: last byte
+  // num_bytes_ago=1: 2nd last byte
+  unsigned int GetRecentByte(int num_bytes_ago);
+  // Recent bytes from the input history.
+  // index 0: last byte
+  // index 1: 2nd last byte
+  std::vector<unsigned int> recent_bytes;
 };
 
 #endif  // SHORT_TERM_MEMORY_H_
