@@ -108,11 +108,27 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int interval_16_12 = 0;
   unsigned int interval_32_3 = 0;
   unsigned int interval_32_6 = 0;
-  unsigned int interval_32_9 = 0;
   unsigned int interval_32_12 = 0;
   unsigned int interval_64_4 = 0;
   unsigned int interval_64_8 = 0;
   unsigned int interval_64_12 = 0;
+
+  // Skip contexts:
+  unsigned int skip_1_2 = 0;
+  unsigned int skip_1_2_3 = 0;
+  unsigned int skip_0_2 = 0;
+  unsigned int skip_0_2_3 = 0;
+  unsigned int skip_1_2_3_4 = 0;
+  unsigned int skip_0_3 = 0;
+  unsigned int skip_0_4 = 0;
+  unsigned int skip_0_2_3_4 = 0;
+  unsigned int skip_0_3_4 = 0;
+  unsigned int skip_0_5 = 0;
+  unsigned int skip_0_6 = 0;
+  unsigned int skip_0_7 = 0;
+  unsigned int skip_0_1_3_4 = 0;
+  unsigned int skip_0_4_5 = 0;
+  unsigned int skip_0_1_2_4 = 0;
 
   // Predictions for the next byte of data from PPM. Each prediction is in the
   // 0-1 range.

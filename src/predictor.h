@@ -45,6 +45,7 @@ class Predictor {
   int sample_frequency_ = 0;
 
   void AddIndirect();
+  void AddSkip();
   void AddMatch();
   void AddDoubleIndirect();
   void AddMixers();

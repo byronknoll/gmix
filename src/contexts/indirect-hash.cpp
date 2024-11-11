@@ -44,11 +44,7 @@ void IndirectHash::WriteToDisk(std::ofstream* s) {
     Serialize(s, map_[key]);
   }
   Serialize(s, outer_context_);
-  Serialize(s, outer_mod_);
-  Serialize(s, inner_mod_);
   Serialize(s, outer_hash_);
-  Serialize(s, outer_hash_mod_);
-  Serialize(s, inner_hash_mod_);
 }
 
 void IndirectHash::ReadFromDisk(std::ifstream* s) {
@@ -63,22 +59,14 @@ void IndirectHash::ReadFromDisk(std::ifstream* s) {
     map_[key] = val;
   }
   Serialize(s, outer_context_);
-  Serialize(s, outer_mod_);
-  Serialize(s, inner_mod_);
   Serialize(s, outer_hash_);
-  Serialize(s, outer_hash_mod_);
-  Serialize(s, inner_hash_mod_);
 }
 
 void IndirectHash::Copy(const MemoryInterface* m) {
   const IndirectHash* orig = static_cast<const IndirectHash*>(m);
   map_ = orig->map_;
   outer_context_ = orig->outer_context_;
-  outer_mod_ = orig->outer_mod_;
-  inner_mod_ = orig->inner_mod_;
   outer_hash_ = orig->outer_hash_;
-  outer_hash_mod_ = orig->outer_hash_mod_;
-  inner_hash_mod_ = orig->inner_hash_mod_;
 }
 
 unsigned long long IndirectHash::GetMemoryUsage(
