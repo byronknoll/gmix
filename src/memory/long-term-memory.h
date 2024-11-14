@@ -10,12 +10,18 @@
 #include "../memory-interface.h"
 
 struct IndirectMemory {
-  // Map from context to two (one byte) states:
-  // first is contexts/nonstationary.h
-  // second is contexts/run-map.h
-  std::unordered_map<unsigned int, std::array<unsigned char, 2>> map;
+  IndirectMemory(unsigned long long table_size)
+      : nonstationary_table(table_size, 255), run_map_table(table_size, 0) {
+    nonstationary_table.shrink_to_fit();
+    run_map_table.shrink_to_fit();
+  }
+  // Map from context to nonstationary state:
+  std::vector<unsigned char> nonstationary_table;
+  // Map from context to run map state:
+  std::vector<unsigned char> run_map_table;
   // Map from state to prediction (in logit space).
   std::array<float, 256> nonstationary_predictions;
+  // Map from state to prediction (in logit space).
   std::array<float, 256> run_map_predictions;
 };
 

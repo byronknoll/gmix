@@ -9,11 +9,14 @@
 // This model maps contexts to two one byte "states" (see
 // contexts/nonstationary.h and contexts/run-map.h). The state is then mapped to
 // a probability. This model only supports contexts up to 24 bits.
-// description: a short identifier for this model.
 class Indirect : public Model {
  public:
+  // table_size: amount of memory to use for storing states. The context table
+  // size will be 256 times larger than this value.
+  // description: a short identifier for this model.
   Indirect(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-           float learning_rate, unsigned int& context, std::string description,
+           float learning_rate, unsigned long long table_size,
+           unsigned int& context, std::string description,
            bool enable_analysis);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);

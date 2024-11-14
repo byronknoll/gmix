@@ -4,7 +4,7 @@
 #include <array>
 
 // Table of state transitions for indirect model. The state is one byte and
-// represents a bit history.
+// represents a bit history. State range: 0-254.
 class Nonstationary {
  public:
   Nonstationary();

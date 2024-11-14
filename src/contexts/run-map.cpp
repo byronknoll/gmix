@@ -7,7 +7,7 @@ RunMap::RunMap() {
       if (state < 127)
         ++state;
       else if (state >= 128)
-        state = 0;
+        state = 1;
     } else {
       if (state < 128)
         state = 128;

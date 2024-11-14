@@ -3,8 +3,10 @@
 
 #include <array>
 
-// Table of state transitions for indirect model. The state is one byte and
-// represents a bit history.
+// Table of state transitions for indirect model. The state keeps track of
+// sequences of consecutive 0s or 1s:
+// 0-127: number of consecutive "0" bits
+// 128-255: number of consecutive "1" bits (after subtracting 127)
 class RunMap {
  public:
   RunMap();

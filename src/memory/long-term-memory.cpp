@@ -6,17 +6,27 @@
 void LongTermMemory::WriteToDisk(std::ofstream* s) {
   auto start = s->tellp();
   for (auto& mem : indirect) {
-    std::set<unsigned int> keys;  // use a set to get consistent key order.
-    for (auto& it : mem.map) {
-      keys.insert(it.first);
+    std::vector<unsigned int> keys;
+    for (int i = 0; i < mem.nonstationary_table.size(); ++i) {
+      if (mem.nonstationary_table[i] != 255) {
+        keys.push_back(i);
+      }
     }
     unsigned int size = keys.size();
     Serialize(s, size);
-    for (unsigned int key : keys) {
-      Serialize(s, key);
-      Serialize(s, mem.map[key][0]);
-      Serialize(s, mem.map[key][1]);
+    if (size < mem.nonstationary_table.size() / 3) {
+      // If the table is sparse, encode keys+values.
+      for (unsigned int key : keys) {
+        Serialize(s, key);
+        Serialize(s, mem.nonstationary_table[key]);
+        Serialize(s, mem.run_map_table[key]);
+      }
+    } else {
+      // If the table is dense, encode all values.
+      SerializeArray(s, mem.nonstationary_table);
+      SerializeArray(s, mem.run_map_table);
     }
+
     SerializeArray(s, mem.nonstationary_predictions);
     SerializeArray(s, mem.run_map_predictions);
   }
@@ -81,14 +91,21 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
   for (auto& mem : indirect) {
     unsigned int size;
     Serialize(s, size);
-    for (int i = 0; i < size; ++i) {
-      unsigned int key;
-      Serialize(s, key);
-      unsigned char state;
-      Serialize(s, state);
-      mem.map[key][0] = state;
-      Serialize(s, state);
-      mem.map[key][1] = state;
+    if (size < mem.nonstationary_table.size() / 3) {
+      // If the table is sparse, encode keys+values.
+      for (int i = 0; i < size; ++i) {
+        unsigned int key;
+        Serialize(s, key);
+        unsigned char state;
+        Serialize(s, state);
+        mem.nonstationary_table[key] = state;
+        Serialize(s, state);
+        mem.run_map_table[key] = state;
+      }
+    } else {
+      // If the table is dense, encode all values.
+      SerializeArray(s, mem.nonstationary_table);
+      SerializeArray(s, mem.run_map_table);
     }
     SerializeArray(s, mem.nonstationary_predictions);
     SerializeArray(s, mem.run_map_predictions);
@@ -145,8 +162,10 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
 void LongTermMemory::Copy(const MemoryInterface* m) {
   const LongTermMemory* orig = static_cast<const LongTermMemory*>(m);
   for (int i = 0; i < indirect.size(); ++i) {
-    indirect[i].map = orig->indirect[i].map;
-    indirect[i].nonstationary_predictions = orig->indirect[i].nonstationary_predictions;
+    indirect[i].nonstationary_table = orig->indirect[i].nonstationary_table;
+    indirect[i].run_map_table = orig->indirect[i].run_map_table;
+    indirect[i].nonstationary_predictions =
+        orig->indirect[i].nonstationary_predictions;
     indirect[i].run_map_predictions = orig->indirect[i].run_map_predictions;
   }
 
