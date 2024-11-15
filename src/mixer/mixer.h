@@ -12,10 +12,12 @@
 class Mixer : public Model {
  public:
   // layer_number: 0: first layer, 1: second layer, 2: final layer
+  // table_size: the size of the table used for storing context matches.
   // description: a short identifier for this mixer.
   Mixer(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
         unsigned int& context, float learning_rate, int layer_number,
-        std::string description, bool enable_analysis);
+        unsigned long long table_size, std::string description,
+        bool enable_analysis);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
@@ -28,7 +30,13 @@ class Mixer : public Model {
 
  private:
   unsigned int& context_;
-  unsigned long long max_steps_, steps_;
+  // Each context is keeps track of how many times it is seen. max_steps_ is the
+  // max of those.
+  unsigned long long max_steps_;
+  // steps_ is the number of times "Learn" has been called.
+  unsigned long long steps_;
+  // contexts_seen_ is the number of unique contexts which have been seen.
+  unsigned long long contexts_seen_ = 0;
   int output_index_, memory_index_, weight_size_;
   float learning_rate_;
   int layer_number_;

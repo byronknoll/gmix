@@ -3,7 +3,6 @@
 
 #include <array>
 #include <memory>
-#include <unordered_map>
 #include <valarray>
 #include <vector>
 
@@ -32,11 +31,16 @@ struct MixerData {
 };
 
 struct MixerMemory {
-  std::unordered_map<unsigned int, std::unique_ptr<MixerData>> mixer_map;
+  MixerMemory(unsigned long long table_size) : mixer_table(table_size) {
+    mixer_table.shrink_to_fit();
+  }
+  // Map from context to MixerData. MixerData will only be allocated when a
+  // context is seen.
+  std::vector<std::unique_ptr<MixerData>> mixer_table;
 };
 
 struct MatchMemory {
-  MatchMemory(unsigned long long size) : table(size, {0,0,0,0,0}) {
+  MatchMemory(unsigned long long size) : table(size, {0, 0, 0, 0, 0}) {
     table.shrink_to_fit();
   };
   // Map from context to "history" pointers. Each pointer is five bytes.

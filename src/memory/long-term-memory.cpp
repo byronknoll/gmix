@@ -34,19 +34,22 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
 
   start = s->tellp();
   for (auto& mixer : mixers) {
-    unsigned int mixer_size = mixer.mixer_map.size();
-    Serialize(s, mixer_size);
-    if (mixer_size == 0) continue;
-    unsigned int input_size = mixer.mixer_map.begin()->second->weights.size();
-    Serialize(s, input_size);
-    std::set<unsigned int> keys;  // use a set to get consistent key order.
-    for (auto& it : mixer.mixer_map) {
-      keys.insert(it.first);
+    unsigned int input_size = 0;
+    std::vector<unsigned int> keys;
+    for (int i = 0; i < mixer.mixer_table.size(); ++i) {
+      auto& ptr = mixer.mixer_table[i];
+      if (ptr) {
+        keys.push_back(i);
+        input_size = ptr->weights.size();
+      }
     }
+    unsigned int mixer_size = keys.size();
+    Serialize(s, mixer_size);
+    Serialize(s, input_size);
     for (unsigned int context : keys) {
       Serialize(s, context);
-      Serialize(s, mixer.mixer_map[context]->steps);
-      SerializeArray(s, mixer.mixer_map[context]->weights);
+      Serialize(s, mixer.mixer_table[context]->steps);
+      SerializeArray(s, mixer.mixer_table[context]->weights);
     }
   }
   printf("Mixers size: %ld\n", s->tellp() - start);
@@ -86,7 +89,7 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
     }
     unsigned int size = keys.size();
     Serialize(s, size);
-    if (size < (5.0/9.0) * mem.table.size()) {
+    if (size < (5.0 / 9.0) * mem.table.size()) {
       // If the table is sparse, encode keys+values.
       for (unsigned int key : keys) {
         Serialize(s, key);
@@ -129,18 +132,19 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
   }
 
   for (auto& mixer : mixers) {
-    mixer.mixer_map.clear();
-    unsigned int mixer_size;
+    unsigned int mixer_size = mixer.mixer_table.size();
+    mixer.mixer_table.clear();
+    mixer.mixer_table.resize(mixer_size);
+    mixer.mixer_table.shrink_to_fit();
     Serialize(s, mixer_size);
     unsigned int input_size;
     Serialize(s, input_size);
     for (int i = 0; i < mixer_size; ++i) {
       unsigned int context;
       Serialize(s, context);
-      mixer.mixer_map[context] =
-          std::unique_ptr<MixerData>(new MixerData(input_size));
-      Serialize(s, mixer.mixer_map[context]->steps);
-      SerializeArray(s, mixer.mixer_map[context]->weights);
+      mixer.mixer_table[context].reset(new MixerData(input_size));
+      Serialize(s, mixer.mixer_table[context]->steps);
+      SerializeArray(s, mixer.mixer_table[context]->weights);
     }
   }
 
@@ -166,7 +170,7 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
   for (auto& mem : match_memory) {
     unsigned int size;
     Serialize(s, size);
-    if (size < (5.0/9.0) * mem.table.size()) {
+    if (size < (5.0 / 9.0) * mem.table.size()) {
       // If the table is sparse, encode keys+values.
       for (int i = 0; i < size; ++i) {
         unsigned int key;
@@ -195,12 +199,17 @@ void LongTermMemory::Copy(const MemoryInterface* m) {
   }
 
   for (int i = 0; i < mixers.size(); ++i) {
-    mixers[i].mixer_map.clear();
-    for (const auto& it : orig->mixers[i].mixer_map) {
-      mixers[i].mixer_map[it.first] =
-          std::unique_ptr<MixerData>(new MixerData(it.second->weights.size()));
-      mixers[i].mixer_map[it.first]->steps = it.second->steps;
-      mixers[i].mixer_map[it.first]->weights = it.second->weights;
+    mixers[i].mixer_table.clear();
+    mixers[i].mixer_table.resize(orig->mixers[i].mixer_table.size());
+    mixers[i].mixer_table.shrink_to_fit();
+    for (int j = 0; j < orig->mixers[i].mixer_table.size(); ++j) {
+      auto& orig_ptr = orig->mixers[i].mixer_table[j];
+      if (orig_ptr) {
+        auto& ptr = mixers[i].mixer_table[j];
+        ptr.reset(new MixerData(orig_ptr->weights.size()));
+        ptr->steps = orig_ptr->steps;
+        ptr->weights = orig_ptr->weights;
+      }
     }
   }
 
