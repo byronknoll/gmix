@@ -1,8 +1,9 @@
 #include "match.h"
 
 Match::Match(ShortTermMemory& short_term_memory,
-             LongTermMemory& long_term_memory, const unsigned int& byte_context,
-             int limit, std::string description, bool enable_analysis)
+             LongTermMemory& long_term_memory, unsigned long long table_size,
+             const unsigned int& byte_context, int limit,
+             std::string description, bool enable_analysis)
     : byte_context_(byte_context),
       cur_match_(0),
       cur_byte_(0),
@@ -13,7 +14,7 @@ Match::Match(ShortTermMemory& short_term_memory,
   prediction_index_ =
       short_term_memory.AddPrediction(description, enable_analysis, this);
   memory_index_ = long_term_memory.match_memory.size();
-  long_term_memory.match_memory.push_back(MatchMemory());
+  long_term_memory.match_memory.push_back(MatchMemory(table_size));
   auto& memory = long_term_memory.match_memory.back();
   for (int i = 0; i < 256; ++i) {
     memory.predictions[i] = 0.5 + (i + 0.5) / 512;
@@ -41,16 +42,11 @@ void Match::Predict(ShortTermMemory& short_term_memory,
     }
     if (match_length_ < 8) {
       // There was a mismatch, so we need to find a new match.
-      const auto& it = match_memory.map.find(byte_context_);
-      if (it != match_memory.map.end()) {
-        // Decode the five byte history pointer.
-        cur_match_ = it->second[0] + (1 << 8) * it->second[1] +
-                     (1 << 16) * it->second[2] + (1 << 24) * it->second[3] +
-                     (1ULL << 32) * it->second[4];
-      } else {
-        // We couldn't find a match.
-        cur_match_ = 0;
-      }
+      const auto& it =
+          match_memory.table[byte_context_ % match_memory.table.size()];
+      // Decode the five byte history pointer.
+      cur_match_ = it[0] + (1 << 8) * it[1] + (1 << 16) * it[2] +
+                   (1 << 24) * it[3] + (1ULL << 32) * it[4];
     } else {
       // The last 8 bits matched, so continue matching the next byte.
       ++cur_match_;
@@ -101,7 +97,7 @@ void Match::Learn(const ShortTermMemory& short_term_memory,
       return;
     }
     auto& match_memory = long_term_memory.match_memory[memory_index_];
-    auto& loc = match_memory.map[byte_context_];
+    auto& loc = match_memory.table[byte_context_ % match_memory.table.size()];
     unsigned long long pos = long_term_memory.history.size() - 1;
     // Encode the five byte history pointer.
     loc[0] = pos;
@@ -140,6 +136,6 @@ unsigned long long Match::GetMemoryUsage(
   unsigned long long usage = 27;
   usage += 256 * 4;  // predictions
   usage += 256 * 4;  // counts
-  usage += 9 * long_term_memory.match_memory[memory_index_].map.size();
+  usage += 5 * long_term_memory.match_memory[memory_index_].table.size();
   return usage;
 }

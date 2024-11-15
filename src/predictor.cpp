@@ -191,30 +191,30 @@ void Predictor::AddSkip() {
 void Predictor::AddMatch() {
   int limit = 400;
   bool enable_analysis = false;
-  AddModel(new Match(short_term_memory_, long_term_memory_,
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1<<8,
                      short_term_memory_.last_byte, limit, "Match(1 byte)",
                      enable_analysis));
-  AddModel(new Match(short_term_memory_, long_term_memory_,
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1<<16,
                      short_term_memory_.last_two_bytes_hash, limit,
                      "Match(2 bytes)", enable_analysis));
   AddModel(
       new SkipContext({0, 1, 2}, 24, short_term_memory_.last_three_bytes_hash));
-  AddModel(new Match(short_term_memory_, long_term_memory_,
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1<<24,
                      short_term_memory_.last_three_bytes_hash, limit,
                      "Match(3 bytes)", enable_analysis));
   AddModel(new SkipContext({0, 1, 2, 3}, 21,
                            short_term_memory_.last_four_bytes_21_bit_hash));
-  AddModel(new Match(short_term_memory_, long_term_memory_,
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1<<21,
                      short_term_memory_.last_four_bytes_21_bit_hash, limit,
                      "Match(4 byte hash)", enable_analysis));
   AddModel(new SkipContext({0, 1, 2, 3, 4}, 21,
                            short_term_memory_.last_five_bytes_21_bit_hash));
-  AddModel(new Match(short_term_memory_, long_term_memory_,
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1<<21,
                      short_term_memory_.last_five_bytes_21_bit_hash, limit,
                      "Match(5 byte hash)", enable_analysis));
   AddModel(new SkipContext({0, 1, 2, 3, 4, 5}, 21,
                            short_term_memory_.last_six_bytes_21_bit_hash));
-  AddModel(new Match(short_term_memory_, long_term_memory_,
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1<<21,
                      short_term_memory_.last_six_bytes_21_bit_hash, limit,
                      "Match(6 byte hash)", enable_analysis));
 }

@@ -71,15 +71,32 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
     Serialize(s, history[i]);
   }
   for (auto& mem : match_memory) {
-    std::set<unsigned int> keys;  // use a set to get consistent key order.
-    for (auto& it : mem.map) {
-      keys.insert(it.first);
+    std::vector<unsigned int> keys;
+    for (int i = 0; i < mem.table.size(); ++i) {
+      bool valid = false;
+      for (int j = 0; j < 5; ++j) {
+        if (mem.table[i][j] != 0) {
+          valid = true;
+          break;
+        }
+      }
+      if (valid) {
+        keys.push_back(i);
+      }
     }
     unsigned int size = keys.size();
     Serialize(s, size);
-    for (unsigned int key : keys) {
-      Serialize(s, key);
-      SerializeArray(s, mem.map[key]);
+    if (size < (5.0/9.0) * mem.table.size()) {
+      // If the table is sparse, encode keys+values.
+      for (unsigned int key : keys) {
+        Serialize(s, key);
+        SerializeArray(s, mem.table[key]);
+      }
+    } else {
+      // If the table is dense, encode all values.
+      for (int i = 0; i < mem.table.size(); ++i) {
+        SerializeArray(s, mem.table[i]);
+      }
     }
     SerializeArray(s, mem.predictions);
     SerializeArray(s, mem.counts);
@@ -149,10 +166,18 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
   for (auto& mem : match_memory) {
     unsigned int size;
     Serialize(s, size);
-    for (unsigned int i = 0; i < size; ++i) {
-      unsigned int key;
-      Serialize(s, key);
-      SerializeArray(s, mem.map[key]);
+    if (size < (5.0/9.0) * mem.table.size()) {
+      // If the table is sparse, encode keys+values.
+      for (int i = 0; i < size; ++i) {
+        unsigned int key;
+        Serialize(s, key);
+        SerializeArray(s, mem.table[key]);
+      }
+    } else {
+      // If the table is dense, encode all values.
+      for (int i = 0; i < mem.table.size(); ++i) {
+        SerializeArray(s, mem.table[i]);
+      }
     }
     SerializeArray(s, mem.predictions);
     SerializeArray(s, mem.counts);
@@ -185,7 +210,7 @@ void LongTermMemory::Copy(const MemoryInterface* m) {
   }
   history = orig->history;
   for (int i = 0; i < match_memory.size(); ++i) {
-    match_memory[i].map = orig->match_memory[i].map;
+    match_memory[i].table = orig->match_memory[i].table;
     match_memory[i].predictions = orig->match_memory[i].predictions;
     match_memory[i].counts = orig->match_memory[i].counts;
   }

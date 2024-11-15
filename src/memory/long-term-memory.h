@@ -36,8 +36,11 @@ struct MixerMemory {
 };
 
 struct MatchMemory {
+  MatchMemory(unsigned long long size) : table(size, {0,0,0,0,0}) {
+    table.shrink_to_fit();
+  };
   // Map from context to "history" pointers. Each pointer is five bytes.
-  std::unordered_map<unsigned int, std::array<unsigned char, 5>> map;
+  std::vector<std::array<unsigned char, 5>> table;
   // Index is the match length, value is the probability (in logit space).
   // Longer match = more probability.
   std::array<float, 256> predictions;
@@ -68,7 +71,7 @@ struct LongTermMemory : MemoryInterface {
   std::vector<NeuronLayerWeights> neuron_layer_weights;
   std::valarray<std::valarray<std::valarray<float>>> lstm_output_layer;
 
-  // A complete history of every byte of input.
+  // A history of input bytes (with some deduplication to save memory).
   std::vector<unsigned char> history;
 
   std::vector<MatchMemory> match_memory;
