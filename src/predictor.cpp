@@ -81,36 +81,32 @@ void Predictor::AddIndirect() {
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 8, short_term_memory_.last_byte,
                         "Indirect(1 byte)", enable_analysis));
-  AddModel(new SkipContext({0, 1}, 16, short_term_memory_.last_two_bytes_hash));
+  AddModel(new SkipContext({0, 1}, short_term_memory_.last_two_bytes_hash));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.last_two_bytes_hash,
                         "Indirect(2 bytes)", enable_analysis));
-  AddModel(new SkipContext({0, 1, 2}, 15,
-                           short_term_memory_.last_three_bytes_15_bit_hash));
+  AddModel(
+      new SkipContext({0, 1, 2}, short_term_memory_.last_three_bytes_hash));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 15,
-                        short_term_memory_.last_three_bytes_15_bit_hash,
+                        1 << 15, short_term_memory_.last_three_bytes_hash,
                         "Indirect(3_15 byte hash)", enable_analysis));
-  AddModel(new SkipContext({0, 1, 2}, 16,
-                           short_term_memory_.last_three_bytes_16_bit_hash));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 16,
-                        short_term_memory_.last_three_bytes_16_bit_hash,
+                        1 << 16, short_term_memory_.last_three_bytes_hash,
                         "Indirect(3_16 byte hash)", enable_analysis));
-  AddModel(new SkipContext({0, 1, 2, 3}, 15,
-                           short_term_memory_.last_four_bytes_15_bit_hash));
+  AddModel(
+      new SkipContext({0, 1, 2, 3}, short_term_memory_.last_four_bytes_hash));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 15, short_term_memory_.last_four_bytes_15_bit_hash,
+                        1 << 15, short_term_memory_.last_four_bytes_hash,
                         "Indirect(4_15 byte hash)", enable_analysis));
-  AddModel(new SkipContext({0, 1, 2, 3, 4}, 15,
-                           short_term_memory_.last_five_bytes_15_bit_hash));
+  AddModel(new SkipContext({0, 1, 2, 3, 4},
+                           short_term_memory_.last_five_bytes_hash));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 15, short_term_memory_.last_five_bytes_15_bit_hash,
+                        1 << 15, short_term_memory_.last_five_bytes_hash,
                         "Indirect(5_15 byte hash)", enable_analysis));
-  AddModel(new SkipContext({0, 1, 2, 3, 4, 5}, 15,
-                           short_term_memory_.last_six_bytes_15_bit_hash));
+  AddModel(new SkipContext({0, 1, 2, 3, 4, 5},
+                           short_term_memory_.last_six_bytes_hash));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 15, short_term_memory_.last_six_bytes_15_bit_hash,
+                        1 << 15, short_term_memory_.last_six_bytes_hash,
                         "Indirect(6_15 byte hash)", enable_analysis));
   for (int i = 1; i < 10; ++i) {
     AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
@@ -126,63 +122,63 @@ void Predictor::AddIndirect() {
 void Predictor::AddSkip() {
   float learning_rate = 0.02;
   bool enable_analysis = true;
-  AddModel(new SkipContext({1, 2}, 16, short_term_memory_.skip_1_2));
+  AddModel(new SkipContext({1, 2}, short_term_memory_.skip_1_2));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_1_2,
                         "Indirect(skip_1_2)", enable_analysis));
-  AddModel(new SkipContext({1, 2, 3}, 16, short_term_memory_.skip_1_2_3));
+  AddModel(new SkipContext({1, 2, 3}, short_term_memory_.skip_1_2_3));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_1_2_3,
                         "Indirect(skip_1_2_3)", enable_analysis));
-  AddModel(new SkipContext({0, 2}, 16, short_term_memory_.skip_0_2));
+  AddModel(new SkipContext({0, 2}, short_term_memory_.skip_0_2));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_2,
                         "Indirect(skip_0_2)", enable_analysis));
-  AddModel(new SkipContext({0, 2, 3}, 16, short_term_memory_.skip_0_2_3));
+  AddModel(new SkipContext({0, 2, 3}, short_term_memory_.skip_0_2_3));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_2_3,
                         "Indirect(skip_0_2_3)", enable_analysis));
-  AddModel(new SkipContext({1, 2, 3, 4}, 16, short_term_memory_.skip_1_2_3_4));
+  AddModel(new SkipContext({1, 2, 3, 4}, short_term_memory_.skip_1_2_3_4));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_1_2_3_4,
                         "Indirect(skip_1_2_3_4)", enable_analysis));
-  AddModel(new SkipContext({0, 3}, 16, short_term_memory_.skip_0_3));
+  AddModel(new SkipContext({0, 3}, short_term_memory_.skip_0_3));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_3,
                         "Indirect(skip_0_3)", enable_analysis));
-  AddModel(new SkipContext({0, 4}, 16, short_term_memory_.skip_0_4));
+  AddModel(new SkipContext({0, 4}, short_term_memory_.skip_0_4));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_4,
                         "Indirect(skip_0_4)", enable_analysis));
-  AddModel(new SkipContext({0, 5}, 16, short_term_memory_.skip_0_5));
+  AddModel(new SkipContext({0, 5}, short_term_memory_.skip_0_5));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_5,
                         "Indirect(skip_0_5)", enable_analysis));
-  AddModel(new SkipContext({0, 2, 3, 4}, 16, short_term_memory_.skip_0_2_3_4));
+  AddModel(new SkipContext({0, 2, 3, 4}, short_term_memory_.skip_0_2_3_4));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_2_3_4,
                         "Indirect(skip_0_2_3_4)", enable_analysis));
-  AddModel(new SkipContext({0, 3, 4}, 16, short_term_memory_.skip_0_3_4));
+  AddModel(new SkipContext({0, 3, 4}, short_term_memory_.skip_0_3_4));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_3_4,
                         "Indirect(skip_0_3_4)", enable_analysis));
-  AddModel(new SkipContext({0, 6}, 16, short_term_memory_.skip_0_6));
+  AddModel(new SkipContext({0, 6}, short_term_memory_.skip_0_6));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_6,
                         "Indirect(skip_0_6)", enable_analysis));
-  AddModel(new SkipContext({0, 7}, 16, short_term_memory_.skip_0_7));
+  AddModel(new SkipContext({0, 7}, short_term_memory_.skip_0_7));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_7,
                         "Indirect(skip_0_7)", enable_analysis));
-  AddModel(new SkipContext({0, 1, 3, 4}, 16, short_term_memory_.skip_0_1_3_4));
+  AddModel(new SkipContext({0, 1, 3, 4}, short_term_memory_.skip_0_1_3_4));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_1_3_4,
                         "Indirect(skip_0_1_3_4)", enable_analysis));
-  AddModel(new SkipContext({0, 4, 5}, 16, short_term_memory_.skip_0_4_5));
+  AddModel(new SkipContext({0, 4, 5}, short_term_memory_.skip_0_4_5));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_4_5,
                         "Indirect(skip_0_4_5)", enable_analysis));
-  AddModel(new SkipContext({0, 1, 2, 4}, 16, short_term_memory_.skip_0_1_2_4));
+  AddModel(new SkipContext({0, 1, 2, 4}, short_term_memory_.skip_0_1_2_4));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_1_2_4,
                         "Indirect(skip_0_1_2_4)", enable_analysis));
@@ -197,25 +193,17 @@ void Predictor::AddMatch() {
   AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 16,
                      short_term_memory_.last_two_bytes_hash, limit,
                      "Match(2 bytes)", enable_analysis));
-  AddModel(
-      new SkipContext({0, 1, 2}, 24, short_term_memory_.last_three_bytes_hash));
   AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 24,
                      short_term_memory_.last_three_bytes_hash, limit,
                      "Match(3 bytes)", enable_analysis));
-  AddModel(new SkipContext({0, 1, 2, 3}, 21,
-                           short_term_memory_.last_four_bytes_21_bit_hash));
   AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 21,
-                     short_term_memory_.last_four_bytes_21_bit_hash, limit,
+                     short_term_memory_.last_four_bytes_hash, limit,
                      "Match(4 byte hash)", enable_analysis));
-  AddModel(new SkipContext({0, 1, 2, 3, 4}, 21,
-                           short_term_memory_.last_five_bytes_21_bit_hash));
   AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 21,
-                     short_term_memory_.last_five_bytes_21_bit_hash, limit,
+                     short_term_memory_.last_five_bytes_hash, limit,
                      "Match(5 byte hash)", enable_analysis));
-  AddModel(new SkipContext({0, 1, 2, 3, 4, 5}, 21,
-                           short_term_memory_.last_six_bytes_21_bit_hash));
   AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 21,
-                     short_term_memory_.last_six_bytes_21_bit_hash, limit,
+                     short_term_memory_.last_six_bytes_hash, limit,
                      "Match(6 byte hash)", enable_analysis));
 }
 
@@ -277,7 +265,7 @@ void Predictor::AddMixers() {
                      short_term_memory_.second_last_plus_recent, 0.003, 0,
                      1 << 16, "Mixer0(2nd last + recent)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_four_bytes_15_bit_hash, 0.0045, 0,
+                     short_term_memory_.last_four_bytes_hash, 0.0045, 0,
                      1 << 15, "Mixer0(4 byte hash)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.indirect_3_24_1_8, 0.006, 0, 1 << 8,
@@ -295,7 +283,7 @@ void Predictor::AddMixers() {
                      short_term_memory_.recent_bytes[2], 0.0065, 0, 1 << 8,
                      "Mixer0(3rd last byte)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.last_three_bytes_15_bit_hash, 0.0025, 0,
+                     short_term_memory_.last_three_bytes_hash, 0.0025, 0,
                      1 << 15, "Mixer0(3 byte hash)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.last_byte, 0.001, 0, 1 << 8,

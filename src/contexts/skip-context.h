@@ -12,8 +12,7 @@ class SkipContext : public Model {
   // bytes_to_use={0}: last byte
   // bytes_to_use={1}: 2nd last byte
   // bytes_to_use={0,1}: last two bytes
-  // num_bits: the number of bits to use for the context hash.
-  SkipContext(const std::vector<int>& bytes_to_use, unsigned int num_bits,
+  SkipContext(const std::vector<int>& bytes_to_use,
               unsigned int& output_context);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
@@ -30,7 +29,6 @@ class SkipContext : public Model {
  private:
   unsigned int& context_;
   std::vector<int> bytes_to_use_;
-  int num_bits_;
 };
 
 #endif  // CONTEXTS_SKIP_CONTEXT_H_

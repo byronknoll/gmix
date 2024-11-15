@@ -12,7 +12,11 @@ Indirect::Indirect(ShortTermMemory& short_term_memory,
   prediction_index_run_map_ = short_term_memory.AddPrediction(
       description + "-run_map", enable_analysis, this);
   memory_index_ = long_term_memory.indirect.size();
-  long_term_memory.indirect.push_back(IndirectMemory(table_size * 256));
+  // When the table size is a multiple of 256, there will be more context
+  // collisions (because the byte context index will always be a multiple of
+  // 256). By adding 1 to the table size we can spread out the byte contexts to
+  // create fewer collisions.
+  long_term_memory.indirect.push_back(IndirectMemory(table_size * 256 + 1));
   for (int i = 0; i < 256; ++i) {
     long_term_memory.indirect.back().nonstationary_predictions[i] = 0;
   }
