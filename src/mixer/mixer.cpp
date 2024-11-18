@@ -2,9 +2,8 @@
 
 Mixer::Mixer(ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory, unsigned int& context,
-             float learning_rate, int layer_number,
-             unsigned long long table_size, std::string description,
-             bool enable_analysis)
+             float learning_rate, int layer_number, unsigned int table_size,
+             std::string description, bool enable_analysis)
     : context_(context),
       max_steps_(1),
       steps_(0),

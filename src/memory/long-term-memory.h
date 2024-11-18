@@ -9,7 +9,7 @@
 #include "../memory-interface.h"
 
 struct IndirectMemory {
-  IndirectMemory(unsigned long long table_size)
+  IndirectMemory(unsigned int table_size)
       : nonstationary_table(table_size, 255), run_map_table(table_size, 0) {
     nonstationary_table.shrink_to_fit();
     run_map_table.shrink_to_fit();
@@ -31,7 +31,7 @@ struct MixerData {
 };
 
 struct MixerMemory {
-  MixerMemory(unsigned long long table_size) : mixer_table(table_size) {
+  MixerMemory(unsigned int table_size) : mixer_table(table_size) {
     mixer_table.shrink_to_fit();
   }
   // Map from context to MixerData. MixerData will only be allocated when a
@@ -40,7 +40,7 @@ struct MixerMemory {
 };
 
 struct MatchMemory {
-  MatchMemory(unsigned long long size) : table(size, {0, 0, 0, 0, 0}) {
+  MatchMemory(unsigned int size) : table(size, {0, 0, 0, 0, 0}) {
     table.shrink_to_fit();
   };
   // Map from context to "history" pointers. Each pointer is five bytes.

@@ -210,45 +210,41 @@ void Predictor::AddMatch() {
 void Predictor::AddDoubleIndirect() {
   float learning_rate = 1.0f / 200;
   bool enable_analysis = false;
-  AddModel(new IndirectHash(1, 8, 1, 8, short_term_memory_.indirect_1_8_1_8));
+  AddModel(new IndirectHash(1, 1 << 8, 1, short_term_memory_.indirect_1_8_1));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 8, short_term_memory_.indirect_1_8_1_8,
+                        1 << 8, short_term_memory_.indirect_1_8_1,
                         "Indirect(indirect_1_8_1_8)", enable_analysis));
-  AddModel(new IndirectHash(1, 8, 2, 16, short_term_memory_.indirect_1_8_2_16));
+  AddModel(new IndirectHash(1, 1 << 8, 2, short_term_memory_.indirect_1_8_2));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 16, short_term_memory_.indirect_1_8_2_16,
+                        1 << 16, short_term_memory_.indirect_1_8_2,
                         "Indirect(indirect_1_8_2_16)", enable_analysis));
-  AddModel(new IndirectHash(1, 8, 3, 15, short_term_memory_.indirect_1_8_3_15));
+  AddModel(new IndirectHash(1, 1 << 8, 3, short_term_memory_.indirect_1_8_3));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 16, short_term_memory_.indirect_1_8_3_15,
+                        1 << 15, short_term_memory_.indirect_1_8_3,
                         "Indirect(indirect_1_8_3_15)", enable_analysis));
-  AddModel(new IndirectHash(2, 16, 1, 8, short_term_memory_.indirect_2_16_1_8));
+  AddModel(new IndirectHash(2, 1 << 16, 1, short_term_memory_.indirect_2_16_1));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 8, short_term_memory_.indirect_2_16_1_8,
+                        1 << 8, short_term_memory_.indirect_2_16_1,
                         "Indirect(indirect_2_16_1_8)", enable_analysis));
-  AddModel(
-      new IndirectHash(2, 16, 2, 16, short_term_memory_.indirect_2_16_2_16));
+  AddModel(new IndirectHash(2, 1 << 16, 2, short_term_memory_.indirect_2_16_2));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 16, short_term_memory_.indirect_2_16_2_16,
+                        1 << 16, short_term_memory_.indirect_2_16_2,
                         "Indirect(indirect_2_16_2_16)", enable_analysis));
-  AddModel(
-      new IndirectHash(2, 16, 3, 15, short_term_memory_.indirect_2_16_3_15));
+  AddModel(new IndirectHash(2, 1 << 16, 3, short_term_memory_.indirect_2_16_3));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 15, short_term_memory_.indirect_2_16_3_15,
+                        1 << 15, short_term_memory_.indirect_2_16_3,
                         "Indirect(indirect_2_16_3_15)", enable_analysis));
-  AddModel(new IndirectHash(3, 24, 1, 8, short_term_memory_.indirect_3_24_1_8));
+  AddModel(new IndirectHash(3, 1 << 24, 1, short_term_memory_.indirect_3_24_1));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 8, short_term_memory_.indirect_3_24_1_8,
+                        1 << 8, short_term_memory_.indirect_3_24_1,
                         "Indirect(indirect_3_24_1_8)", enable_analysis));
-  AddModel(
-      new IndirectHash(4, 24, 2, 16, short_term_memory_.indirect_4_24_2_16));
+  AddModel(new IndirectHash(4, 1 << 24, 2, short_term_memory_.indirect_4_24_2));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 16, short_term_memory_.indirect_4_24_2_16,
+                        1 << 16, short_term_memory_.indirect_4_24_2,
                         "Indirect(indirect_4_24_2_16)", enable_analysis));
-  AddModel(
-      new IndirectHash(4, 24, 3, 15, short_term_memory_.indirect_4_24_3_15));
+  AddModel(new IndirectHash(4, 1 << 24, 3, short_term_memory_.indirect_4_24_3));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 15, short_term_memory_.indirect_4_24_3_15,
+                        1 << 15, short_term_memory_.indirect_4_24_3,
                         "Indirect(indirect_4_24_3_15)", enable_analysis));
 }
 
@@ -268,7 +264,7 @@ void Predictor::AddMixers() {
                      short_term_memory_.last_four_bytes_hash, 0.0045, 0,
                      1 << 15, "Mixer0(4 byte hash)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
-                     short_term_memory_.indirect_3_24_1_8, 0.006, 0, 1 << 8,
+                     short_term_memory_.indirect_3_24_1, 0.006, 0, 1 << 8,
                      "Mixer0(indirect_3_24_1_8)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.recent_bytes[1], 0.004, 0, 1 << 8,

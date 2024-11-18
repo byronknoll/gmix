@@ -4,7 +4,7 @@
 
 Indirect::Indirect(ShortTermMemory& short_term_memory,
                    LongTermMemory& long_term_memory, float learning_rate,
-                   unsigned long long table_size, unsigned int& context,
+                   unsigned int table_size, unsigned int& context,
                    std::string description, bool enable_analysis)
     : context_(context), learning_rate_(learning_rate) {
   prediction_index_indirect_ = short_term_memory.AddPrediction(

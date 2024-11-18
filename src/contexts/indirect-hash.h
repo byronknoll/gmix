@@ -8,13 +8,11 @@
 // *after* that outer context match.
 class IndirectHash : public Model {
  public:
-  // outer_order: number of bytes to use for the outer context.
-  // outer_hash_size: number of bits to use for the outer context hash.
-  // inner_order: number of bytes to use for the inner context.
-  // inner_hash_size: number of bits to use for the inner context hash.
+  // outer_order: number of bytes to use for the outer context (range: 1-8).
+  // inner_order: number of bytes to use for the inner context (range: 1-4).
   // output_context: reference for where to store the matched inner context.
-  IndirectHash(int outer_order, int outer_hash_size, int inner_order,
-               int inner_hash_size, unsigned int& output_context);
+  IndirectHash(int outer_order, unsigned int table_size, int inner_order,
+               unsigned int& output_context);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
@@ -27,14 +25,12 @@ class IndirectHash : public Model {
 
  private:
   // Map from outer context to inner context.
-  std::unordered_map<unsigned int, unsigned long long> map_;
+  std::vector<unsigned int> table_;
   unsigned long long outer_context_ = 0;
   // These are used to truncate the outer/inner contexts to the correct number
   // of bits (based on the context order).
   unsigned long long outer_mod_, inner_mod_;
   unsigned int outer_hash_ = 0;
-  // These are used to truncate the context hash to the correct number of bits.
-  unsigned int outer_hash_mod_, inner_hash_mod_;
   unsigned int& context_;
 };
 

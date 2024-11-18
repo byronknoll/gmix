@@ -84,15 +84,15 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int second_last_plus_recent = 0;
 
   // Indirect hash contexts:
-  unsigned int indirect_1_8_1_8 = 0;
-  unsigned int indirect_1_8_2_16 = 0;
-  unsigned int indirect_1_8_3_15 = 0;
-  unsigned int indirect_2_16_1_8 = 0;
-  unsigned int indirect_2_16_2_16 = 0;
-  unsigned int indirect_2_16_3_15 = 0;
-  unsigned int indirect_3_24_1_8 = 0;
-  unsigned int indirect_4_24_2_16 = 0;
-  unsigned int indirect_4_24_3_15 = 0;
+  unsigned int indirect_1_8_1 = 0;
+  unsigned int indirect_1_8_2 = 0;
+  unsigned int indirect_1_8_3 = 0;
+  unsigned int indirect_2_16_1 = 0;
+  unsigned int indirect_2_16_2 = 0;
+  unsigned int indirect_2_16_3 = 0;
+  unsigned int indirect_3_24_1 = 0;
+  unsigned int indirect_4_24_2 = 0;
+  unsigned int indirect_4_24_3 = 0;
 
   // Interval contexts:
   unsigned int interval_16_4 = 0;

@@ -1,7 +1,7 @@
 #include "match.h"
 
 Match::Match(ShortTermMemory& short_term_memory,
-             LongTermMemory& long_term_memory, unsigned long long table_size,
+             LongTermMemory& long_term_memory, unsigned int table_size,
              const unsigned int& byte_context, int limit,
              std::string description, bool enable_analysis)
     : byte_context_(byte_context),

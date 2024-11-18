@@ -4,59 +4,70 @@
 
 #include "murmur-hash.h"
 
-IndirectHash::IndirectHash(int outer_order, int outer_hash_size,
-                           int inner_order, int inner_hash_size,
-                           unsigned int& output_context)
-    : outer_mod_(1 << (8 * (outer_order - 1))),
+IndirectHash::IndirectHash(int outer_order, unsigned int table_size,
+                           int inner_order, unsigned int& output_context)
+    : table_(table_size, 0),
+      outer_mod_(1 << (8 * (outer_order - 1))),
       inner_mod_(1 << (8 * (inner_order - 1))),
-      outer_hash_mod_(1 << outer_hash_size),
-      inner_hash_mod_(1 << inner_hash_size),
-      context_(output_context) {}
+      context_(output_context) {
+  table_.shrink_to_fit();
+}
 
 void IndirectHash::Predict(ShortTermMemory& short_term_memory,
                            const LongTermMemory& long_term_memory) {
   if (short_term_memory.recent_bits == 1) {  // Byte boundary
     // Update the previous inner context with the last byte.
-    unsigned long long& inner_context = map_[outer_hash_];
+    unsigned int& inner_context = table_[outer_hash_ % table_.size()];
     inner_context =
         ((inner_context % inner_mod_) << 8) + short_term_memory.last_byte;
     // Update the outer context with the last byte.
     outer_context_ =
         ((outer_context_ % outer_mod_) << 8) + short_term_memory.last_byte;
-    unsigned int hash;
-    MurmurHash3_x86_32(&outer_context_, 8, 0XDEADBEEF, &hash);
-    outer_hash_ = hash % outer_hash_mod_;
+    MurmurHash3_x86_32(&outer_context_, 8, 0XDEADBEEF, &outer_hash_);
     // Map to the new inner context.
-    MurmurHash3_x86_32(&(map_[outer_hash_]), 8, 0XDEADBEEF, &hash);
-    context_ = hash % inner_hash_mod_;
+    MurmurHash3_x86_32(&(table_[outer_hash_ % table_.size()]), 4, 0XDEADBEEF,
+                       &context_);
   }
 }
 
 void IndirectHash::WriteToDisk(std::ofstream* s) {
-  std::set<unsigned int> keys;  // use a set to get consistent key order.
-  for (const auto& it : map_) {
-    keys.insert(it.first);
+  std::vector<unsigned int> keys;
+  for (int i = 0; i < table_.size(); ++i) {
+    if (table_[i] != 0) {
+      keys.push_back(i);
+    }
   }
-  int size = keys.size();
+  unsigned int size = keys.size();
   Serialize(s, size);
-  for (unsigned int key : keys) {
-    Serialize(s, key);
-    Serialize(s, map_[key]);
+  if (size < table_.size() / 2) {
+    // If the table is sparse, encode keys+values.
+    for (unsigned int key : keys) {
+      Serialize(s, key);
+      Serialize(s, table_[key]);
+    }
+  } else {
+    // If the table is dense, encode all values.
+    SerializeArray(s, table_);
   }
   Serialize(s, outer_context_);
   Serialize(s, outer_hash_);
 }
 
 void IndirectHash::ReadFromDisk(std::ifstream* s) {
-  map_.clear();
-  int size;
+  unsigned int size;
   Serialize(s, size);
-  for (int i = 0; i < size; ++i) {
-    unsigned int key;
-    Serialize(s, key);
-    unsigned long long val;
-    Serialize(s, val);
-    map_[key] = val;
+  if (size < table_.size() / 2) {
+    // If the table is sparse, encode keys+values.
+    for (int i = 0; i < size; ++i) {
+      unsigned int key;
+      Serialize(s, key);
+      unsigned int context;
+      Serialize(s, context);
+      table_[key] = context;
+    }
+  } else {
+    // If the table is dense, encode all values.
+    SerializeArray(s, table_);
   }
   Serialize(s, outer_context_);
   Serialize(s, outer_hash_);
@@ -64,7 +75,7 @@ void IndirectHash::ReadFromDisk(std::ifstream* s) {
 
 void IndirectHash::Copy(const MemoryInterface* m) {
   const IndirectHash* orig = static_cast<const IndirectHash*>(m);
-  map_ = orig->map_;
+  table_ = orig->table_;
   outer_context_ = orig->outer_context_;
   outer_hash_ = orig->outer_hash_;
 }
@@ -73,6 +84,6 @@ unsigned long long IndirectHash::GetMemoryUsage(
     const ShortTermMemory& short_term_memory,
     const LongTermMemory& long_term_memory) {
   unsigned long long usage = 36;
-  usage += map_.size() * 12;
+  usage += table_.size() * 4;
   return usage;
 }

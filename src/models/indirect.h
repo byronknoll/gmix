@@ -15,9 +15,8 @@ class Indirect : public Model {
   // size will be 256 times larger than this value.
   // description: a short identifier for this model.
   Indirect(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-           float learning_rate, unsigned long long table_size,
-           unsigned int& context, std::string description,
-           bool enable_analysis);
+           float learning_rate, unsigned int table_size, unsigned int& context,
+           std::string description, bool enable_analysis);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
