@@ -38,7 +38,10 @@ int main(int argc, char* argv[]) {
   clock_t start = clock();
 
   if (argv[1][1] == 'g') {
-    if (argc != 7) return Help();
+    if (argc != 7) {
+      printf("Wrong number of arguments.\n");
+      return Help();
+    }
     std::string checkpoint_path = argv[2];
     std::string prompt_path = argv[3];
     std::string output_path = argv[4];
@@ -52,7 +55,10 @@ int main(int argc, char* argv[]) {
     printf("%1.2f s.\n", ((double)clock() - start) / CLOCKS_PER_SEC);
     return 0;
   }
-  if (argc != 4 && argc != 5) return Help();
+  if (argc != 4 && argc != 5) {
+    printf("Wrong number of arguments.\n");
+    return Help();
+  }
 
   std::string checkpoing_path = "";
   std::string input_path = argv[2];

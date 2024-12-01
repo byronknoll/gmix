@@ -5,10 +5,10 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <vector>
-#include <filesystem>
 
 #include "../coder/decoder.h"
 #include "../coder/encoder.h"
@@ -91,14 +91,20 @@ bool RunCompression(const std::string& checkpoint_path,
                     unsigned long long* input_bytes,
                     unsigned long long* output_bytes) {
   std::ifstream data_in(input_path, std::ios::in | std::ios::binary);
-  if (!data_in.is_open()) return false;
+  if (!data_in.is_open()) {
+    printf("Can not open: %s\n", input_path.c_str());
+    return false;
+  }
 
   data_in.seekg(0, std::ios::end);
   *input_bytes = data_in.tellg();
   data_in.seekg(0, std::ios::beg);
 
   std::ofstream data_out(output_path, std::ios::out | std::ios::binary);
-  if (!data_out.is_open()) return false;
+  if (!data_out.is_open()) {
+    printf("Can not open: %s\n", output_path.c_str());
+    return false;
+  }
 
   WriteHeader(*input_bytes, &data_out);
   Predictor p;
@@ -120,7 +126,10 @@ bool RunDecompression(const std::string& checkpoint_path,
                       unsigned long long* input_bytes,
                       unsigned long long* output_bytes) {
   std::ifstream data_in(input_path, std::ios::in | std::ios::binary);
-  if (!data_in.is_open()) return false;
+  if (!data_in.is_open()) {
+    printf("Can not open: %s\n", input_path.c_str());
+    return false;
+  }
 
   data_in.seekg(0, std::ios::end);
   *input_bytes = data_in.tellg();
@@ -135,7 +144,10 @@ bool RunDecompression(const std::string& checkpoint_path,
   }
 
   std::ofstream data_out(output_path, std::ios::out | std::ios::binary);
-  if (!data_out.is_open()) return false;
+  if (!data_out.is_open()) {
+    printf("Can not open: %s\n", output_path.c_str());
+    return false;
+  }
 
   Decompress(*output_bytes, &data_in, &data_out, &p);
   data_in.close();
@@ -148,9 +160,15 @@ bool RunGeneration(const std::string& checkpoint_path,
                    const std::string& output_path, int output_size,
                    float temperature) {
   std::ifstream data_in(prompt_path, std::ios::in | std::ios::binary);
-  if (!data_in.is_open()) return false;
+  if (!data_in.is_open()) {
+    printf("Can not open: %s\n", prompt_path.c_str());
+    return false;
+  }
   std::ofstream data_out(output_path, std::ios::out | std::ios::binary);
-  if (!data_out.is_open()) return false;
+  if (!data_out.is_open()) {
+    printf("Can not open: %s\n", output_path.c_str());
+    return false;
+  }
   if (temperature < 0.001) temperature = 0.001;
 
   Predictor p;
@@ -207,10 +225,16 @@ bool RunTraining(const std::string& checkpoint_path,
                  unsigned long long* input_bytes,
                  unsigned long long* output_bytes) {
   std::ifstream data_train(train_path, std::ios::in | std::ios::binary);
-  if (!data_train.is_open()) return false;
+  if (!data_train.is_open()) {
+    printf("Can not open: %s\n", train_path.c_str());
+    return false;
+  }
 
   std::ifstream data_test(test_path, std::ios::in | std::ios::binary);
-  if (!data_test.is_open()) return false;
+  if (!data_test.is_open()) {
+    printf("Can not open: %s\n", test_path.c_str());
+    return false;
+  }
 
   data_train.seekg(0, std::ios::end);
   *input_bytes = data_train.tellg();
@@ -224,8 +248,12 @@ bool RunTraining(const std::string& checkpoint_path,
   std::ofstream metrics("analysis/training.tsv", std::ios::out);
   metrics << "bytes\ttrain_entropy\ttest_entropy" << std::endl;
 
+  std::filesystem::create_directory("data");
   std::ofstream data_out("data/tmp", std::ios::out | std::ios::binary);
-  if (!data_out.is_open()) return false;
+  if (!data_out.is_open()) {
+    printf("Can not open: data/tmp\n");
+    return false;
+  }
 
   WriteHeader(*input_bytes, &data_out);
 
