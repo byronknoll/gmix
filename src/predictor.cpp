@@ -403,19 +403,22 @@ void Predictor::WriteCheckpoint(std::string path) {
   data_out_long.close();
 }
 
-void Predictor::ReadCheckpoint(std::string path) {
-  std::ifstream data_in_short(path + ".short", std::ios::in | std::ios::binary);
-  if (!data_in_short.is_open()) return;
+void Predictor::ReadCheckpoint(std::string path,
+                               bool restore_short_term_memory) {
+  if (restore_short_term_memory) {
+    std::ifstream data_in_short(path + ".short",
+                                std::ios::in | std::ios::binary);
+    if (!data_in_short.is_open()) return;
+    for (const auto& model : models_) {
+      model->ReadFromDisk(&data_in_short);
+    }
+    short_term_memory_.ReadFromDisk(&data_in_short);
+    data_in_short.close();
+  }
+
   std::ifstream data_in_long(path + ".long", std::ios::in | std::ios::binary);
   if (!data_in_long.is_open()) return;
-
-  for (const auto& model : models_) {
-    model->ReadFromDisk(&data_in_short);
-  }
-  short_term_memory_.ReadFromDisk(&data_in_short);
   long_term_memory_.ReadFromDisk(&data_in_long);
-
-  data_in_short.close();
   data_in_long.close();
 }
 

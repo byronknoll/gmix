@@ -384,6 +384,75 @@ void TestGeneration() {
   if (CompareFiles("data/checkpoint.short", "data/checkpoint2.short")) Fail();
 }
 
+void TestRestoreLongTermMemory() {
+  printf("TestRestoreLongTermMemory:\n");
+  // Create a fresh baseline predictor to capture initial short-term memory state.
+  Predictor fresh;
+  fresh.WriteCheckpoint("data/fresh");
+
+  // Load only long-term memory from an existing checkpoint.
+  Predictor p;
+  p.ReadCheckpoint("data/checkpoint", /*restore_short_term_memory=*/false);
+  p.WriteCheckpoint("data/checkpoint_ltm_only");
+
+  // Check that long-term memory is restored from the checkpoint.
+  if (!CompareFiles("data/checkpoint.long", "data/checkpoint_ltm_only.long"))
+    Fail();
+  // Check that short-term memory is NOT restored from the checkpoint.
+  if (CompareFiles("data/checkpoint.short", "data/checkpoint_ltm_only.short"))
+    Fail();
+  // Check that short-term memory context starts from scratch matching a fresh predictor.
+  if (!CompareFiles("data/fresh.short", "data/checkpoint_ltm_only.short"))
+    Fail();
+
+  // Test loading when only the .long file exists on disk.
+  std::filesystem::remove("data/fresh.short");
+  Predictor p2;
+  p2.ReadCheckpoint("data/checkpoint_ltm_only",
+                    /*restore_short_term_memory=*/false);
+  p2.WriteCheckpoint("data/checkpoint_ltm_only2");
+  // Check that long-term memory is restored even when .short is omitted on disk.
+  if (!CompareFiles("data/checkpoint.long", "data/checkpoint_ltm_only2.long"))
+    Fail();
+
+  // Test compressing data with a predictor using restored long-term memory and scratch short-term memory.
+  std::ifstream data_in("data/test", std::ios::in | std::ios::binary);
+  if (!data_in.is_open()) Fail();
+  data_in.seekg(0, std::ios::end);
+  unsigned long long input_bytes = data_in.tellg();
+  data_in.seekg(0, std::ios::beg);
+
+  std::ofstream data_out("data/test_ltm_compressed",
+                         std::ios::out | std::ios::binary);
+  if (!data_out.is_open()) Fail();
+  runner_utils::WriteHeader(input_bytes, &data_out);
+  unsigned long long output_bytes = 0;
+  runner_utils::Compress(input_bytes, &data_in, &data_out, &output_bytes, &p2);
+  data_in.close();
+  data_out.close();
+
+  // Test decompressing the data using another predictor with restored long-term memory and scratch short-term memory.
+  Predictor p3;
+  p3.ReadCheckpoint("data/checkpoint_ltm_only",
+                    /*restore_short_term_memory=*/false);
+  std::ifstream comp_in("data/test_ltm_compressed",
+                        std::ios::in | std::ios::binary);
+  if (!comp_in.is_open()) Fail();
+  unsigned long long decomp_output_bytes = 0;
+  runner_utils::ReadHeader(&comp_in, &decomp_output_bytes);
+  std::ofstream decomp_out("data/test_ltm_decompressed",
+                           std::ios::out | std::ios::binary);
+  if (!decomp_out.is_open()) Fail();
+  runner_utils::Decompress(decomp_output_bytes, &comp_in, &decomp_out, &p3);
+  comp_in.close();
+  decomp_out.close();
+  printf("\n");
+
+  // Check that compression and decompression with restored long-term memory correctly recovers the original data.
+  if (!CompareFiles("data/test", "data/test_ltm_decompressed"))
+    Fail();
+}
+
 void TestDeterministicGeneration() {
   printf("TestDeterministicGeneration:\n");
   srand(0xDEADBEEF);
@@ -446,6 +515,7 @@ int main(int argc, char* argv[]) {
   TestCompressionWithCopyRestart();
   TestDecompressionWithRestart();
   TestGeneration();
+  TestRestoreLongTermMemory();
   TestDeterministicGeneration();
   TestPpmGeneration();
   printf("Tests passed.\n");

@@ -24,7 +24,7 @@ class Predictor {
   void Perceive(int bit);
   void Learn();
   void WriteCheckpoint(std::string path);
-  void ReadCheckpoint(std::string path);
+  void ReadCheckpoint(std::string path, bool restore_short_term_memory = true);
   // Makes this predictor a deep copy of the other Predictor.
   void Copy(const Predictor& p);
   // This will output files (entropy.tsv and memory.tsv) with model metrics.
