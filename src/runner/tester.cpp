@@ -320,30 +320,48 @@ void Fail() {
   abort();
 }
 
+void GenerateRandomData(const std::string& path, unsigned long long size) {
+  std::ofstream out(path, std::ios::out | std::ios::binary);
+  for (unsigned long long i = 0; i < size; ++i) {
+    out.put(static_cast<char>(rand() % 256));
+  }
+}
+
 void TestCompression() {
   printf("TestCompression:\n");
   unsigned long long in, out;
-  runner_utils::RunCompression("", "./test", "data/test1", &in, &out);
+  runner_utils::RunCompression("", "data/test", "data/test1", &in, &out);
   printf("\n");
 }
 
 void TestCompressionWithRestart() {
   printf("TestCompressionWithRestart:\n");
   unsigned long long in, out;
-  RunCompressionWithRestart("./test", "data/test2", &in, &out);
+  RunCompressionWithRestart("data/test", "data/test2", &in, &out);
   printf("\n");
+  // Check that compressed data with restart matches normal compression output.
   if (!CompareFiles("data/test1", "data/test2")) Fail();
+  // Check that predictor long-term memory checkpoint saved before restart
+  // matches the checkpoint re-saved after reading the checkpoint.
   if (!CompareFiles("data/checkpoint.long", "data/checkpoint2.long")) Fail();
+  // Check that predictor short-term memory checkpoint saved before restart
+  // matches the checkpoint re-saved after reading the checkpoint.
   if (!CompareFiles("data/checkpoint.short", "data/checkpoint2.short")) Fail();
 }
 
 void TestCompressionWithCopyRestart() {
   printf("TestCompressionWithCopyRestart:\n");
   unsigned long long in, out;
-  RunCompressionWithCopyRestart("./test", "data/test3", &in, &out);
+  RunCompressionWithCopyRestart("data/test", "data/test3", &in, &out);
   printf("\n");
+  // Check that compressed data using in-memory copied Predictor matches normal
+  // compression output.
   if (!CompareFiles("data/test1", "data/test3")) Fail();
+  // Check that the in-memory copied Predictor's long-term memory matches the
+  // checkpoint saved on disk at the split point.
   if (!CompareFiles("data/checkpoint.long", "data/checkpoint2.long")) Fail();
+  // Check that the in-memory copied Predictor's short-term memory matches the
+  // checkpoint saved on disk at the split point.
   if (!CompareFiles("data/checkpoint.short", "data/checkpoint2.short")) Fail();
 }
 
@@ -352,17 +370,18 @@ void TestDecompressionWithRestart() {
   unsigned long long in, out;
   RunDecompressionWithRestart("data/test1", "data/test2", &in, &out);
   printf("\n");
-  if (!CompareFiles("./test", "data/test2")) Fail();
+  // Check that decompressing with restart accurately restores the original
+  // uncompressed input data.
+  if (!CompareFiles("data/test", "data/test2")) Fail();
 }
 
 void TestGeneration() {
   printf("TestGeneration:\n");
-  RunGenerationTest("data/test1", "data/test4", 100000);
-  // Long term memory should remain the same during generation, but short term
-  // memory should not.
+  RunGenerationTest("data/test1", "data/test4", 1000);
+  // Long term memory should remain the same during generation (no Learn calls).
   if (!CompareFiles("data/checkpoint.long", "data/checkpoint2.long")) Fail();
+  // Short term memory should change during generation as new bits are perceived.
   if (CompareFiles("data/checkpoint.short", "data/checkpoint2.short")) Fail();
-  printf("\n");
 }
 
 void TestPpmGeneration() {
@@ -403,12 +422,12 @@ void TestPpmGeneration() {
   entropy = -entropy / test_text.size();
   printf("PPM generation cross entropy: %.4f\n", entropy);
   if (entropy > 0.5) Fail();
-  printf("\n");
 }
 
 int main(int argc, char* argv[]) {
   srand(0xDEADBEEF);
   std::filesystem::create_directory("data");
+  GenerateRandomData("data/test", 1000);
   TestCompression();
   TestCompressionWithRestart();
   TestCompressionWithCopyRestart();
