@@ -105,6 +105,12 @@ void LongTermMemory::WriteToDisk(std::ofstream* s) {
     SerializeArray(s, mem.counts);
   }
   printf("Match size: %ld\n", s->tellp() - start);
+
+  start = s->tellp();
+  for (auto& m : model_memory) {
+    m->WriteToDisk(s);
+  }
+  printf("Model-owned memory size: %ld\n", s->tellp() - start);
 }
 
 void LongTermMemory::ReadFromDisk(std::ifstream* s) {
@@ -186,6 +192,9 @@ void LongTermMemory::ReadFromDisk(std::ifstream* s) {
     SerializeArray(s, mem.predictions);
     SerializeArray(s, mem.counts);
   }
+  for (auto& m : model_memory) {
+    m->ReadFromDisk(s);
+  }
 }
 
 void LongTermMemory::Copy(const MemoryInterface* m) {
@@ -222,5 +231,8 @@ void LongTermMemory::Copy(const MemoryInterface* m) {
     match_memory[i].table = orig->match_memory[i].table;
     match_memory[i].predictions = orig->match_memory[i].predictions;
     match_memory[i].counts = orig->match_memory[i].counts;
+  }
+  for (int i = 0; i < model_memory.size(); ++i) {
+    model_memory[i]->Copy(orig->model_memory[i].get());
   }
 }

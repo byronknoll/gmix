@@ -79,6 +79,11 @@ struct LongTermMemory : MemoryInterface {
   std::vector<unsigned char> history;
 
   std::vector<MatchMemory> match_memory;
+
+  // Long-term memory that is fully owned/serialized by a single model (used
+  // when a model's memory doesn't fit one of the structs above). Each entry
+  // implements its own WriteToDisk/ReadFromDisk/Copy.
+  std::vector<std::unique_ptr<MemoryInterface>> model_memory;
 };
 
 #endif  // LONG_TERM_MEMORY_H_

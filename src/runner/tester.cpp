@@ -365,6 +365,47 @@ void TestGeneration() {
   printf("\n");
 }
 
+void TestPpmGeneration() {
+  printf("TestPpmGeneration:\n");
+  Predictor p;
+  std::string pattern = "The quick brown fox jumps over the lazy dog. ";
+  std::string train_text = "";
+  for (int i = 0; i < 50; ++i) {
+    train_text += pattern;
+  }
+  // Train predictor on pattern.
+  for (char c : train_text) {
+    for (int j = 7; j >= 0; --j) {
+      p.Predict();
+      p.Perceive((c >> j) & 1);
+      p.Learn();
+    }
+  }
+
+  // Now test in generate mode (Predict + Perceive, NO Learn).
+  std::string test_text = "";
+  for (int i = 0; i < 15; ++i) {
+    test_text += pattern;
+  }
+  double entropy = 0;
+  for (char c : test_text) {
+    for (int j = 7; j >= 0; --j) {
+      float prob = p.Predict();
+      int bit = (c >> j) & 1;
+      if (bit)
+        entropy += log2(prob);
+      else
+        entropy += log2(1 - prob);
+      p.Perceive(bit);
+      // NOTE: p.Learn() is NOT called!
+    }
+  }
+  entropy = -entropy / test_text.size();
+  printf("PPM generation cross entropy: %.4f\n", entropy);
+  if (entropy > 0.5) Fail();
+  printf("\n");
+}
+
 int main(int argc, char* argv[]) {
   srand(0xDEADBEEF);
   std::filesystem::create_directory("data");
@@ -373,6 +414,7 @@ int main(int argc, char* argv[]) {
   TestCompressionWithCopyRestart();
   TestDecompressionWithRestart();
   TestGeneration();
+  TestPpmGeneration();
   printf("Tests passed.\n");
   return 0;
 }

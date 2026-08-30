@@ -1,9 +1,13 @@
 // ppmd is written by Dmitry Shkarin.
 // mod_ppmd is adapted from ppmd by Eugene Shelwien.
 // This file is adapted from mod_ppmd_v3: http://encode.su/threads/2515-mod_ppmd
-// All memory for this model is considered "short term memory". Ideally the heap
-// allocated memory (starting at "HeapStart") should be long term memory, but
-// updating the code to prevent "learning" has been challenging.
+// The PPM tree (heap allocated memory starting at "HeapStart", plus the
+// allocator/model state describing it) is long-term memory: it lives in
+// LongTermMemory (see ModPPMD::memory_index_) and is only mutated by
+// "ppmd_UpdateByte", which runs from ModPPMD::Learn. "ppmd_PrepareByte" (used
+// by ModPPMD::Predict) only computes per-byte prediction scratch data (the
+// "mutable" members below) from the frozen tree, so predictions never depend
+// on data that hasn't been perceived yet.
 
 #include "mod_ppmd.h"
 
@@ -59,8 +63,8 @@ class ppmd_Model : public MemoryInterface {
 
   byte* HeapStart;
   typedef byte* pbyte;
-  uint Ptr2Indx(void* p) { return pbyte(p) - HeapStart; }
-  void* Indx2Ptr(uint indx) { return indx + HeapStart; }
+  uint Ptr2Indx(void* p) const { return pbyte(p) - HeapStart; }
+  void* Indx2Ptr(uint indx) const { return indx + HeapStart; }
 
   struct _MEM_BLK {
     uint Stamp;
@@ -74,7 +78,7 @@ class ppmd_Model : public MemoryInterface {
     int avail() const { return (NextIndx != 0); }
   };
 
-  BLK_NODE* getNext(BLK_NODE* This) {
+  BLK_NODE* getNext(BLK_NODE* This) const {
     return (BLK_NODE*)Indx2Ptr(This->NextIndx);
   }
 
@@ -139,7 +143,7 @@ class ppmd_Model : public MemoryInterface {
     GlueCount = GlueCount1 = 0;
   }
 
-  qword GetUsedMemory() {
+  qword GetUsedMemory() const {
     int i;
     qword RetVal = SubAllocatorSize - (HiUnit - LoUnit) - (UnitsStart - pText);
     for (i = 0; i < N_INDEXES; i++) {
@@ -361,7 +365,7 @@ class ppmd_Model : public MemoryInterface {
     t2 = tmp;
   }
 
-  void PrefetchData(void* Addr) { *(volatile byte*)Addr; }
+  void PrefetchData(void* Addr) const { *(volatile byte*)Addr; }
 
   enum { UP_FREQ = 5 };
 
@@ -409,7 +413,7 @@ class ppmd_Model : public MemoryInterface {
     uint iSuccessor;
   };
 
-  PPM_CONTEXT* getSucc(STATE* This) {
+  PPM_CONTEXT* getSucc(STATE* This) const {
     return (PPM_CONTEXT*)Indx2Ptr(This->iSuccessor);
   }
 
@@ -432,9 +436,11 @@ class ppmd_Model : public MemoryInterface {
     STATE& oneState() const { return (STATE&)SummFreq; }
   };
 
-  STATE* getStats(PPM_CONTEXT* This) { return (STATE*)Indx2Ptr(This->iStats); }
+  STATE* getStats(PPM_CONTEXT* This) const {
+    return (STATE*)Indx2Ptr(This->iStats);
+  }
 
-  PPM_CONTEXT* suff(PPM_CONTEXT* This) {
+  PPM_CONTEXT* suff(PPM_CONTEXT* This) const {
     return (PPM_CONTEXT*)Indx2Ptr(This->iSuffix);
   }
 
@@ -443,12 +449,26 @@ class ppmd_Model : public MemoryInterface {
   int OrderFall;
 
   STATE* FoundState;  // found next state transition
-  PPM_CONTEXT* MaxContext;
+  // MaxContext is a navigation position (which tree node we're at), not
+  // trained data, so it's excluded from WriteToDisk/ReadFromDisk/Copy here;
+  // ModPPMD serializes it separately as short-term state (see
+  // GetMaxContextOffset/SetMaxContextOffset). It's mutable so the read-only
+  // prediction path can advance it (see TryAdvanceContext).
+  mutable PPM_CONTEXT* MaxContext;
 
-  uint EscCount;
-  uint CharMask[256];
+  uint GetMaxContextOffset() const { return Ptr2Indx(MaxContext); }
+  void SetMaxContextOffset(uint offset) {
+    MaxContext = (PPM_CONTEXT*)Indx2Ptr(offset);
+  }
 
-  int BSumm;
+  // EscCount/CharMask/BSumm are per-byte prediction scratch: they get fully
+  // recomputed by "ppmd_PrepareByte" every byte (from the frozen tree) and
+  // never carry learned information between bytes, so they're safe to mutate
+  // from the read-only prediction path.
+  mutable uint EscCount;
+  mutable uint CharMask[256];
+
+  mutable int BSumm;
   int RunLength;
   int InitRL;
 
@@ -473,7 +493,7 @@ class ppmd_Model : public MemoryInterface {
       Count = 7;
     }
 
-    uint getMean() { return Summ >> Shift; }
+    uint getMean() const { return Summ >> Shift; }
 
     void update() {
       if (--Count == 0) setShift_rare();
@@ -493,7 +513,7 @@ class ppmd_Model : public MemoryInterface {
     }
   };
 
-  int NumMasked;
+  mutable int NumMasked;
 
   STATE* rescale(PPM_CONTEXT& q, int OrderFall, STATE* FoundState) {
     STATE tmp;
@@ -1181,15 +1201,18 @@ class ppmd_Model : public MemoryInterface {
     }
   };
 
-  qsym SQ[1024];
-  uint SQ_ptr;
+  // SQ/sqp/trF/trT are recomputed from scratch every byte by
+  // "ppmd_PrepareByte"/"ConvertSQ" (they hold this byte's quantized
+  // predictions, not learned state), so they're mutable.
+  mutable qsym SQ[1024];
+  mutable uint SQ_ptr;
 
-  uint sqp[256];  // symbol probs
+  mutable uint sqp[256];  // symbol probs
 
-  uint trF[256];  // binary tree, freqs
-  uint trT[256];  // binary tree, totals
+  mutable uint trF[256];  // binary tree, freqs
+  mutable uint trT[256];  // binary tree, totals
 
-  void ConvertSQ(void) {
+  void ConvertSQ(void) const {
     uint i, c, j, b, freq, total, prob;
     uint cum = 0xFFFFFF00;  // base coef, add 1 to each to remove zero probs
 
@@ -1219,11 +1242,11 @@ class ppmd_Model : public MemoryInterface {
     }
   }
 
-  void processBinSymbol_T(PPM_CONTEXT& q, int) {
+  void processBinSymbol_T(PPM_CONTEXT& q, int) const {
     STATE& rs = q.oneState();
     int i = NS2BSIndx[suff(&q)->NumStats] + PrevSuccess + q.Flags +
             ((RunLength >> 26) & 0x20);
-    word& bs = BinSumm[QTable[rs.Freq - 1]][i];
+    const word& bs = BinSumm[QTable[rs.Freq - 1]][i];
     BSumm = bs;
 
     SQ[SQ_ptr++].store(rs.Symbol, BSumm + BSumm, SCALE);
@@ -1234,7 +1257,7 @@ class ppmd_Model : public MemoryInterface {
   }
 
   // encode in unmasked (maxorder) context
-  void processSymbol1_T(PPM_CONTEXT& q, int) {
+  void processSymbol1_T(PPM_CONTEXT& q, int) const {
     STATE* p = getStats(&q);
 
     int cnum = q.NumStats;
@@ -1258,7 +1281,7 @@ class ppmd_Model : public MemoryInterface {
   }
 
   // encode in masked context
-  void processSymbol2_T(PPM_CONTEXT& q, int) {
+  void processSymbol2_T(PPM_CONTEXT& q, int) const {
     STATE* p = getStats(&q);
 
     int c;
@@ -1266,7 +1289,7 @@ class ppmd_Model : public MemoryInterface {
     int see_freq;
     int cnum = q.NumStats;
 
-    SEE2_CONTEXT* psee2c;
+    const SEE2_CONTEXT* psee2c;
     if (cnum != 0xFF) {
       psee2c = SEE2Cont[QTable[cnum + 3] - 4];
       psee2c += (q.SummFreq > 10 * (cnum + 1));
@@ -1319,10 +1342,13 @@ class ppmd_Model : public MemoryInterface {
 
   ~ppmd_Model() { StopSubAllocator(); }
 
-  void ppmd_PrepareByte(void) {
+  // Computes this byte's quantized symbol probabilities ("sqp") from the
+  // current (frozen) PPM tree. This never mutates the tree itself, only the
+  // "mutable" per-byte scratch fields above, so it's safe to call while
+  // long-term memory is const (i.e. from "Predict").
+  void ppmd_PrepareByte(void) const {
     SQ_ptr = 0;
     NumMasked = 0;
-    int _OrderFall = OrderFall;
 
     PPM_CONTEXT* MinContext = MaxContext;
     if (MinContext->NumStats) {
@@ -1334,7 +1360,6 @@ class ppmd_Model : public MemoryInterface {
     while (1) {
       do {
         if (!MinContext->iSuffix) goto Break;
-        OrderFall++;
         MinContext = suff(MinContext);
       } while (MinContext->NumStats == NumMasked);
       processSymbol2_T(MinContext[0], 0);
@@ -1343,11 +1368,45 @@ class ppmd_Model : public MemoryInterface {
   Break:
     EscCount++;
     NumMasked = 0;
-    OrderFall = _OrderFall;
 
     ConvertSQ();
   }
 
+  // Read-only lookup: finds the STATE entry for "symbol" directly in context
+  // "q" (unmasked/top context only, no escape handling), mirroring the match
+  // logic in processSymbol1/processBinSymbol without any of their mutations.
+  STATE* FindStateInContext(PPM_CONTEXT& q, int symbol) const {
+    if (q.NumStats == 0) {
+      STATE& rs = q.oneState();
+      return (rs.Symbol == symbol) ? &rs : nullptr;
+    }
+    STATE* p = getStats(&q);
+    for (int i = 0; i <= q.NumStats; ++i) {
+      if (p[i].Symbol == symbol) return &p[i];
+    }
+    return nullptr;
+  }
+
+  // Advances MaxContext using byte "c" without mutating the PPM tree:
+  // traverses from MaxContext down suffix links to find the longest matching
+  // context that has a materialized successor for "c". If none is found,
+  // falls back to the order-0 root.
+  void AdvanceContext(uint c) const {
+    PPM_CONTEXT* root = MaxContext;
+    for (PPM_CONTEXT* pc = MaxContext; pc != nullptr;) {
+      STATE* p = FindStateInContext(*pc, c);
+      if (p && p->iSuccessor && (byte*)Indx2Ptr(p->iSuccessor) >= UnitsStart) {
+        MaxContext = getSucc(p);
+        return;
+      }
+      root = pc;
+      pc = pc->iSuffix ? suff(pc) : nullptr;
+    }
+    MaxContext = root;
+  }
+
+  // Updates the PPM tree (long-term memory) with the observed byte "c". This
+  // is the model's "learning" step, so it should only be called from "Learn".
   void ppmd_UpdateByte(uint c) {
     PPM_CONTEXT* MinContext = MaxContext;
     if (MinContext->NumStats) {
@@ -1400,19 +1459,11 @@ class ppmd_Model : public MemoryInterface {
     Serialize(s, offset);
     offset = (byte*)FoundState - HeapStart;
     Serialize(s, offset);
-    offset = (byte*)MaxContext - HeapStart;
-    Serialize(s, offset);
     offset = (byte*)saved_pc - HeapStart;
     Serialize(s, offset);
     Serialize(s, OrderFall);
-    Serialize(s, EscCount);
-    for (int i = 0; i < 256; ++i) {
-      Serialize(s, CharMask[i]);
-    }
-    Serialize(s, BSumm);
     Serialize(s, RunLength);
     Serialize(s, InitRL);
-    Serialize(s, NumMasked);
     Serialize(s, PrevSuccess);
     for (int i = 0; i < 25; ++i) {
       for (int j = 0; j < 64; ++j) {
@@ -1429,17 +1480,9 @@ class ppmd_Model : public MemoryInterface {
     Serialize(s, DummySEE2Cont.Count);
     Serialize(s, DummySEE2Cont.Shift);
     Serialize(s, DummySEE2Cont.Summ);
-    for (int i = 0; i < 1024; ++i) {
-      Serialize(s, SQ[i].freq);
-      Serialize(s, SQ[i].sym);
-      Serialize(s, SQ[i].total);
-    }
-    Serialize(s, SQ_ptr);
-    for (int i = 0; i < 256; ++i) {
-      Serialize(s, sqp[i]);
-      Serialize(s, trF[i]);
-      Serialize(s, trT[i]);
-    }
+    // EscCount/CharMask/BSumm/NumMasked/SQ/SQ_ptr/sqp/trF/trT are per-byte
+    // prediction scratch (see "ppmd_PrepareByte"): they're fully recomputed
+    // from the tree on the next call, so they aren't serialized here.
     Serialize(s, cxt);
     Serialize(s, y);
 
@@ -1502,18 +1545,10 @@ class ppmd_Model : public MemoryInterface {
     Serialize(s, offset);
     FoundState = (STATE*)(HeapStart + offset);
     Serialize(s, offset);
-    MaxContext = (PPM_CONTEXT*)(HeapStart + offset);
-    Serialize(s, offset);
     saved_pc = (PPM_CONTEXT*)(HeapStart + offset);
     Serialize(s, OrderFall);
-    Serialize(s, EscCount);
-    for (int i = 0; i < 256; ++i) {
-      Serialize(s, CharMask[i]);
-    }
-    Serialize(s, BSumm);
     Serialize(s, RunLength);
     Serialize(s, InitRL);
-    Serialize(s, NumMasked);
     Serialize(s, PrevSuccess);
     for (int i = 0; i < 25; ++i) {
       for (int j = 0; j < 64; ++j) {
@@ -1530,17 +1565,6 @@ class ppmd_Model : public MemoryInterface {
     Serialize(s, DummySEE2Cont.Count);
     Serialize(s, DummySEE2Cont.Shift);
     Serialize(s, DummySEE2Cont.Summ);
-    for (int i = 0; i < 1024; ++i) {
-      Serialize(s, SQ[i].freq);
-      Serialize(s, SQ[i].sym);
-      Serialize(s, SQ[i].total);
-    }
-    Serialize(s, SQ_ptr);
-    for (int i = 0; i < 256; ++i) {
-      Serialize(s, sqp[i]);
-      Serialize(s, trF[i]);
-      Serialize(s, trT[i]);
-    }
     Serialize(s, cxt);
     Serialize(s, y);
 
@@ -1583,19 +1607,11 @@ class ppmd_Model : public MemoryInterface {
     AuxUnit = HeapStart + (orig->AuxUnit - orig->HeapStart);
     FoundState =
         (STATE*)(HeapStart + ((byte*)orig->FoundState - orig->HeapStart));
-    MaxContext =
-        (PPM_CONTEXT*)(HeapStart + ((byte*)orig->MaxContext - orig->HeapStart));
     saved_pc =
         (PPM_CONTEXT*)(HeapStart + ((byte*)orig->saved_pc - orig->HeapStart));
     OrderFall = orig->OrderFall;
-    EscCount = orig->EscCount;
-    for (int i = 0; i < 256; ++i) {
-      CharMask[i] = orig->CharMask[i];
-    }
-    BSumm = orig->BSumm;
     RunLength = orig->RunLength;
     InitRL = orig->InitRL;
-    NumMasked = orig->NumMasked;
     PrevSuccess = orig->PrevSuccess;
     for (int i = 0; i < 25; ++i) {
       for (int j = 0; j < 64; ++j) {
@@ -1612,17 +1628,9 @@ class ppmd_Model : public MemoryInterface {
     DummySEE2Cont.Count = orig->DummySEE2Cont.Count;
     DummySEE2Cont.Shift = orig->DummySEE2Cont.Shift;
     DummySEE2Cont.Summ = orig->DummySEE2Cont.Summ;
-    for (int i = 0; i < 1024; ++i) {
-      SQ[i].freq = orig->SQ[i].freq;
-      SQ[i].sym = orig->SQ[i].sym;
-      SQ[i].total = orig->SQ[i].total;
-    }
-    SQ_ptr = orig->SQ_ptr;
-    for (int i = 0; i < 256; ++i) {
-      sqp[i] = orig->sqp[i];
-      trF[i] = orig->trF[i];
-      trT[i] = orig->trT[i];
-    }
+    // EscCount/CharMask/BSumm/NumMasked/SQ/SQ_ptr/sqp/trF/trT are per-byte
+    // prediction scratch; not copied for the same reason they're not
+    // serialized (see WriteToDisk).
     cxt = orig->cxt;
     y = orig->y;
 
@@ -1642,18 +1650,43 @@ ModPPMD::ModPPMD(ShortTermMemory& short_term_memory,
     : top_(255), mid_(127), bot_(0) {
   prediction_index_ = short_term_memory.AddPrediction(
       "mod_ppmd(" + std::to_string(order) + ")", enable_analysis, this);
-  ppmd_model_.reset(new ppmd_Model());
-  ppmd_model_->Init(order, memory, 1, 0);
+  memory_index_ = long_term_memory.model_memory.size();
+  long_term_memory_ = &long_term_memory;
+  long_term_memory.model_memory.push_back(std::make_unique<ppmd_Model>());
+  ppmd_Model* model = GetModel(long_term_memory);
+  model->Init(order, memory, 1, 0);
+  // Prime the model, matching the original behavior of updating on the very
+  // first prediction (before any byte has actually been observed).
+  model->ppmd_UpdateByte(0);
+  model->ppmd_PrepareByte();
+}
+
+ppmd_Model* ModPPMD::GetModel(LongTermMemory& long_term_memory) {
+  return static_cast<ppmd_Model*>(
+      long_term_memory.model_memory[memory_index_].get());
+}
+
+const ppmd_Model* ModPPMD::GetModel(
+    const LongTermMemory& long_term_memory) const {
+  return static_cast<const ppmd_Model*>(
+      long_term_memory.model_memory[memory_index_].get());
 }
 
 void ModPPMD::Predict(ShortTermMemory& short_term_memory,
                       const LongTermMemory& long_term_memory) {
   if (short_term_memory.recent_bits == 1) {
-    // A new byte has been observed. Update the byte-level predictions.
-    ppmd_model_->ppmd_UpdateByte(short_term_memory.last_byte);
-    ppmd_model_->ppmd_PrepareByte();
+    // A new byte has been observed. If "Learn" hasn't already advanced the
+    // context for it (i.e. we're predicting without training, such as during
+    // generation), advance using the existing tree links; otherwise this
+    // is a no-op because Learn already updated the context.
+    const ppmd_Model* model = GetModel(long_term_memory);
+    if (!context_advanced_) {
+      model->AdvanceContext(short_term_memory.last_byte);
+    }
+    context_advanced_ = false;
+    model->ppmd_PrepareByte();
     for (int i = 0; i < 256; ++i) {
-      short_term_memory.ppm_predictions[i] = ppmd_model_->sqp[i];
+      short_term_memory.ppm_predictions[i] = model->sqp[i];
       if (short_term_memory.ppm_predictions[i] < 1)
         short_term_memory.ppm_predictions[i] = 1;
     }
@@ -1681,18 +1714,35 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
   }
 }
 
+void ModPPMD::Learn(const ShortTermMemory& short_term_memory,
+                    LongTermMemory& long_term_memory) {
+  int current_byte =
+      short_term_memory.recent_bits * 2 + short_term_memory.new_bit;
+  if (current_byte >= 256) {
+    // A full byte has just been perceived. This is the model's "learning"
+    // step: it mutates the PPM tree in long-term memory.
+    GetModel(long_term_memory)->ppmd_UpdateByte(current_byte - 256);
+    context_advanced_ = true;
+  }
+}
+
 void ModPPMD::WriteToDisk(std::ofstream* s) {
   Serialize(s, top_);
   Serialize(s, mid_);
   Serialize(s, bot_);
-  ppmd_model_->WriteToDisk(s);
+  Serialize(s, context_advanced_);
+  unsigned int max_context_offset = GetModel(*long_term_memory_)->GetMaxContextOffset();
+  Serialize(s, max_context_offset);
 }
 
 void ModPPMD::ReadFromDisk(std::ifstream* s) {
   Serialize(s, top_);
   Serialize(s, mid_);
   Serialize(s, bot_);
-  ppmd_model_->ReadFromDisk(s);
+  Serialize(s, context_advanced_);
+  uint max_context_offset;
+  Serialize(s, max_context_offset);
+  GetModel(*long_term_memory_)->SetMaxContextOffset(max_context_offset);
 }
 
 void ModPPMD::Copy(const MemoryInterface* m) {
@@ -1700,14 +1750,16 @@ void ModPPMD::Copy(const MemoryInterface* m) {
   top_ = orig->top_;
   mid_ = orig->mid_;
   bot_ = orig->bot_;
-  ppmd_model_->Copy(orig->ppmd_model_.get());
+  context_advanced_ = orig->context_advanced_;
+  GetModel(*long_term_memory_)
+      ->SetMaxContextOffset(GetModel(*orig->long_term_memory_)->GetMaxContextOffset());
 }
 
 unsigned long long ModPPMD::GetMemoryUsage(
     const ShortTermMemory& short_term_memory,
     const LongTermMemory& long_term_memory) {
   unsigned long long usage = 16;
-  usage += ppmd_model_->GetUsedMemory();
+  usage += GetModel(long_term_memory)->GetUsedMemory();
   return usage;
 }
 
