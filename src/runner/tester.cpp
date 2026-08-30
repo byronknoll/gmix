@@ -384,6 +384,19 @@ void TestGeneration() {
   if (CompareFiles("data/checkpoint.short", "data/checkpoint2.short")) Fail();
 }
 
+void TestDeterministicGeneration() {
+  printf("TestDeterministicGeneration:\n");
+  srand(0xDEADBEEF);
+  runner_utils::RunGeneration("data/checkpoint", "data/test", "data/gen1", 100,
+                              1.0);
+  srand(0xDEADBEEF);
+  runner_utils::RunGeneration("data/checkpoint", "data/test", "data/gen2", 100,
+                              1.0);
+  // Check that running generation twice from the same checkpoint and seed
+  // produces identical generated text.
+  if (!CompareFiles("data/gen1", "data/gen2")) Fail();
+}
+
 void TestPpmGeneration() {
   printf("TestPpmGeneration:\n");
   Predictor p;
@@ -433,6 +446,7 @@ int main(int argc, char* argv[]) {
   TestCompressionWithCopyRestart();
   TestDecompressionWithRestart();
   TestGeneration();
+  TestDeterministicGeneration();
   TestPpmGeneration();
   printf("Tests passed.\n");
   return 0;
