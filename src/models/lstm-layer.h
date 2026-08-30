@@ -8,14 +8,28 @@
 #include <vector>
 
 #include "../memory-interface.h"
-#include "../memory/long-term-memory.h"
+
+struct NeuronLayerWeights {
+  NeuronLayerWeights(unsigned int input_size, unsigned int num_cells)
+      : weights(std::valarray<float>(input_size), num_cells) {};
+  std::valarray<std::valarray<float>> weights;
+};
+
+struct LstmMemory : public MemoryInterface {
+  std::vector<NeuronLayerWeights> neuron_layer_weights;
+  std::valarray<std::valarray<std::valarray<float>>> lstm_output_layer;
+
+  void WriteToDisk(std::ofstream* s) override;
+  void ReadFromDisk(std::ifstream* s) override;
+  void Copy(const MemoryInterface* m) override;
+};
 
 struct NeuronLayer : public MemoryInterface {
   NeuronLayer(unsigned int input_size, unsigned int num_cells, int horizon,
-              int offset, LongTermMemory& long_term_memory);
-  void WriteToDisk(std::ofstream* s);
-  void ReadFromDisk(std::ifstream* s);
-  void Copy(const MemoryInterface* m);
+              int offset, LstmMemory& lstm_memory);
+  void WriteToDisk(std::ofstream* s) override;
+  void ReadFromDisk(std::ifstream* s) override;
+  void Copy(const MemoryInterface* m) override;
   unsigned long long GetMemoryUsage();
 
   std::valarray<float> error_, ivar_, gamma_, gamma_u_, gamma_m_, gamma_v_,
@@ -30,19 +44,19 @@ class LstmLayer : public MemoryInterface {
   LstmLayer(unsigned int input_size, unsigned int auxiliary_input_size,
             unsigned int output_size, unsigned int num_cells, int horizon,
             float gradient_clip, float learning_rate,
-            LongTermMemory& long_term_memory);
+            LstmMemory& lstm_memory);
   void ForwardPass(const std::valarray<float>& input, int input_symbol,
                    std::valarray<float>* hidden, int hidden_start,
-                   const LongTermMemory& long_term_memory);
+                   const LstmMemory& lstm_memory);
   void BackwardPass(const std::valarray<float>& input, int epoch, int layer,
                     int input_symbol, std::valarray<float>* hidden_error,
-                    LongTermMemory& long_term_memory);
+                    LstmMemory& lstm_memory);
   static inline float Rand() {
     return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
   }
-  void WriteToDisk(std::ofstream* s);
-  void ReadFromDisk(std::ifstream* s);
-  void Copy(const MemoryInterface* m);
+  void WriteToDisk(std::ofstream* s) override;
+  void ReadFromDisk(std::ifstream* s) override;
+  void Copy(const MemoryInterface* m) override;
   unsigned long long GetMemoryUsage();
 
  private:
@@ -58,11 +72,11 @@ class LstmLayer : public MemoryInterface {
 
   void ClipGradients(std::valarray<float>* arr);
   void ForwardPass(NeuronLayer& neurons, const std::valarray<float>& input,
-                   int input_symbol, const LongTermMemory& long_term_memory);
+                   int input_symbol, const LstmMemory& lstm_memory);
   void BackwardPass(NeuronLayer& neurons, const std::valarray<float>& input,
                     int epoch, int layer, int input_symbol,
                     std::valarray<float>* hidden_error,
-                    LongTermMemory& long_term_memory);
+                    LstmMemory& lstm_memory);
 };
 
 #endif  // MODELS_LSTM_LAYER_H

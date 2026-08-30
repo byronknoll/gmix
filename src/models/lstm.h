@@ -20,12 +20,16 @@ class Lstm : public MemoryInterface {
   std::valarray<float>& Predict(unsigned int input,
                                 const LongTermMemory& long_term_memory);
   void SetInput(const std::valarray<float>& input);
-  void WriteToDisk(std::ofstream* s);
-  void ReadFromDisk(std::ifstream* s);
-  void Copy(const MemoryInterface* m);
+  void WriteToDisk(std::ofstream* s) override;
+  void ReadFromDisk(std::ifstream* s) override;
+  void Copy(const MemoryInterface* m) override;
   unsigned long long GetMemoryUsage();
 
+  LstmMemory* GetMemory(LongTermMemory& long_term_memory);
+  const LstmMemory* GetMemory(const LongTermMemory& long_term_memory) const;
+
  private:
+  int memory_index_;
   std::vector<std::unique_ptr<LstmLayer>> layers_;
   std::vector<unsigned int> input_history_;
   std::valarray<float> hidden_, hidden_error_;

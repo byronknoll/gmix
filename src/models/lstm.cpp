@@ -24,7 +24,10 @@ Lstm::Lstm(unsigned int input_size, unsigned int output_size,
       input_size_(input_size),
       output_size_(output_size),
       epoch_(0) {
-  long_term_memory.lstm_output_layer.resize(
+  memory_index_ = long_term_memory.model_memory.size();
+  long_term_memory.model_memory.push_back(std::make_unique<LstmMemory>());
+  LstmMemory* mem = GetMemory(long_term_memory);
+  mem->lstm_output_layer.resize(
       horizon_,
       std::valarray<std::valarray<float>>(
           std::valarray<float>(num_cells * num_layers + 1), output_size));
@@ -38,8 +41,19 @@ Lstm::Lstm(unsigned int input_size, unsigned int output_size,
   for (unsigned int i = 0; i < num_layers; ++i) {
     layers_.push_back(std::unique_ptr<LstmLayer>(new LstmLayer(
         layer_input_[0][i].size() + output_size, input_size_, output_size_,
-        num_cells, horizon, gradient_clip, learning_rate, long_term_memory)));
+        num_cells, horizon, gradient_clip, learning_rate, *mem)));
   }
+}
+
+LstmMemory* Lstm::GetMemory(LongTermMemory& long_term_memory) {
+  return static_cast<LstmMemory*>(
+      long_term_memory.model_memory[memory_index_].get());
+}
+
+const LstmMemory* Lstm::GetMemory(
+    const LongTermMemory& long_term_memory) const {
+  return static_cast<const LstmMemory*>(
+      long_term_memory.model_memory[memory_index_].get());
 }
 
 void Lstm::SetInput(const std::valarray<float>& input) {
@@ -50,6 +64,7 @@ void Lstm::SetInput(const std::valarray<float>& input) {
 }
 
 void Lstm::Perceive(unsigned int input, LongTermMemory& long_term_memory) {
+  LstmMemory* mem = GetMemory(long_term_memory);
   int last_epoch = epoch_ - 1;
   if (last_epoch == -1) last_epoch = horizon_ - 1;
   int old_input = input_history_[last_epoch];
@@ -63,8 +78,7 @@ void Lstm::Perceive(unsigned int input, LongTermMemory& long_term_memory) {
                                                      : output_[epoch][i];
           for (unsigned int j = 0; j < hidden_error_.size(); ++j) {
             hidden_error_[j] +=
-                long_term_memory.lstm_output_layer[epoch][i][j + offset] *
-                error;
+                mem->lstm_output_layer[epoch][i][j + offset] * error;
           }
         }
         int prev_epoch = epoch - 1;
@@ -73,7 +87,7 @@ void Lstm::Perceive(unsigned int input, LongTermMemory& long_term_memory) {
         if (epoch == 0) input_symbol = old_input;
         layers_[layer]->BackwardPass(layer_input_[epoch][layer], epoch, layer,
                                      input_symbol, &hidden_error_,
-                                     long_term_memory);
+                                     *mem);
       }
     }
   }
@@ -81,21 +95,22 @@ void Lstm::Perceive(unsigned int input, LongTermMemory& long_term_memory) {
   for (unsigned int i = 0; i < output_size_; ++i) {
     float error =
         (i == input) ? (output_[last_epoch][i] - 1) : output_[last_epoch][i];
-    long_term_memory.lstm_output_layer[epoch_][i] =
-        long_term_memory.lstm_output_layer[last_epoch][i];
-    long_term_memory.lstm_output_layer[epoch_][i] -=
+    mem->lstm_output_layer[epoch_][i] =
+        mem->lstm_output_layer[last_epoch][i];
+    mem->lstm_output_layer[epoch_][i] -=
         learning_rate_ * error * hidden_;
   }
 }
 
 std::valarray<float>& Lstm::Predict(unsigned int input,
                                     const LongTermMemory& long_term_memory) {
+  const LstmMemory* mem = GetMemory(long_term_memory);
   for (unsigned int i = 0; i < layers_.size(); ++i) {
     auto start = begin(hidden_) + i * num_cells_;
     std::copy(start, start + num_cells_,
               begin(layer_input_[epoch_][i]) + input_size_);
     layers_[i]->ForwardPass(layer_input_[epoch_][i], input, &hidden_,
-                            i * num_cells_, long_term_memory);
+                            i * num_cells_, *mem);
     if (i < layers_.size() - 1) {
       auto start2 =
           begin(layer_input_[epoch_][i + 1]) + num_cells_ + input_size_;
@@ -106,7 +121,7 @@ std::valarray<float>& Lstm::Predict(unsigned int input,
   for (unsigned int i = 0; i < output_size_; ++i) {
     float sum = 0;
     for (unsigned int j = 0; j < hidden_.size(); ++j) {
-      sum += hidden_[j] * long_term_memory.lstm_output_layer[epoch_][i][j];
+      sum += hidden_[j] * mem->lstm_output_layer[epoch_][i][j];
     }
     output_[epoch_][i] = sum;
     max_out = std::max(sum, max_out);
@@ -159,6 +174,7 @@ void Lstm::ReadFromDisk(std::ifstream* s) {
 
 void Lstm::Copy(const MemoryInterface* m) {
   const Lstm* orig = static_cast<const Lstm*>(m);
+  memory_index_ = orig->memory_index_;
   input_history_ = orig->input_history_;
   hidden_ = orig->hidden_;
   hidden_error_ = orig->hidden_error_;
@@ -181,4 +197,40 @@ unsigned long long Lstm::GetMemoryUsage() {
     usage += layers_[i]->GetMemoryUsage();
   }
   return usage;
+}
+
+void LstmMemory::WriteToDisk(std::ofstream* s) {
+  for (auto& x : lstm_output_layer) {
+    for (auto& y : x) {
+      SerializeArray(s, y);
+    }
+  }
+  for (auto& x : neuron_layer_weights) {
+    for (auto& y : x.weights) {
+      SerializeArray(s, y);
+    }
+  }
+}
+
+void LstmMemory::ReadFromDisk(std::ifstream* s) {
+  for (auto& x : lstm_output_layer) {
+    for (auto& y : x) {
+      SerializeArray(s, y);
+    }
+  }
+  for (auto& x : neuron_layer_weights) {
+    for (auto& y : x.weights) {
+      SerializeArray(s, y);
+    }
+  }
+}
+
+void LstmMemory::Copy(const MemoryInterface* m) {
+  const LstmMemory* orig = static_cast<const LstmMemory*>(m);
+  lstm_output_layer = orig->lstm_output_layer;
+  neuron_layer_weights.resize(orig->neuron_layer_weights.size(),
+                              NeuronLayerWeights(0, 0));
+  for (int i = 0; i < neuron_layer_weights.size(); ++i) {
+    neuron_layer_weights[i].weights = orig->neuron_layer_weights[i].weights;
+  }
 }

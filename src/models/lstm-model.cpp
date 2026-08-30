@@ -88,10 +88,11 @@ unsigned long long LstmModel::GetMemoryUsage(
     const LongTermMemory& long_term_memory) {
   unsigned long long usage = 16;
   usage += 256 * 4;  // probs_
-  usage += 4 * long_term_memory.lstm_output_layer.size() *
-           long_term_memory.lstm_output_layer[0].size() *
-           long_term_memory.lstm_output_layer[0][0].size();
-  for (const auto& layer : long_term_memory.neuron_layer_weights) {
+  const LstmMemory* mem = lstm_.GetMemory(long_term_memory);
+  usage += 4 * mem->lstm_output_layer.size() *
+           mem->lstm_output_layer[0].size() *
+           mem->lstm_output_layer[0][0].size();
+  for (const auto& layer : mem->neuron_layer_weights) {
     usage += 4 * layer.weights.size() * layer.weights[0].size();
   }
   usage += lstm_.GetMemoryUsage();

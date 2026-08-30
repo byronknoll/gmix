@@ -11,8 +11,9 @@ Mixer::Mixer(ShortTermMemory& short_term_memory,
       layer_number_(layer_number) {
   output_index_ = short_term_memory.AddMixer(description, layer_number,
                                              enable_analysis, this);
-  memory_index_ = long_term_memory.mixers.size();
-  long_term_memory.mixers.push_back(MixerMemory(table_size));
+  memory_index_ = long_term_memory.model_memory.size();
+  long_term_memory.model_memory.push_back(
+      std::make_unique<MixerMemory>(table_size, description));
 
   if (layer_number_ == 0) {
     weight_size_ = short_term_memory.num_predictions + output_index_;
@@ -26,9 +27,20 @@ Mixer::Mixer(ShortTermMemory& short_term_memory,
   }
 }
 
+MixerMemory* Mixer::GetMemory(LongTermMemory& long_term_memory) {
+  return static_cast<MixerMemory*>(
+      long_term_memory.model_memory[memory_index_].get());
+}
+
+const MixerMemory* Mixer::GetMemory(
+    const LongTermMemory& long_term_memory) const {
+  return static_cast<const MixerMemory*>(
+      long_term_memory.model_memory[memory_index_].get());
+}
+
 MixerData* Mixer::FindMixerData(const LongTermMemory& long_term_memory) {
   MixerData* data = nullptr;
-  auto& mixer_table = long_term_memory.mixers[memory_index_].mixer_table;
+  auto& mixer_table = GetMemory(long_term_memory)->mixer_table;
   auto& ptr = mixer_table[context_ % mixer_table.size()];
   if (ptr) {
     data = ptr.get();
@@ -39,7 +51,7 @@ MixerData* Mixer::FindMixerData(const LongTermMemory& long_term_memory) {
 MixerData* Mixer::FindOrCreateMixerData(
     const ShortTermMemory& short_term_memory,
     LongTermMemory& long_term_memory) {
-  auto& mixer_table = long_term_memory.mixers[memory_index_].mixer_table;
+  auto& mixer_table = GetMemory(long_term_memory)->mixer_table;
   auto& ptr = mixer_table[context_ % mixer_table.size()];
   if (!ptr) {
     ++contexts_seen_;
@@ -200,7 +212,61 @@ unsigned long long Mixer::GetMemoryUsage(
   unsigned long long usage = 29;
   int mixer_data_size = weight_size_ * 4 + 12;
   usage += contexts_seen_ * mixer_data_size;
-  auto& mixer_table = long_term_memory.mixers[memory_index_].mixer_table;
+  auto& mixer_table = GetMemory(long_term_memory)->mixer_table;
   usage += 8 * mixer_table.size();
   return usage;
+}
+
+void MixerMemory::WriteToDisk(std::ofstream* s) {
+  unsigned int input_size = 0;
+  std::vector<unsigned int> keys;
+  for (int i = 0; i < mixer_table.size(); ++i) {
+    auto& ptr = mixer_table[i];
+    if (ptr) {
+      keys.push_back(i);
+      input_size = ptr->weights.size();
+    }
+  }
+  unsigned int mixer_size = keys.size();
+  Serialize(s, mixer_size);
+  Serialize(s, input_size);
+  for (unsigned int context : keys) {
+    Serialize(s, context);
+    Serialize(s, mixer_table[context]->steps);
+    SerializeArray(s, mixer_table[context]->weights);
+  }
+}
+
+void MixerMemory::ReadFromDisk(std::ifstream* s) {
+  unsigned int mixer_size = mixer_table.size();
+  mixer_table.clear();
+  mixer_table.resize(mixer_size);
+  mixer_table.shrink_to_fit();
+  Serialize(s, mixer_size);
+  unsigned int input_size;
+  Serialize(s, input_size);
+  for (int i = 0; i < mixer_size; ++i) {
+    unsigned int context;
+    Serialize(s, context);
+    mixer_table[context].reset(new MixerData(input_size));
+    Serialize(s, mixer_table[context]->steps);
+    SerializeArray(s, mixer_table[context]->weights);
+  }
+}
+
+void MixerMemory::Copy(const MemoryInterface* m) {
+  const MixerMemory* orig = static_cast<const MixerMemory*>(m);
+  description = orig->description;
+  mixer_table.clear();
+  mixer_table.resize(orig->mixer_table.size());
+  mixer_table.shrink_to_fit();
+  for (int j = 0; j < orig->mixer_table.size(); ++j) {
+    auto& orig_ptr = orig->mixer_table[j];
+    if (orig_ptr) {
+      auto& ptr = mixer_table[j];
+      ptr.reset(new MixerData(orig_ptr->weights.size()));
+      ptr->steps = orig_ptr->steps;
+      ptr->weights = orig_ptr->weights;
+    }
+  }
 }

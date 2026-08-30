@@ -13,13 +13,25 @@ Match::Match(ShortTermMemory& short_term_memory,
       learning_rate_(1.0 / limit) {
   prediction_index_ =
       short_term_memory.AddPrediction(description, enable_analysis, this);
-  memory_index_ = long_term_memory.match_memory.size();
-  long_term_memory.match_memory.push_back(MatchMemory(table_size));
-  auto& memory = long_term_memory.match_memory.back();
+  memory_index_ = long_term_memory.model_memory.size();
+  long_term_memory.model_memory.push_back(
+      std::make_unique<MatchMemory>(table_size, description));
+  MatchMemory* memory = GetMemory(long_term_memory);
   for (int i = 0; i < 256; ++i) {
-    memory.predictions[i] = 0.5 + (i + 0.5) / 512;
+    memory->predictions[i] = 0.5 + (i + 0.5) / 512;
   }
-  memory.counts.fill(1);
+  memory->counts.fill(1);
+}
+
+MatchMemory* Match::GetMemory(LongTermMemory& long_term_memory) {
+  return static_cast<MatchMemory*>(
+      long_term_memory.model_memory[memory_index_].get());
+}
+
+const MatchMemory* Match::GetMemory(
+    const LongTermMemory& long_term_memory) const {
+  return static_cast<const MatchMemory*>(
+      long_term_memory.model_memory[memory_index_].get());
 }
 
 void Match::Predict(ShortTermMemory& short_term_memory,
@@ -33,7 +45,7 @@ void Match::Predict(ShortTermMemory& short_term_memory,
     match_length_ = 0;
   }
   bit_pos_ /= 2;  // Move to the next bit.
-  const auto& match_memory = long_term_memory.match_memory[memory_index_];
+  const auto& match_memory = *GetMemory(long_term_memory);
 
   if (short_term_memory.recent_bits == 1) {  // Byte boundary.
     // If the history pointer overflows, reset the match.
@@ -79,7 +91,7 @@ void Match::Learn(const ShortTermMemory& short_term_memory,
   if (match_length_ > 2) {
     int match = 0;
     if (short_term_memory.new_bit == ((cur_byte_ & bit_pos_) != 0)) match = 1;
-    auto& match_memory = long_term_memory.match_memory[memory_index_];
+    auto& match_memory = *GetMemory(long_term_memory);
     float learning_rate = learning_rate_;
     if (match_memory.counts[match_length_] < limit_) {
       ++match_memory.counts[match_length_];
@@ -96,7 +108,7 @@ void Match::Learn(const ShortTermMemory& short_term_memory,
       // updated.
       return;
     }
-    auto& match_memory = long_term_memory.match_memory[memory_index_];
+    auto& match_memory = *GetMemory(long_term_memory);
     auto& loc = match_memory.table[byte_context_ % match_memory.table.size()];
     unsigned long long pos = long_term_memory.history.size() - 1;
     // Encode the five byte history pointer.
@@ -136,6 +148,66 @@ unsigned long long Match::GetMemoryUsage(
   unsigned long long usage = 27;
   usage += 256 * 4;  // predictions
   usage += 256 * 4;  // counts
-  usage += 5 * long_term_memory.match_memory[memory_index_].table.size();
+  usage += 5 * GetMemory(long_term_memory)->table.size();
   return usage;
+}
+
+void MatchMemory::WriteToDisk(std::ofstream* s) {
+  std::vector<unsigned int> keys;
+  for (int i = 0; i < table.size(); ++i) {
+    bool valid = false;
+    for (int j = 0; j < 5; ++j) {
+      if (table[i][j] != 0) {
+        valid = true;
+        break;
+      }
+    }
+    if (valid) {
+      keys.push_back(i);
+    }
+  }
+  unsigned int size = keys.size();
+  Serialize(s, size);
+  if (size < (5.0 / 9.0) * table.size()) {
+    // If the table is sparse, encode keys+values.
+    for (unsigned int key : keys) {
+      Serialize(s, key);
+      SerializeArray(s, table[key]);
+    }
+  } else {
+    // If the table is dense, encode all values.
+    for (int i = 0; i < table.size(); ++i) {
+      SerializeArray(s, table[i]);
+    }
+  }
+  SerializeArray(s, predictions);
+  SerializeArray(s, counts);
+}
+
+void MatchMemory::ReadFromDisk(std::ifstream* s) {
+  unsigned int size;
+  Serialize(s, size);
+  if (size < (5.0 / 9.0) * table.size()) {
+    // If the table is sparse, encode keys+values.
+    for (int i = 0; i < size; ++i) {
+      unsigned int key;
+      Serialize(s, key);
+      SerializeArray(s, table[key]);
+    }
+  } else {
+    // If the table is dense, encode all values.
+    for (int i = 0; i < table.size(); ++i) {
+      SerializeArray(s, table[i]);
+    }
+  }
+  SerializeArray(s, predictions);
+  SerializeArray(s, counts);
+}
+
+void MatchMemory::Copy(const MemoryInterface* m) {
+  const MatchMemory* orig = static_cast<const MatchMemory*>(m);
+  description = orig->description;
+  table = orig->table;
+  predictions = orig->predictions;
+  counts = orig->counts;
 }
