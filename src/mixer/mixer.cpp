@@ -110,6 +110,7 @@ void Mixer::Predict(ShortTermMemory& short_term_memory,
   }
   if (layer_number_ == 2) {
     short_term_memory.final_mixer_output = p;
+    // printf("Mixer2 output = %f\n", p);
   } else if (layer_number_ == 1) {
     short_term_memory.mixer_layer1_outputs[output_index_] = p;
   } else {
@@ -120,6 +121,12 @@ void Mixer::Predict(ShortTermMemory& short_term_memory,
 void Mixer::Learn(const ShortTermMemory& short_term_memory,
                   LongTermMemory& long_term_memory) {
   MixerData* data = FindOrCreateMixerData(short_term_memory, long_term_memory);
+  if (data->steps > max_steps_) {
+    max_steps_ = data->steps;
+  }
+  if (steps_ < max_steps_) {
+    steps_ = max_steps_;
+  }
   float decay = 0.9 / pow(0.0000001 * steps_ + 0.8, 0.8);
   decay *= 1.5 - ((1.0 * data->steps) / max_steps_);
   float p;

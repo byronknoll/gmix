@@ -1590,6 +1590,8 @@ class ppmd_Model : public MemoryInterface {
       }
       Serialize(s, HeapStart[i]);
     }
+    MaxContext = (PPM_CONTEXT*)HeapStart;
+    ppmd_PrepareByte();
   }
 
   void Copy(const MemoryInterface* m) {
@@ -1639,6 +1641,8 @@ class ppmd_Model : public MemoryInterface {
         HeapStart[i] = orig->HeapStart[i];
       }
     }
+    MaxContext = (PPM_CONTEXT*)HeapStart;
+    ppmd_PrepareByte();
   }
 };
 

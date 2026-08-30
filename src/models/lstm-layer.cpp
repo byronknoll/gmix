@@ -12,6 +12,7 @@ namespace {
 void Adam(std::valarray<float>* g, std::valarray<float>* m,
           std::valarray<float>* v, std::valarray<float>* w, float learning_rate,
           float t, unsigned long long update_limit) {
+  if (t < 1.0f) t = 1.0f;
   const float beta1 = 0.025, beta2 = 0.9999, eps = 1e-6f;
   float alpha;
   if (t < update_limit) {
