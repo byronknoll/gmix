@@ -9,10 +9,12 @@
 #include "contexts/interval-context.h"
 #include "contexts/skip-context.h"
 #include "mixer/mixer.h"
+#include "models/apm.h"
 #include "models/indirect.h"
 #include "models/lstm-model.h"
 #include "models/match.h"
 #include "models/mod_ppmd.h"
+#include "models/post-mixer-apm.h"
 
 Predictor::Predictor() {
   srand(0xDEADBEEF);
@@ -25,6 +27,7 @@ Predictor::Predictor() {
   AddSkip();
   AddMatch();
   AddDoubleIndirect();
+  AddAPMs();
   AddMixers();
   short_term_memory_.predictions.resize(short_term_memory_.num_predictions);
   short_term_memory_.predictions = 0;
@@ -40,10 +43,10 @@ Predictor::Predictor() {
 }
 
 void Predictor::Copy(const Predictor& p) {
+  long_term_memory_.Copy(&p.long_term_memory_);
   for (int i = 0; i < models_.size(); ++i) {
     models_[i]->Copy(p.models_[i].get());
   }
-  long_term_memory_.Copy(&p.long_term_memory_);
   short_term_memory_.Copy(&p.short_term_memory_);
 }
 
@@ -89,25 +92,22 @@ void Predictor::AddIndirect() {
       new SkipContext({0, 1, 2}, short_term_memory_.last_three_bytes_hash));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 15, short_term_memory_.last_three_bytes_hash,
-                        "Indirect(3_15 byte hash)", enable_analysis));
-  AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
-                        1 << 16, short_term_memory_.last_three_bytes_hash,
-                        "Indirect(3_16 byte hash)", enable_analysis));
+                        "Indirect(3 byte hash)", enable_analysis));
   AddModel(
       new SkipContext({0, 1, 2, 3}, short_term_memory_.last_four_bytes_hash));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 15, short_term_memory_.last_four_bytes_hash,
-                        "Indirect(4_15 byte hash)", enable_analysis));
+                        "Indirect(4 byte hash)", enable_analysis));
   AddModel(new SkipContext({0, 1, 2, 3, 4},
                            short_term_memory_.last_five_bytes_hash));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 15, short_term_memory_.last_five_bytes_hash,
-                        "Indirect(5_15 byte hash)", enable_analysis));
+                        "Indirect(5 byte hash)", enable_analysis));
   AddModel(new SkipContext({0, 1, 2, 3, 4, 5},
                            short_term_memory_.last_six_bytes_hash));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 15, short_term_memory_.last_six_bytes_hash,
-                        "Indirect(6_15 byte hash)", enable_analysis));
+                        "Indirect(6 byte hash)", enable_analysis));
   for (int i = 1; i < 10; ++i) {
     AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                           1 << 8, short_term_memory_.recent_bytes[i],
@@ -248,6 +248,47 @@ void Predictor::AddDoubleIndirect() {
                         "Indirect(indirect_4_24_3_15)", enable_analysis));
 }
 
+void Predictor::AddAPMs() {
+  float lr = 0.035f;
+  bool enable_analysis = false;
+  // APMs on PPM
+  AddModel(new APM(short_term_memory_, long_term_memory_, 0,
+                   short_term_memory_.bit_context, 256, lr,
+                   "APM(PPM,bit_ctx)", enable_analysis));
+  AddModel(new APM(short_term_memory_, long_term_memory_, 0,
+                   short_term_memory_.last_byte, 256, lr,
+                   "APM(PPM,last_byte)", enable_analysis));
+  AddModel(new APM(short_term_memory_, long_term_memory_, 0,
+                   short_term_memory_.last_byte_plus_recent, 65536, lr,
+                   "APM(PPM,last_byte_recent)", enable_analysis));
+
+  // APMs on LSTM
+  AddModel(new APM(short_term_memory_, long_term_memory_, 1,
+                   short_term_memory_.bit_context, 256, lr,
+                   "APM(LSTM,bit_ctx)", enable_analysis));
+  AddModel(new APM(short_term_memory_, long_term_memory_, 1,
+                   short_term_memory_.last_byte, 256, lr,
+                   "APM(LSTM,last_byte)", enable_analysis));
+
+  // APMs on Indirect
+  AddModel(new APM(short_term_memory_, long_term_memory_, 2,
+                   short_term_memory_.bit_context, 256, lr,
+                   "APM(Ind1,bit_ctx)", enable_analysis));
+  AddModel(new APM(short_term_memory_, long_term_memory_, 4,
+                   short_term_memory_.bit_context, 256, lr,
+                   "APM(Ind2,bit_ctx)", enable_analysis));
+
+  // APMs on Match
+  AddModel(new APM(short_term_memory_, long_term_memory_,
+                   short_term_memory_.num_predictions - 1,
+                   short_term_memory_.bit_context, 256, lr,
+                   "APM(Match,bit_ctx)", enable_analysis));
+  AddModel(new APM(short_term_memory_, long_term_memory_,
+                   short_term_memory_.num_predictions - 1,
+                   short_term_memory_.longest_match, 8, lr,
+                   "APM(Match,longest_match)", enable_analysis));
+}
+
 void Predictor::AddMixers() {
   bool enable_analysis = false;
   // First layer.
@@ -355,14 +396,28 @@ void Predictor::AddMixers() {
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.always_zero, 0.0005, 2, 1,
                      "Mixer(final layer)", enable_analysis));
+
+  // Post-Mixer Secondary Symbol Estimation (SSE) stages
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.bit_context, 256, 0.03f, 0.35f,
+                            "PostMixerAPM(bit_ctx)"));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.last_byte_plus_recent, 65536,
+                            0.025f, 0.35f, "PostMixerAPM(last_byte_recent)"));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.second_last_plus_recent, 65536,
+                            0.02f, 0.25f, "PostMixerAPM(2nd_last_recent)"));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.last_two_bytes_hash, 65536,
+                            0.02f, 0.25f, "PostMixerAPM(2_bytes_hash)"));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.longest_match, 8, 0.02f, 0.25f,
+                            "PostMixerAPM(longest_match)"));
 }
 
 float Predictor::Predict() {
   short_term_memory_.active_models.clear();
-  if (sample_frequency_ > 0) {
-    // To compute cross entropy, set "inactive" model predictions to 0.5.
-    short_term_memory_.predictions = 0;
-  }
+  short_term_memory_.predictions = 0;
   for (const auto& model : models_) {
     model->Predict(short_term_memory_, long_term_memory_);
   }
@@ -405,6 +460,11 @@ void Predictor::WriteCheckpoint(std::string path) {
 
 void Predictor::ReadCheckpoint(std::string path,
                                bool restore_short_term_memory) {
+  std::ifstream data_in_long(path + ".long", std::ios::in | std::ios::binary);
+  if (!data_in_long.is_open()) return;
+  long_term_memory_.ReadFromDisk(&data_in_long);
+  data_in_long.close();
+
   if (restore_short_term_memory) {
     std::ifstream data_in_short(path + ".short",
                                 std::ios::in | std::ios::binary);
@@ -415,11 +475,6 @@ void Predictor::ReadCheckpoint(std::string path,
     short_term_memory_.ReadFromDisk(&data_in_short);
     data_in_short.close();
   }
-
-  std::ifstream data_in_long(path + ".long", std::ios::in | std::ios::binary);
-  if (!data_in_long.is_open()) return;
-  long_term_memory_.ReadFromDisk(&data_in_long);
-  data_in_long.close();
 }
 
 void Predictor::EnableAnalysis(int sample_frequency) {

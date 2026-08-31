@@ -11,6 +11,7 @@
 
 #include "mod_ppmd.h"
 
+#include <climits>
 #include <cstring>
 #include <numeric>
 
@@ -1447,19 +1448,19 @@ class ppmd_Model : public MemoryInterface {
     Serialize(s, GlueCount);
     Serialize(s, GlueCount1);
     Serialize(s, SubAllocatorSize);
-    unsigned long long offset = pText - HeapStart;
+    unsigned long long offset = pText ? (pText - HeapStart) : ULLONG_MAX;
     Serialize(s, offset);
-    offset = UnitsStart - HeapStart;
+    offset = UnitsStart ? (UnitsStart - HeapStart) : ULLONG_MAX;
     Serialize(s, offset);
-    offset = LoUnit - HeapStart;
+    offset = LoUnit ? (LoUnit - HeapStart) : ULLONG_MAX;
     Serialize(s, offset);
-    offset = HiUnit - HeapStart;
+    offset = HiUnit ? (HiUnit - HeapStart) : ULLONG_MAX;
     Serialize(s, offset);
-    offset = AuxUnit - HeapStart;
+    offset = AuxUnit ? (AuxUnit - HeapStart) : ULLONG_MAX;
     Serialize(s, offset);
-    offset = (byte*)FoundState - HeapStart;
+    offset = FoundState ? ((byte*)FoundState - HeapStart) : ULLONG_MAX;
     Serialize(s, offset);
-    offset = (byte*)saved_pc - HeapStart;
+    offset = saved_pc ? ((byte*)saved_pc - HeapStart) : ULLONG_MAX;
     Serialize(s, offset);
     Serialize(s, OrderFall);
     Serialize(s, RunLength);
@@ -1533,19 +1534,19 @@ class ppmd_Model : public MemoryInterface {
     Serialize(s, SubAllocatorSize);
     unsigned long long offset;
     Serialize(s, offset);
-    pText = HeapStart + offset;
+    pText = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
     Serialize(s, offset);
-    UnitsStart = HeapStart + offset;
+    UnitsStart = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
     Serialize(s, offset);
-    LoUnit = HeapStart + offset;
+    LoUnit = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
     Serialize(s, offset);
-    HiUnit = HeapStart + offset;
+    HiUnit = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
     Serialize(s, offset);
-    AuxUnit = HeapStart + offset;
+    AuxUnit = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
     Serialize(s, offset);
-    FoundState = (STATE*)(HeapStart + offset);
+    FoundState = (offset != ULLONG_MAX) ? (STATE*)(HeapStart + offset) : nullptr;
     Serialize(s, offset);
-    saved_pc = (PPM_CONTEXT*)(HeapStart + offset);
+    saved_pc = (offset != ULLONG_MAX) ? (PPM_CONTEXT*)(HeapStart + offset) : nullptr;
     Serialize(s, OrderFall);
     Serialize(s, RunLength);
     Serialize(s, InitRL);
@@ -1590,7 +1591,7 @@ class ppmd_Model : public MemoryInterface {
       }
       Serialize(s, HeapStart[i]);
     }
-    MaxContext = (PPM_CONTEXT*)HeapStart;
+    MaxContext = (PPM_CONTEXT*)(HeapStart + SubAllocatorSize - UNIT_SIZE);
     ppmd_PrepareByte();
   }
 
@@ -1602,15 +1603,14 @@ class ppmd_Model : public MemoryInterface {
     GlueCount = orig->GlueCount;
     GlueCount1 = orig->GlueCount1;
     SubAllocatorSize = orig->SubAllocatorSize;
-    pText = HeapStart + (orig->pText - orig->HeapStart);
-    UnitsStart = HeapStart + (orig->UnitsStart - orig->HeapStart);
-    LoUnit = HeapStart + (orig->LoUnit - orig->HeapStart);
-    HiUnit = HeapStart + (orig->HiUnit - orig->HeapStart);
-    AuxUnit = HeapStart + (orig->AuxUnit - orig->HeapStart);
-    FoundState =
-        (STATE*)(HeapStart + ((byte*)orig->FoundState - orig->HeapStart));
-    saved_pc =
-        (PPM_CONTEXT*)(HeapStart + ((byte*)orig->saved_pc - orig->HeapStart));
+    pText = orig->pText ? (HeapStart + (orig->pText - orig->HeapStart)) : nullptr;
+    UnitsStart = orig->UnitsStart ? (HeapStart + (orig->UnitsStart - orig->HeapStart)) : nullptr;
+    LoUnit = orig->LoUnit ? (HeapStart + (orig->LoUnit - orig->HeapStart)) : nullptr;
+    HiUnit = orig->HiUnit ? (HeapStart + (orig->HiUnit - orig->HeapStart)) : nullptr;
+    AuxUnit = orig->AuxUnit ? (HeapStart + (orig->AuxUnit - orig->HeapStart)) : nullptr;
+    FoundState = orig->FoundState ? (STATE*)(HeapStart + ((byte*)orig->FoundState - orig->HeapStart)) : nullptr;
+    saved_pc = orig->saved_pc ? (PPM_CONTEXT*)(HeapStart + ((byte*)orig->saved_pc - orig->HeapStart)) : nullptr;
+    MaxContext = (PPM_CONTEXT*)(HeapStart + SubAllocatorSize - UNIT_SIZE);
     OrderFall = orig->OrderFall;
     RunLength = orig->RunLength;
     InitRL = orig->InitRL;
@@ -1641,7 +1641,6 @@ class ppmd_Model : public MemoryInterface {
         HeapStart[i] = orig->HeapStart[i];
       }
     }
-    MaxContext = (PPM_CONTEXT*)HeapStart;
     ppmd_PrepareByte();
   }
 };

@@ -48,6 +48,7 @@ class Predictor {
   void AddSkip();
   void AddMatch();
   void AddDoubleIndirect();
+  void AddAPMs();
   void AddMixers();
   void AddIntervalContexts();
   void AddModel(Model* model);

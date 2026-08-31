@@ -21,7 +21,7 @@ struct ShortTermMemory : MemoryInterface {
   ShortTermMemory()
       : ppm_predictions(1.0 / 256, 256),
         rotating_history(1000),
-        recent_bytes(10) {}
+        recent_bytes(20) {}
   ~ShortTermMemory() {}
   void WriteToDisk(std::ofstream* s);
   void ReadFromDisk(std::ifstream* s);
@@ -80,6 +80,12 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int last_four_bytes_hash = 0;
   unsigned int last_five_bytes_hash = 0;
   unsigned int last_six_bytes_hash = 0;
+  unsigned int last_seven_bytes_hash = 0;
+  unsigned int last_eight_bytes_hash = 0;
+  unsigned int last_nine_bytes_hash = 0;
+  unsigned int last_ten_bytes_hash = 0;
+  unsigned int last_twelve_bytes_hash = 0;
+  unsigned int last_sixteen_bytes_hash = 0;
   unsigned int last_byte_plus_recent = 0;
   unsigned int second_last_plus_recent = 0;
 
@@ -118,9 +124,21 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int skip_0_5 = 0;
   unsigned int skip_0_6 = 0;
   unsigned int skip_0_7 = 0;
+  unsigned int skip_0_8 = 0;
+  unsigned int skip_0_9 = 0;
+  unsigned int skip_0_1_3 = 0;
+  unsigned int skip_0_1_4 = 0;
+  unsigned int skip_0_1_5 = 0;
+  unsigned int skip_0_2_4 = 0;
+  unsigned int skip_0_2_5 = 0;
+  unsigned int skip_0_3_5 = 0;
   unsigned int skip_0_1_3_4 = 0;
   unsigned int skip_0_4_5 = 0;
   unsigned int skip_0_1_2_4 = 0;
+  unsigned int skip_0_1_2_3_5 = 0;
+  unsigned int stride_2 = 0;
+  unsigned int stride_3 = 0;
+  unsigned int stride_4 = 0;
 
   // Predictions for the next byte of data from PPM. Each prediction is in the
   // 0-1 range.

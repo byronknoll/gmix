@@ -1,4 +1,6 @@
 #include "match.h"
+#include <algorithm>
+#include "../mixer/sigmoid.h"
 
 Match::Match(ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory, unsigned int table_size,
@@ -18,7 +20,7 @@ Match::Match(ShortTermMemory& short_term_memory,
       std::make_unique<MatchMemory>(table_size, description));
   MatchMemory* memory = GetMemory(long_term_memory);
   for (int i = 0; i < 256; ++i) {
-    memory->predictions[i] = 0.5 + (i + 0.5) / 512;
+    memory->predictions[i] = Sigmoid::Logistic(std::min(7.0f, 0.15f * i));
   }
   memory->counts.fill(1);
 }

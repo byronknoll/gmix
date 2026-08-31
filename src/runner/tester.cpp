@@ -315,10 +315,7 @@ bool RunGenerationTest(const std::string& input_path,
   return true;
 }
 
-void Fail() {
-  printf("Test failed.\n");
-  abort();
-}
+#define Fail() do { printf("Test failed at %s:%d\n", __FILE__, __LINE__); abort(); } while(0)
 
 void GenerateRandomData(const std::string& path, unsigned long long size) {
   std::ofstream out(path, std::ios::out | std::ios::binary);
