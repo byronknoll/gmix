@@ -15,6 +15,7 @@
 #include "models/match.h"
 #include "models/mod_ppmd.h"
 #include "models/post-mixer-apm.h"
+#include "models/state-map.h"
 #include "models/stationary-map.h"
 
 Predictor::Predictor() {
@@ -29,6 +30,7 @@ Predictor::Predictor() {
   AddMatch();
   AddDoubleIndirect();
   AddStationaryMaps();
+  AddStateMaps();
   AddAPMs();
   AddMixers();
   short_term_memory_.predictions.resize(short_term_memory_.num_predictions);
@@ -278,6 +280,34 @@ void Predictor::AddStationaryMaps() {
                              65536, 6, "SCM(int16_8)", enable_analysis));
 }
 
+void Predictor::AddStateMaps() {
+  bool enable_analysis = false;
+  AddModel(new StateMap(short_term_memory_, long_term_memory_,
+                        short_term_memory_.last_byte,
+                        65536, 1023, "StateMap(1_byte)", enable_analysis));
+  AddModel(new StateMap(short_term_memory_, long_term_memory_,
+                        short_term_memory_.recent_bytes[1],
+                        65536, 1023, "StateMap(2nd_byte)", enable_analysis));
+  AddModel(new StateMap(short_term_memory_, long_term_memory_,
+                        short_term_memory_.last_two_bytes_hash,
+                        65536, 1023, "StateMap(2_bytes)", enable_analysis));
+  AddModel(new StateMap(short_term_memory_, long_term_memory_,
+                        short_term_memory_.skip_0_2,
+                        65536, 1023, "StateMap(skip_0_2)", enable_analysis));
+  AddModel(new StateMap(short_term_memory_, long_term_memory_,
+                        short_term_memory_.last_three_bytes_hash,
+                        65536, 1023, "StateMap(3_bytes)", enable_analysis));
+  AddModel(new StateMap(short_term_memory_, long_term_memory_,
+                        short_term_memory_.indirect_1_8_1,
+                        65536, 1023, "StateMap(ind1)", enable_analysis));
+  AddModel(new StateMap(short_term_memory_, long_term_memory_,
+                        short_term_memory_.stride_2,
+                        65536, 1023, "StateMap(stride_2)", enable_analysis));
+  AddModel(new StateMap(short_term_memory_, long_term_memory_,
+                        short_term_memory_.interval_16_8,
+                        65536, 1023, "StateMap(int16_8)", enable_analysis));
+}
+
 void Predictor::AddAPMs() {
   float lr = 0.035f;
   bool enable_analysis = false;
@@ -440,9 +470,6 @@ void Predictor::AddMixers() {
   AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
                             short_term_memory_.last_two_bytes_hash, 65536,
                             0.02f, 0.25f, "PostMixerAPM(2_bytes_hash)"));
-  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
-                            short_term_memory_.last_three_bytes_hash, 65536,
-                            0.015f, 0.20f, "PostMixerAPM(3_bytes_hash)"));
   AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
                             short_term_memory_.longest_match, 8, 0.02f, 0.25f,
                             "PostMixerAPM(longest_match)"));

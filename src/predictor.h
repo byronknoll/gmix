@@ -49,6 +49,7 @@ class Predictor {
   void AddMatch();
   void AddDoubleIndirect();
   void AddStationaryMaps();
+  void AddStateMaps();
   void AddAPMs();
   void AddMixers();
   void AddIntervalContexts();

@@ -12,7 +12,8 @@ class ppmd_Model;
 class ModPPMD : public Model {
  public:
   ModPPMD(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
-          int order, int memory, bool enable_analysis);
+          int order, int memory, bool enable_analysis,
+          bool update_shared_ppm_predictions = true);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory);
   void Learn(const ShortTermMemory& short_term_memory,
@@ -44,6 +45,8 @@ class ModPPMD : public Model {
   // to advance again for the same byte. Starts true because the constructor
   // already primes the model for the first byte.
   bool context_advanced_ = true;
+  bool update_shared_ppm_predictions_ = true;
+  std::valarray<float> byte_predictions_;
   // top_, mid_, and bot_ are used to keep track of ranges for converting
   // byte-level predictions to bit-level predictions. The range is updated as
   // bits are observed.

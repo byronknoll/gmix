@@ -130,7 +130,7 @@ class ppmd_Model : public MemoryInterface {
 
   int StartSubAllocator(qword SASize) {
     qword t = SASize << 20U;
-    HeapStart = new byte[t];
+    HeapStart = (byte*)calloc(1, t);
     if (HeapStart == NULL) return 0;
     SubAllocatorSize = t;
     return 1;
@@ -156,7 +156,7 @@ class ppmd_Model : public MemoryInterface {
   void StopSubAllocator() {
     if (SubAllocatorSize) {
       SubAllocatorSize = 0;
-      delete[] HeapStart;
+      free(HeapStart);
     }
   }
 
@@ -1532,6 +1532,7 @@ class ppmd_Model : public MemoryInterface {
     Serialize(s, GlueCount);
     Serialize(s, GlueCount1);
     Serialize(s, SubAllocatorSize);
+    memset(HeapStart, 0, SubAllocatorSize);
     unsigned long long offset;
     Serialize(s, offset);
     pText = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
@@ -1636,11 +1637,10 @@ class ppmd_Model : public MemoryInterface {
     cxt = orig->cxt;
     y = orig->y;
 
-    for (unsigned long long i = 0; i < SubAllocatorSize; ++i) {
-      if (orig->HeapStart[i] != 0 || HeapStart[i] != 0) {
-        HeapStart[i] = orig->HeapStart[i];
-      }
-    }
+    unsigned long long lower_used = orig->pText ? (orig->pText - orig->HeapStart) : 0;
+    if (lower_used > 0) memcpy(HeapStart, orig->HeapStart, lower_used);
+    unsigned long long upper_used = orig->UnitsStart ? (orig->HeapStart + orig->SubAllocatorSize - orig->UnitsStart) : 0;
+    if (upper_used > 0) memcpy(HeapStart + SubAllocatorSize - upper_used, orig->HeapStart + orig->SubAllocatorSize - upper_used, upper_used);
     ppmd_PrepareByte();
   }
 };
@@ -1649,8 +1649,12 @@ class ppmd_Model : public MemoryInterface {
 
 ModPPMD::ModPPMD(ShortTermMemory& short_term_memory,
                  LongTermMemory& long_term_memory, int order, int memory,
-                 bool enable_analysis)
-    : top_(255), mid_(127), bot_(0) {
+                 bool enable_analysis, bool update_shared_ppm_predictions)
+    : update_shared_ppm_predictions_(update_shared_ppm_predictions),
+      byte_predictions_(1.0f / 256, 256),
+      top_(255),
+      mid_(127),
+      bot_(0) {
   prediction_index_ = short_term_memory.AddPrediction(
       "mod_ppmd(" + std::to_string(order) + ")", enable_analysis, this);
   memory_index_ = long_term_memory.model_memory.size();
@@ -1689,12 +1693,13 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
     context_advanced_ = false;
     model->ppmd_PrepareByte();
     for (int i = 0; i < 256; ++i) {
-      short_term_memory.ppm_predictions[i] = model->sqp[i];
-      if (short_term_memory.ppm_predictions[i] < 1)
-        short_term_memory.ppm_predictions[i] = 1;
+      byte_predictions_[i] = model->sqp[i];
+      if (byte_predictions_[i] < 1) byte_predictions_[i] = 1;
     }
-    short_term_memory.ppm_predictions /=
-        short_term_memory.ppm_predictions.sum();
+    byte_predictions_ /= byte_predictions_.sum();
+    if (update_shared_ppm_predictions_) {
+      short_term_memory.ppm_predictions = byte_predictions_;
+    }
     top_ = 255;
     bot_ = 0;
   } else {
@@ -1706,11 +1711,11 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
   }
   mid_ = bot_ + ((top_ - bot_) / 2);
   float num =
-      std::accumulate(&short_term_memory.ppm_predictions[mid_ + 1],
-                      &short_term_memory.ppm_predictions[top_ + 1], 0.0f);
+      std::accumulate(&byte_predictions_[mid_ + 1],
+                      &byte_predictions_[top_ + 1], 0.0f);
   float denom =
-      std::accumulate(&short_term_memory.ppm_predictions[bot_],
-                      &short_term_memory.ppm_predictions[mid_ + 1], num);
+      std::accumulate(&byte_predictions_[bot_],
+                      &byte_predictions_[mid_ + 1], num);
   if (denom != 0) {
     float p = num / denom;
     short_term_memory.SetPrediction(p, prediction_index_);
@@ -1734,6 +1739,8 @@ void ModPPMD::WriteToDisk(std::ofstream* s) {
   Serialize(s, mid_);
   Serialize(s, bot_);
   Serialize(s, context_advanced_);
+  Serialize(s, update_shared_ppm_predictions_);
+  SerializeArray(s, byte_predictions_);
   unsigned int max_context_offset = GetModel(*long_term_memory_)->GetMaxContextOffset();
   Serialize(s, max_context_offset);
 }
@@ -1743,6 +1750,8 @@ void ModPPMD::ReadFromDisk(std::ifstream* s) {
   Serialize(s, mid_);
   Serialize(s, bot_);
   Serialize(s, context_advanced_);
+  Serialize(s, update_shared_ppm_predictions_);
+  SerializeArray(s, byte_predictions_);
   uint max_context_offset;
   Serialize(s, max_context_offset);
   GetModel(*long_term_memory_)->SetMaxContextOffset(max_context_offset);
@@ -1754,6 +1763,8 @@ void ModPPMD::Copy(const MemoryInterface* m) {
   mid_ = orig->mid_;
   bot_ = orig->bot_;
   context_advanced_ = orig->context_advanced_;
+  update_shared_ppm_predictions_ = orig->update_shared_ppm_predictions_;
+  byte_predictions_ = orig->byte_predictions_;
   GetModel(*long_term_memory_)
       ->SetMaxContextOffset(GetModel(*orig->long_term_memory_)->GetMaxContextOffset());
 }
