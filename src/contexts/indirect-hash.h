@@ -26,10 +26,10 @@ class IndirectHash : public Model {
  private:
   // Map from outer context to inner context.
   std::vector<unsigned int> table_;
-  unsigned long long outer_context_ = 0;
-  // These are used to truncate the outer/inner contexts to the correct number
+  int outer_order_ = 1;
+  // These are used to truncate the inner contexts to the correct number
   // of bits (based on the context order).
-  unsigned long long outer_mod_, inner_mod_;
+  unsigned long long inner_mod_;
   unsigned int outer_hash_ = 0;
   unsigned int& context_;
 };
