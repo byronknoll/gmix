@@ -43,11 +43,13 @@ PostMixerAPM::PostMixerAPM(ShortTermMemory& short_term_memory,
                            unsigned int num_contexts,
                            float learning_rate,
                            float blend_weight,
-                           std::string description)
+                           std::string description,
+                           bool hash_with_bit_context)
     : context_(context),
       num_contexts_(num_contexts),
       learning_rate_(learning_rate),
-      blend_weight_(blend_weight) {
+      blend_weight_(blend_weight),
+      hash_with_bit_context_(hash_with_bit_context) {
   memory_index_ = long_term_memory.model_memory.size();
   long_term_memory.model_memory.push_back(
       std::make_unique<PostMixerAPMMemory>(num_contexts_, kNumBins, description));
@@ -76,7 +78,11 @@ void PostMixerAPM::Predict(ShortTermMemory& short_term_memory,
   if (b > kNumBins - 2) b = kNumBins - 2;
   float w = u - b;
 
-  unsigned int c = context_ % num_contexts_;
+  unsigned int c = hash_with_bit_context_
+                       ? (((context_ * 2654435761u) ^
+                           (short_term_memory.bit_context * 2246822519u)) &
+                          (num_contexts_ - 1))
+                       : (context_ & (num_contexts_ - 1));
   unsigned int idx = c * kNumBins + b;
 
   const auto& mem = *GetMemory(long_term_memory);
@@ -125,6 +131,7 @@ void PostMixerAPM::Copy(const MemoryInterface* m) {
   last_bin_ = orig->last_bin_;
   last_weight_ = orig->last_weight_;
   last_output_ = orig->last_output_;
+  hash_with_bit_context_ = orig->hash_with_bit_context_;
 }
 
 unsigned long long PostMixerAPM::GetMemoryUsage(

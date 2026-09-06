@@ -38,7 +38,8 @@ class Match : public Model {
   // description: a short identifier for this model.
   Match(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
         unsigned int table_size, const unsigned int& byte_context,
-        int limit, std::string description, bool enable_analysis);
+        int limit, std::string description, bool enable_analysis,
+        bool add_skip_connection = false);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory) override;
   void Learn(const ShortTermMemory& short_term_memory,
@@ -63,6 +64,7 @@ class Match : public Model {
   // This represents the number of consecutive bit matches (0-255).
   unsigned char match_length_;
   int limit_, prediction_index_, memory_index_;
+  unsigned int mask_;
   float learning_rate_;
 };
 

@@ -60,6 +60,8 @@ class Mixer : public Model {
   unsigned long long max_steps_;
   // steps_ is the number of times "Learn" has been called.
   unsigned long long steps_;
+  // cached_decay_ avoids expensive pow() call on every single bit.
+  float cached_decay_ = 0.9f / 0.836511642f;
   // contexts_seen_ is the number of unique contexts which have been seen.
   unsigned long long contexts_seen_ = 0;
   int output_index_, memory_index_, weight_size_;

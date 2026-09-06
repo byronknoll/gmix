@@ -199,7 +199,8 @@ void Predictor::AddMatch() {
                      "Match(2 bytes)", enable_analysis));
   AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 20,
                      short_term_memory_.last_three_bytes_hash, limit,
-                     "Match(3 bytes)", enable_analysis));
+                     "Match(3 bytes)", enable_analysis,
+                     /*add_skip_connection=*/true));
   AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 19,
                      short_term_memory_.last_four_bytes_hash, limit,
                      "Match(4 byte hash)", enable_analysis));
@@ -209,6 +210,43 @@ void Predictor::AddMatch() {
   AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 19,
                      short_term_memory_.last_six_bytes_hash, limit,
                      "Match(6 byte hash)", enable_analysis));
+  AddModel(new SkipContext({0, 1, 2, 3, 4, 5, 6, 7},
+                           short_term_memory_.last_eight_bytes_hash));
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 19,
+                     short_term_memory_.last_eight_bytes_hash, limit,
+                     "Match(8 bytes)", enable_analysis,
+                     /*add_skip_connection=*/true));
+  AddModel(new SkipContext({0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+                           short_term_memory_.last_ten_bytes_hash));
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 19,
+                     short_term_memory_.last_ten_bytes_hash, limit,
+                     "Match(10 bytes)", enable_analysis,
+                     /*add_skip_connection=*/true));
+  AddModel(new SkipContext({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+                           short_term_memory_.last_twelve_bytes_hash));
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 19,
+                     short_term_memory_.last_twelve_bytes_hash, limit,
+                     "Match(12 bytes)", enable_analysis,
+                     /*add_skip_connection=*/true));
+  AddModel(new SkipContext(
+      {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+      short_term_memory_.last_sixteen_bytes_hash));
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 19,
+                     short_term_memory_.last_sixteen_bytes_hash, limit,
+                     "Match(16 bytes)", enable_analysis,
+                     /*add_skip_connection=*/true));
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 19,
+                     short_term_memory_.skip_0_2, limit,
+                     "Match(skip_0_2)", enable_analysis,
+                     /*add_skip_connection=*/true));
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 19,
+                     short_term_memory_.skip_0_3, limit,
+                     "Match(skip_0_3)", enable_analysis,
+                     /*add_skip_connection=*/true));
+  AddModel(new Match(short_term_memory_, long_term_memory_, 1 << 19,
+                     short_term_memory_.skip_0_2_3, limit,
+                     "Match(skip_0_2_3)", enable_analysis,
+                     /*add_skip_connection=*/true));
 }
 
 void Predictor::AddDoubleIndirect() {
@@ -254,58 +292,56 @@ void Predictor::AddDoubleIndirect() {
 
 void Predictor::AddStationaryMaps() {
   bool enable_analysis = false;
+  unsigned int small_table = 65536;
+  unsigned int hash_table = 262144;
   AddModel(new StationaryMap(short_term_memory_, long_term_memory_,
                              short_term_memory_.last_byte,
-                             65536, 6, "SCM(1_byte)", enable_analysis));
+                             small_table, 6, "SCM(1_byte)", enable_analysis));
   AddModel(new StationaryMap(short_term_memory_, long_term_memory_,
                              short_term_memory_.recent_bytes[1],
-                             65536, 6, "SCM(2nd_byte)", enable_analysis));
+                             small_table, 6, "SCM(2nd_byte)", enable_analysis));
   AddModel(new StationaryMap(short_term_memory_, long_term_memory_,
                              short_term_memory_.last_two_bytes_hash,
-                             65536, 5, "SCM(2_bytes)", enable_analysis));
+                             hash_table, 5, "SCM(2_bytes)", enable_analysis));
   AddModel(new StationaryMap(short_term_memory_, long_term_memory_,
                              short_term_memory_.skip_0_2,
-                             65536, 6, "SCM(skip_0_2)", enable_analysis));
+                             hash_table, 6, "SCM(skip_0_2)", enable_analysis));
   AddModel(new StationaryMap(short_term_memory_, long_term_memory_,
                              short_term_memory_.last_three_bytes_hash,
-                             65536, 5, "SCM(3_bytes)", enable_analysis));
+                             hash_table, 5, "SCM(3_bytes)", enable_analysis));
   AddModel(new StationaryMap(short_term_memory_, long_term_memory_,
                              short_term_memory_.indirect_1_8_1,
-                             65536, 6, "SCM(ind1)", enable_analysis));
-  AddModel(new StationaryMap(short_term_memory_, long_term_memory_,
-                             short_term_memory_.stride_2,
-                             65536, 6, "SCM(stride_2)", enable_analysis));
+                             hash_table, 6, "SCM(ind1)", enable_analysis));
   AddModel(new StationaryMap(short_term_memory_, long_term_memory_,
                              short_term_memory_.interval_16_8,
-                             65536, 6, "SCM(int16_8)", enable_analysis));
+                             small_table, 6, "SCM(int16_8)", enable_analysis));
 }
 
 void Predictor::AddStateMaps() {
   bool enable_analysis = false;
+  unsigned int small_table = 65536;
+  unsigned int hash_table = 262144;
   AddModel(new StateMap(short_term_memory_, long_term_memory_,
                         short_term_memory_.last_byte,
-                        65536, 1023, "StateMap(1_byte)", enable_analysis));
+                        small_table, 1023, "StateMap(1_byte)", enable_analysis));
   AddModel(new StateMap(short_term_memory_, long_term_memory_,
                         short_term_memory_.recent_bytes[1],
-                        65536, 1023, "StateMap(2nd_byte)", enable_analysis));
+                        small_table, 1023, "StateMap(2nd_byte)", enable_analysis));
   AddModel(new StateMap(short_term_memory_, long_term_memory_,
                         short_term_memory_.last_two_bytes_hash,
-                        65536, 1023, "StateMap(2_bytes)", enable_analysis));
+                        hash_table, 1023, "StateMap(2_bytes)", enable_analysis));
   AddModel(new StateMap(short_term_memory_, long_term_memory_,
                         short_term_memory_.skip_0_2,
-                        65536, 1023, "StateMap(skip_0_2)", enable_analysis));
+                        hash_table, 1023, "StateMap(skip_0_2)", enable_analysis));
   AddModel(new StateMap(short_term_memory_, long_term_memory_,
                         short_term_memory_.last_three_bytes_hash,
-                        65536, 1023, "StateMap(3_bytes)", enable_analysis));
+                        hash_table, 1023, "StateMap(3_bytes)", enable_analysis));
   AddModel(new StateMap(short_term_memory_, long_term_memory_,
                         short_term_memory_.indirect_1_8_1,
-                        65536, 1023, "StateMap(ind1)", enable_analysis));
-  AddModel(new StateMap(short_term_memory_, long_term_memory_,
-                        short_term_memory_.stride_2,
-                        65536, 1023, "StateMap(stride_2)", enable_analysis));
+                        hash_table, 1023, "StateMap(ind1)", enable_analysis));
   AddModel(new StateMap(short_term_memory_, long_term_memory_,
                         short_term_memory_.interval_16_8,
-                        65536, 1023, "StateMap(int16_8)", enable_analysis));
+                        small_table, 1023, "StateMap(int16_8)", enable_analysis));
 }
 
 void Predictor::AddAPMs() {
@@ -321,6 +357,9 @@ void Predictor::AddAPMs() {
   AddModel(new APM(short_term_memory_, long_term_memory_, 0,
                    short_term_memory_.last_byte_plus_recent, 65536, lr,
                    "APM(PPM,last_byte_recent)", enable_analysis));
+  AddModel(new APM(short_term_memory_, long_term_memory_, 0,
+                   short_term_memory_.last_two_bytes_hash, 65536, lr,
+                   "APM(PPM,2_bytes_hash)", enable_analysis));
 
   // APMs on LSTM
   AddModel(new APM(short_term_memory_, long_term_memory_, 1,
@@ -469,7 +508,44 @@ void Predictor::AddMixers() {
                             0.02f, 0.25f, "PostMixerAPM(2nd_last_recent)"));
   AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
                             short_term_memory_.last_two_bytes_hash, 65536,
-                            0.02f, 0.25f, "PostMixerAPM(2_bytes_hash)"));
+                            0.02f, 0.25f, "PostMixerAPM(2_bytes_hash)",
+                            /*hash_with_bit_context=*/true));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.last_three_bytes_hash, 65536,
+                            0.015f, 0.20f, "PostMixerAPM(3_bytes_hash)",
+                            /*hash_with_bit_context=*/true));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.last_four_bytes_hash, 65536,
+                            0.012f, 0.15f, "PostMixerAPM(4_bytes_hash)",
+                            /*hash_with_bit_context=*/true));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.skip_0_2, 65536,
+                            0.015f, 0.20f, "PostMixerAPM(skip_0_2)",
+                            /*hash_with_bit_context=*/true));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.indirect_1_8_1, 65536,
+                            0.015f, 0.20f, "PostMixerAPM(indirect_1_8_1)",
+                            /*hash_with_bit_context=*/true));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.skip_0_3, 65536,
+                            0.015f, 0.20f, "PostMixerAPM(skip_0_3)",
+                            /*hash_with_bit_context=*/true));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.skip_0_2_3, 65536,
+                            0.015f, 0.20f, "PostMixerAPM(skip_0_2_3)",
+                            /*hash_with_bit_context=*/true));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.interval_16_8, 65536,
+                            0.015f, 0.20f, "PostMixerAPM(interval_16_8)",
+                            /*hash_with_bit_context=*/true));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.indirect_2_16_1, 65536,
+                            0.015f, 0.20f, "PostMixerAPM(indirect_2_16_1)",
+                            /*hash_with_bit_context=*/true));
+  AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
+                            short_term_memory_.indirect_3_24_1, 65536,
+                            0.015f, 0.20f, "PostMixerAPM(indirect_3_24_1)",
+                            /*hash_with_bit_context=*/true));
   AddModel(new PostMixerAPM(short_term_memory_, long_term_memory_,
                             short_term_memory_.longest_match, 8, 0.02f, 0.25f,
                             "PostMixerAPM(longest_match)"));

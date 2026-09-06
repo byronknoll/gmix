@@ -127,8 +127,10 @@ void Mixer::Learn(const ShortTermMemory& short_term_memory,
   if (steps_ < max_steps_) {
     steps_ = max_steps_;
   }
-  float decay = 0.9 / pow(0.0000001 * steps_ + 0.8, 0.8);
-  decay *= 1.5 - ((1.0 * data->steps) / max_steps_);
+  if ((steps_ & 15) == 0) {
+    cached_decay_ = 0.9f / std::pow(0.0000001f * steps_ + 0.8f, 0.8f);
+  }
+  float decay = cached_decay_ * (1.5f - ((1.0f * data->steps) / max_steps_));
   float p;
   if (layer_number_ == 2) {
     p = Sigmoid::Logistic(short_term_memory.final_mixer_output);
@@ -204,6 +206,7 @@ void Mixer::ReadFromDisk(std::ifstream* s) {
   Serialize(s, steps_);
   Serialize(s, max_steps_);
   Serialize(s, contexts_seen_);
+  cached_decay_ = 0.9f / std::pow(0.0000001f * steps_ + 0.8f, 0.8f);
 }
 
 void Mixer::Copy(const MemoryInterface* m) {
@@ -211,6 +214,7 @@ void Mixer::Copy(const MemoryInterface* m) {
   steps_ = orig->steps_;
   max_steps_ = orig->max_steps_;
   contexts_seen_ = orig->contexts_seen_;
+  cached_decay_ = orig->cached_decay_;
 }
 
 unsigned long long Mixer::GetMemoryUsage(

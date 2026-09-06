@@ -50,9 +50,15 @@ const StationaryMapMemory* StationaryMap::GetMemory(
 
 void StationaryMap::Predict(ShortTermMemory& short_term_memory,
                             const LongTermMemory& long_term_memory) {
-  unsigned int full_ctx =
-      (context_ << 8) | (short_term_memory.bit_context & 0xff);
-  unsigned int idx = full_ctx % num_contexts_;
+  unsigned int idx;
+  if (context_ < 256 && num_contexts_ <= 65536) {
+    idx = ((context_ << 8) | (short_term_memory.bit_context & 0xff)) & (num_contexts_ - 1);
+  } else {
+    uint32_t h = (context_ ^ (context_ >> 16)) * 2654435761u +
+                 (short_term_memory.bit_context * 2246822519u);
+    h ^= (h >> 13);
+    idx = h & (num_contexts_ - 1);
+  }
   const auto& mem = *GetMemory(long_term_memory);
   uint16_t val = mem.table[idx];
   float p = (static_cast<float>(val) + 0.5f) / 65536.0f;

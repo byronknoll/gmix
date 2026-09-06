@@ -31,7 +31,8 @@ class PostMixerAPM : public Model {
                unsigned int num_contexts,
                float learning_rate,
                float blend_weight,
-               std::string description);
+               std::string description,
+               bool hash_with_bit_context = false);
   ~PostMixerAPM() {}
 
   void Predict(ShortTermMemory& short_term_memory,
@@ -51,6 +52,7 @@ class PostMixerAPM : public Model {
   float learning_rate_;
   float blend_weight_;
   int memory_index_;
+  bool hash_with_bit_context_ = false;
 
   // Short-term state.
   unsigned int last_context_ = 0;

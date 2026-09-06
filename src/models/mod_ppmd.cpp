@@ -1657,6 +1657,7 @@ ModPPMD::ModPPMD(ShortTermMemory& short_term_memory,
       bot_(0) {
   prediction_index_ = short_term_memory.AddPrediction(
       "mod_ppmd(" + std::to_string(order) + ")", enable_analysis, this);
+  short_term_memory.models_with_skip_connection.push_back(prediction_index_);
   memory_index_ = long_term_memory.model_memory.size();
   long_term_memory_ = &long_term_memory;
   long_term_memory.model_memory.push_back(std::make_unique<ppmd_Model>());

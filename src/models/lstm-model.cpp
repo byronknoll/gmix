@@ -4,7 +4,7 @@
 
 LstmModel::LstmModel(ShortTermMemory& short_term_memory,
                      LongTermMemory& long_term_memory, bool enable_analysis)
-    : lstm_(256, 256, 50, 1, 100, 0.03, 10, long_term_memory),
+    : lstm_(256, 256, 200, 2, 100, 0.03, 10, long_term_memory),
       top_(255),
       mid_(127),
       bot_(0),
@@ -89,9 +89,17 @@ unsigned long long LstmModel::GetMemoryUsage(
   unsigned long long usage = 16;
   usage += 256 * 4;  // probs_
   const LstmMemory* mem = lstm_.GetMemory(long_term_memory);
-  usage += 4 * mem->lstm_output_layer.size() *
-           mem->lstm_output_layer[0].size() *
-           mem->lstm_output_layer[0][0].size();
+#ifdef P1_MODE
+  if (mem->output_w.size() > 0) {
+    usage += 4 * mem->output_w.size() * mem->output_w[0].size();
+  }
+#else
+  if (mem->lstm_output_layer.size() > 0) {
+    usage += 4 * mem->lstm_output_layer.size() *
+             mem->lstm_output_layer[0].size() *
+             mem->lstm_output_layer[0][0].size();
+  }
+#endif
   for (const auto& layer : mem->neuron_layer_weights) {
     usage += 4 * layer.weights.size() * layer.weights[0].size();
   }

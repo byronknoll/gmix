@@ -6,9 +6,22 @@
 #include <numeric>
 
 #include "../mixer/sigmoid.h"
+#ifdef P2_FASTMATH
+#include "../mixer/fastmath.h"
+#define FAST_TANH fast_tanh
+#define FAST_TANH_VEC fast_tanh_vec
+#define LSTM_LOGISTIC fast_logistic
+#define LSTM_EXPF fast_expf
+#else
+#define FAST_TANH tanhf
+#define FAST_TANH_VEC tanhf
+#define LSTM_LOGISTIC Sigmoid::Logistic
+#define LSTM_EXPF expf
+#endif
 
 namespace {
 
+#ifdef STOCK_VALARRAY
 void Adam(std::valarray<float>* g, std::valarray<float>* m,
           std::valarray<float>* v, std::valarray<float>* w, float learning_rate,
           float t, unsigned long long update_limit) {
@@ -33,6 +46,33 @@ void Adam(std::valarray<float>* g, std::valarray<float>* m,
                  (sqrt((*v) / (float)(1.0f - pow(beta2, update_limit)) + eps)));
   }
 }
+#else
+void Adam(std::valarray<float>* g, std::valarray<float>* m,
+          std::valarray<float>* v, std::valarray<float>* w, float learning_rate,
+          float t, unsigned long long update_limit) {
+  if (t < 1.0f) t = 1.0f;
+  const float beta1 = 0.025f, beta2 = 0.9999f, eps = 1e-6f;
+  float t_used = (t < update_limit) ? t : static_cast<float>(update_limit);
+  float alpha = learning_rate * 0.1f / std::sqrt(5e-5f * t_used + 1.0f);
+  float inv_b1 = 1.0f / (1.0f - std::pow(beta1, t_used));
+  float inv_b2 = 1.0f / (1.0f - std::pow(beta2, t_used));
+  const size_t sz = g->size();
+  float* gp = &(*g)[0];
+  float* mp = &(*m)[0];
+  float* vp = &(*v)[0];
+  float* wp = &(*w)[0];
+  for (size_t i = 0; i < sz; ++i) {
+    float gi = gp[i];
+    float mi = mp[i] * beta1 + (1.0f - beta1) * gi;
+    float vi = vp[i] * beta2 + (1.0f - beta2) * gi * gi;
+    mp[i] = mi;
+    vp[i] = vi;
+    float m_hat = mi * inv_b1;
+    float v_hat = vi * inv_b2;
+    wp[i] -= alpha * (m_hat / (std::sqrt(v_hat + eps)));
+  }
+}
+#endif
 
 }  // namespace
 
@@ -55,6 +95,10 @@ NeuronLayer::NeuronLayer(unsigned int input_size, unsigned int num_cells,
       v_(std::valarray<float>(input_size), num_cells),
       transpose_(std::valarray<float>(num_cells), input_size - offset),
       norm_(std::valarray<float>(num_cells), horizon) {
+#ifdef P3_BATCH
+  error_hist_.resize(horizon);
+  for (int e = 0; e < horizon; ++e) error_hist_[e].resize(num_cells);
+#endif
   layer_index_ = lstm_memory.neuron_layer_weights.size();
   lstm_memory.neuron_layer_weights.push_back(
       NeuronLayerWeights(input_size, num_cells));
@@ -180,29 +224,59 @@ LstmLayer::LstmLayer(unsigned int input_size, unsigned int auxiliary_input_size,
   float val = sqrt(6.0f / float(input_size_ + output_size_));
   float low = -val;
   float range = 2 * val;
+  auto& fg_weights =
+      lstm_memory.neuron_layer_weights[forget_gate_.layer_index_].weights;
+  auto& in_weights =
+      lstm_memory.neuron_layer_weights[input_node_.layer_index_].weights;
+  auto& og_weights =
+      lstm_memory.neuron_layer_weights[output_gate_.layer_index_].weights;
   for (unsigned int i = 0; i < num_cells_; ++i) {
-    for (unsigned int j = 0;
-         j < lstm_memory.neuron_layer_weights[0].weights[i].size(); ++j) {
-      lstm_memory.neuron_layer_weights[0].weights[i][j] =
-          low + Rand() * range;
-      lstm_memory.neuron_layer_weights[1].weights[i][j] =
-          low + Rand() * range;
-      lstm_memory.neuron_layer_weights[2].weights[i][j] =
-          low + Rand() * range;
+    for (unsigned int j = 0; j < fg_weights[i].size(); ++j) {
+      fg_weights[i][j] = low + Rand() * range;
+      in_weights[i][j] = low + Rand() * range;
+      og_weights[i][j] = low + Rand() * range;
     }
-
-    lstm_memory.neuron_layer_weights[forget_gate_.layer_index_]
-        .weights[i][input_size - 1] = 1;
+    fg_weights[i][input_size - 1] = 1;
   }
+#ifdef P3_BATCH
+  input_hist_.resize(horizon, nullptr);
+  sym_hist_.resize(horizon, 0);
+#endif
+#ifdef LSTM_QUANT
+  qcols_ = input_size - output_size - 1;
+  qstride_ = (qcols_ + (LSTM_QUANT_PAD - 1)) & ~(LSTM_QUANT_PAD - 1);
+  if (qcols_ == 0 || qstride_ > 65536u) {
+    fprintf(stderr, "LSTM_QUANT: unsupported width qcols=%u\n", qcols_);
+    abort();
+  }
+  qinput_.assign(qstride_, 0);
+#ifdef LSTM_QUANT_KERNEL_VNNI
+  qinput_biased_.assign(qstride_, 128);
+#endif
+  NeuronLayer* gates[3] = {&forget_gate_, &input_node_, &output_gate_};
+  for (int g = 0; g < 3; ++g) {
+    gates[g]->qweights_.assign((size_t)num_cells_ * qstride_, 0);
+    gates[g]->qscale_.assign(num_cells_, 1.0f);
+    gates[g]->qrowsum_.assign(num_cells_, 0);
+  }
+#endif
 }
 
 void LstmLayer::ForwardPass(const std::valarray<float>& input, int input_symbol,
                             std::valarray<float>* hidden, int hidden_start,
                             const LstmMemory& lstm_memory) {
   last_state_[epoch_] = state_;
+#ifdef LSTM_QUANT
+  if (qdirty_) {
+    QuantRequantize(lstm_memory);
+    qdirty_ = false;
+  }
+  QuantizeInput(input);
+#endif
   ForwardPass(forget_gate_, input, input_symbol, lstm_memory);
   ForwardPass(input_node_, input, input_symbol, lstm_memory);
   ForwardPass(output_gate_, input, input_symbol, lstm_memory);
+#ifdef STOCK_VALARRAY
   for (unsigned int i = 0; i < num_cells_; ++i) {
     forget_gate_.state_[epoch_][i] =
         Sigmoid::Logistic(forget_gate_.state_[epoch_][i]);
@@ -216,6 +290,27 @@ void LstmLayer::ForwardPass(const std::valarray<float>& input, int input_symbol,
   tanh_state_[epoch_] = tanh(state_);
   std::slice slice = std::slice(hidden_start, num_cells_, 1);
   (*hidden)[slice] = output_gate_.state_[epoch_] * tanh_state_[epoch_];
+#else
+  for (unsigned int i = 0; i < num_cells_; ++i) {
+    forget_gate_.state_[epoch_][i] =
+        LSTM_LOGISTIC(forget_gate_.state_[epoch_][i]);
+    input_node_.state_[epoch_][i] = FAST_TANH(input_node_.state_[epoch_][i]);
+    output_gate_.state_[epoch_][i] =
+        LSTM_LOGISTIC(output_gate_.state_[epoch_][i]);
+  }
+  input_gate_state_[epoch_] = 1.0f - forget_gate_.state_[epoch_];
+  state_ *= forget_gate_.state_[epoch_];
+  state_ += input_node_.state_[epoch_] * input_gate_state_[epoch_];
+#ifdef P2_FASTMATH
+  tanh_state_[epoch_] = FAST_TANH_VEC(state_);
+#else
+  for (unsigned int i = 0; i < num_cells_; ++i) {
+    tanh_state_[epoch_][i] = FAST_TANH(state_[i]);
+  }
+#endif
+  std::slice slice = std::slice(hidden_start, num_cells_, 1);
+  (*hidden)[slice] = output_gate_.state_[epoch_] * tanh_state_[epoch_];
+#endif
   ++epoch_;
   if (epoch_ == horizon_) epoch_ = 0;
 }
@@ -225,6 +320,7 @@ void LstmLayer::ForwardPass(NeuronLayer& neurons,
                             const LstmMemory& lstm_memory) {
   const auto& weights =
       lstm_memory.neuron_layer_weights[neurons.layer_index_].weights;
+#ifdef STOCK_VALARRAY
   for (unsigned int i = 0; i < num_cells_; ++i) {
     float f = weights[i][input_symbol];
     for (unsigned int j = 0; j < input.size(); ++j) {
@@ -239,21 +335,69 @@ void LstmLayer::ForwardPass(NeuronLayer& neurons,
   neurons.norm_[epoch_] *= neurons.ivar_[epoch_];
   neurons.state_[epoch_] =
       neurons.norm_[epoch_] * neurons.gamma_ + neurons.beta_;
+#else
+  float sum_sq = 0.0f;
+  float* norm_row = &neurons.norm_[epoch_][0];
+#ifdef LSTM_QUANT
+  const unsigned int bias_col = (unsigned int)weights[0].size() - 1;
+  for (unsigned int i = 0; i < num_cells_; ++i) {
+    const LstmQuantAcc acc = QuantDotRow(neurons, i);
+    float f = weights[i][input_symbol] + weights[i][bias_col] +
+              (float)acc * (neurons.qscale_[i] * qact_scale_);
+    norm_row[i] = f;
+    sum_sq += f * f;
+  }
+#else
+  const float* inp = &input[0];
+  const size_t inp_sz = input.size();
+  for (unsigned int i = 0; i < num_cells_; ++i) {
+    const float* w_row = &weights[i][output_size_];
+    float f = weights[i][input_symbol];
+    for (size_t j = 0; j < inp_sz; ++j) {
+      f += inp[j] * w_row[j];
+    }
+    norm_row[i] = f;
+    sum_sq += f * f;
+  }
+#endif
+  float ivar = 1.0f / std::sqrt((sum_sq / num_cells_) + 1e-5f);
+  neurons.ivar_[epoch_] = ivar;
+  float* state_row = &neurons.state_[epoch_][0];
+  const float* gamma = &neurons.gamma_[0];
+  const float* beta = &neurons.beta_[0];
+  for (unsigned int i = 0; i < num_cells_; ++i) {
+    norm_row[i] *= ivar;
+    state_row[i] = norm_row[i] * gamma[i] + beta[i];
+  }
+#endif
 }
 
 void LstmLayer::ClipGradients(std::valarray<float>* arr) {
+#ifdef STOCK_VALARRAY
   for (unsigned int i = 0; i < arr->size(); ++i) {
     if ((*arr)[i] < -gradient_clip_)
       (*arr)[i] = -gradient_clip_;
     else if ((*arr)[i] > gradient_clip_)
       (*arr)[i] = gradient_clip_;
   }
+#else
+  float* p = &(*arr)[0];
+  const size_t sz = arr->size();
+  const float gc = gradient_clip_;
+  for (size_t i = 0; i < sz; ++i) {
+    if (p[i] < -gc)
+      p[i] = -gc;
+    else if (p[i] > gc)
+      p[i] = gc;
+  }
+#endif
 }
 
 void LstmLayer::BackwardPass(const std::valarray<float>& input, int epoch,
                              int layer, int input_symbol,
                              std::valarray<float>* hidden_error,
                              LstmMemory& lstm_memory) {
+#ifdef STOCK_VALARRAY
   if (epoch == (int)horizon_ - 1) {
     stored_error_ = *hidden_error;
     state_error_ = 0;
@@ -282,6 +426,57 @@ void LstmLayer::BackwardPass(const std::valarray<float>& input, int epoch,
       ++update_steps_;
     }
   }
+#else
+  if (epoch == (int)horizon_ - 1) {
+    stored_error_ = *hidden_error;
+    state_error_ = 0;
+  } else {
+    stored_error_ += *hidden_error;
+  }
+
+  float* out_err = &output_gate_.error_[0];
+  float* in_err = &input_node_.error_[0];
+  float* f_err = &forget_gate_.error_[0];
+  float* st_err = &state_error_[0];
+  const float* stored_err = &stored_error_[0];
+  const float* tanh_s = &tanh_state_[epoch][0];
+  const float* out_s = &output_gate_.state_[epoch][0];
+  const float* in_s = &input_node_.state_[epoch][0];
+  const float* f_s = &forget_gate_.state_[epoch][0];
+  const float* in_gate_s = &input_gate_state_[epoch][0];
+  const float* last_s = &last_state_[epoch][0];
+
+  for (unsigned int i = 0; i < num_cells_; ++i) {
+    float se = stored_err[i];
+    float ts = tanh_s[i];
+    float os = out_s[i];
+    out_err[i] = ts * se * os * (1.0f - os);
+    float s_err = st_err[i] + se * os * (1.0f - ts * ts);
+    float is = in_s[i];
+    float igs = in_gate_s[i];
+    in_err[i] = s_err * igs * (1.0f - is * is);
+    float fs = f_s[i];
+    f_err[i] = (last_s[i] - is) * s_err * fs * igs;
+    st_err[i] = s_err;
+  }
+
+  *hidden_error = 0;
+  if (epoch > 0) {
+    for (unsigned int i = 0; i < num_cells_; ++i) {
+      st_err[i] *= f_s[i];
+    }
+    stored_error_ = 0;
+  } else {
+    if (update_steps_ < update_limit_) {
+      ++update_steps_;
+    }
+  }
+#endif
+
+#ifdef P3_BATCH
+  input_hist_[epoch] = &input;
+  sym_hist_[epoch] = input_symbol;
+#endif
 
   BackwardPass(forget_gate_, input, epoch, layer, input_symbol, hidden_error,
                lstm_memory);
@@ -289,6 +484,10 @@ void LstmLayer::BackwardPass(const std::valarray<float>& input, int epoch,
                lstm_memory);
   BackwardPass(output_gate_, input, epoch, layer, input_symbol, hidden_error,
                lstm_memory);
+
+#ifdef LSTM_QUANT
+  if (epoch == 0) qdirty_ = true;
+#endif
 
   ClipGradients(&state_error_);
   ClipGradients(&stored_error_);
@@ -302,6 +501,7 @@ void LstmLayer::BackwardPass(NeuronLayer& neurons,
                              LstmMemory& lstm_memory) {
   auto& weights =
       lstm_memory.neuron_layer_weights[neurons.layer_index_].weights;
+#ifdef STOCK_VALARRAY
   if (epoch == (int)horizon_ - 1) {
     neurons.gamma_u_ = 0;
     neurons.beta_u_ = 0;
@@ -352,6 +552,166 @@ void LstmLayer::BackwardPass(NeuronLayer& neurons,
     Adam(&neurons.beta_u_, &neurons.beta_m_, &neurons.beta_v_, &neurons.beta_,
          learning_rate_, update_steps_, update_limit_);
   }
+#else
+  if (epoch == (int)horizon_ - 1) {
+    neurons.gamma_u_ = 0;
+    neurons.beta_u_ = 0;
+    int offset = output_size_ + input_size_;
+    const size_t tr_sz = neurons.transpose_.size();
+    for (unsigned int i = 0; i < num_cells_; ++i) {
+      neurons.update_[i] = 0;
+      const float* w_row = &weights[i][offset];
+      for (size_t j = 0; j < tr_sz; ++j) {
+        neurons.transpose_[j][i] = w_row[j];
+      }
+    }
+  }
+  const float* norm_ep = &neurons.norm_[epoch][0];
+  float* err_ptr = &neurons.error_[0];
+  float err_norm_sum = 0.0f;
+  const float ivar = neurons.ivar_[epoch];
+  const float* gamma = &neurons.gamma_[0];
+  float* beta_u = &neurons.beta_u_[0];
+  float* gamma_u = &neurons.gamma_u_[0];
+
+  for (unsigned int i = 0; i < num_cells_; ++i) {
+    float e = err_ptr[i];
+    beta_u[i] += e;
+    gamma_u[i] += e * norm_ep[i];
+    e *= gamma[i] * ivar;
+    err_ptr[i] = e;
+    err_norm_sum += e * norm_ep[i];
+  }
+  float mean_err_norm = err_norm_sum / num_cells_;
+  for (unsigned int i = 0; i < num_cells_; ++i) {
+    err_ptr[i] -= mean_err_norm * norm_ep[i];
+  }
+
+  if (layer > 0) {
+    float* h_err = &(*hidden_error)[0];
+    for (unsigned int i = 0; i < num_cells_; ++i) {
+      const float* tr_row = &neurons.transpose_[num_cells_ + i][0];
+      float f = 0.0f;
+      for (unsigned int j = 0; j < num_cells_; ++j) {
+        f += err_ptr[j] * tr_row[j];
+      }
+      h_err[i] += f;
+    }
+  }
+  if (epoch > 0) {
+    float* st_err = &stored_error_[0];
+    for (unsigned int i = 0; i < num_cells_; ++i) {
+      const float* tr_row = &neurons.transpose_[i][0];
+      float f = 0.0f;
+      for (unsigned int j = 0; j < num_cells_; ++j) {
+        f += err_ptr[j] * tr_row[j];
+      }
+      st_err[i] += f;
+    }
+  }
+#ifndef P3_BATCH
+  const float* inp = &input[0];
+  const size_t inp_sz = input.size();
+  for (unsigned int i = 0; i < num_cells_; ++i) {
+    float e = err_ptr[i];
+    float* upd = &neurons.update_[i][output_size_];
+    for (size_t j = 0; j < inp_sz; ++j) {
+      upd[j] += e * inp[j];
+    }
+    neurons.update_[i][input_symbol] += e;
+  }
+#else
+  neurons.error_hist_[epoch] = neurons.error_;
+  if (epoch == 0) {
+#if defined(P3_REGBLOCK)
+    for (unsigned int i = 0; i < num_cells_; ++i) {
+      float* up = &neurons.update_[i][0];
+      float* upd = up + output_size_;
+      for (int e = horizon_ - 1; e >= 0; --e)
+        up[sym_hist_[e]] += neurons.error_hist_[e][i];
+      const unsigned int n = (unsigned int)input_hist_[0]->size();
+      constexpr unsigned int BLK = 32u;
+      for (unsigned int jb = 0; jb < n; jb += BLK) {
+        const unsigned int bn = (jb + BLK <= n) ? BLK : (n - jb);
+        float acc[BLK];
+        for (unsigned int k = 0; k < bn; ++k) acc[k] = upd[jb + k];
+        for (int e = horizon_ - 1; e >= 0; --e) {
+          const float fe = neurons.error_hist_[e][i];
+          const float* ip = &(*input_hist_[e])[0] + jb;
+          for (unsigned int k = 0; k < bn; ++k) acc[k] += fe * ip[k];
+        }
+        for (unsigned int k = 0; k < bn; ++k) upd[jb + k] = acc[k];
+      }
+    }
+#elif defined(P3_MICROKERNEL) && defined(__AVX512F__)
+    const unsigned int H = (unsigned int)horizon_;
+    const unsigned int n = (unsigned int)input_hist_[0]->size();
+    const float* Xp[512]; const float* Ep[512];
+    for (unsigned int e = 0; e < H; ++e) {
+      Xp[e] = &(*input_hist_[e])[0];
+      Ep[e] = &neurons.error_hist_[e][0];
+    }
+    for (unsigned int i = 0; i < num_cells_; ++i) {
+      float* up = &neurons.update_[i][0];
+      for (int e = (int)H - 1; e >= 0; --e) up[sym_hist_[e]] += Ep[e][i];
+    }
+    constexpr unsigned int MR = 8;
+    unsigned int ib = 0;
+    for (; ib + MR <= num_cells_; ib += MR) {
+      float* upd[MR];
+      for (unsigned int c = 0; c < MR; ++c)
+        upd[c] = &neurons.update_[ib + c][output_size_];
+      unsigned int j = 0;
+      for (; j + 16 <= n; j += 16) {
+        __m512 acc[MR];
+        for (unsigned int c = 0; c < MR; ++c) acc[c] = _mm512_loadu_ps(upd[c] + j);
+        for (int e = (int)H - 1; e >= 0; --e) {
+          const __m512 x = _mm512_loadu_ps(Xp[e] + j);
+          for (unsigned int c = 0; c < MR; ++c)
+            acc[c] = _mm512_fmadd_ps(_mm512_set1_ps(Ep[e][ib + c]), x, acc[c]);
+        }
+        for (unsigned int c = 0; c < MR; ++c) _mm512_storeu_ps(upd[c] + j, acc[c]);
+      }
+      for (; j < n; ++j)
+        for (int e = (int)H - 1; e >= 0; --e) {
+          const float xj = Xp[e][j];
+          for (unsigned int c = 0; c < MR; ++c) upd[c][j] += Ep[e][ib + c] * xj;
+        }
+    }
+    for (; ib < num_cells_; ++ib) {
+      float* upd = &neurons.update_[ib][output_size_];
+      for (int e = (int)H - 1; e >= 0; --e) {
+        const float fe = Ep[e][ib];
+        const float* ip = Xp[e];
+        for (unsigned int j = 0; j < n; ++j) upd[j] += fe * ip[j];
+      }
+    }
+#else
+    for (unsigned int i = 0; i < num_cells_; ++i) {
+      float* up = &neurons.update_[i][0];
+      float* upd = up + output_size_;
+      for (int e = horizon_ - 1; e >= 0; --e) {
+        const float fe = neurons.error_hist_[e][i];
+        const float* ip = &(*input_hist_[e])[0];
+        const unsigned int n = input_hist_[e]->size();
+        for (unsigned int j = 0; j < n; ++j) upd[j] += fe * ip[j];
+        up[sym_hist_[e]] += fe;
+      }
+    }
+#endif
+  }
+#endif
+  if (epoch == 0) {
+    for (unsigned int i = 0; i < num_cells_; ++i) {
+      Adam(&neurons.update_[i], &neurons.m_[i], &neurons.v_[i], &weights[i],
+           learning_rate_, update_steps_, update_limit_);
+    }
+    Adam(&neurons.gamma_u_, &neurons.gamma_m_, &neurons.gamma_v_,
+         &neurons.gamma_, learning_rate_, update_steps_, update_limit_);
+    Adam(&neurons.beta_u_, &neurons.beta_m_, &neurons.beta_v_, &neurons.beta_,
+         learning_rate_, update_steps_, update_limit_);
+  }
+#endif
 }
 
 void LstmLayer::WriteToDisk(std::ofstream* s) {
@@ -407,6 +767,9 @@ void LstmLayer::Copy(const MemoryInterface* m) {
   forget_gate_.Copy(&orig->forget_gate_);
   input_node_.Copy(&orig->input_node_);
   output_gate_.Copy(&orig->output_gate_);
+#ifdef LSTM_QUANT
+  qdirty_ = true;
+#endif
 }
 
 unsigned long long LstmLayer::GetMemoryUsage() {
@@ -422,3 +785,48 @@ unsigned long long LstmLayer::GetMemoryUsage() {
   usage += output_gate_.GetMemoryUsage();
   return usage;
 }
+
+#ifdef LSTM_QUANT
+void LstmLayer::QuantRequantizeGate(NeuronLayer& neurons,
+                                    const LstmMemory& lstm_memory) {
+  const auto& weights =
+      lstm_memory.neuron_layer_weights[neurons.layer_index_].weights;
+  for (unsigned int i = 0; i < num_cells_; ++i) {
+    neurons.qscale_[i] = LstmQuantizeRow(
+        &weights[i][output_size_], qcols_,
+        &neurons.qweights_[(size_t)i * qstride_], qstride_,
+        &neurons.qrowsum_[i]);
+  }
+}
+
+void LstmLayer::QuantRequantize(const LstmMemory& lstm_memory) {
+  QuantRequantizeGate(forget_gate_, lstm_memory);
+  QuantRequantizeGate(input_node_, lstm_memory);
+  QuantRequantizeGate(output_gate_, lstm_memory);
+}
+
+void LstmLayer::QuantizeInput(const std::valarray<float>& input) {
+  if ((unsigned int)input.size() != qcols_ + 1) {
+    fprintf(stderr, "LSTM_QUANT: input width %u != qcols+1 %u\n",
+            (unsigned int)input.size(), qcols_ + 1);
+    abort();
+  }
+  qact_scale_ = LstmQuantizeActs(&input[0], qcols_, qinput_.data(), qstride_);
+#ifdef LSTM_QUANT_KERNEL_VNNI
+  for (unsigned int j = 0; j < qstride_; ++j) {
+    qinput_biased_[j] = (uint8_t)((int32_t)qinput_[j] + 128);
+  }
+#endif
+}
+
+LstmQuantAcc LstmLayer::QuantDotRow(const NeuronLayer& neurons,
+                                    unsigned int i) const {
+#ifdef LSTM_QUANT_KERNEL_VNNI
+  return LstmQuantDot(&neurons.qweights_[(size_t)i * qstride_], qinput_.data(),
+                      qinput_biased_.data(), qstride_, neurons.qrowsum_[i]);
+#else
+  return LstmQuantDot(&neurons.qweights_[(size_t)i * qstride_], qinput_.data(),
+                      nullptr, qstride_, neurons.qrowsum_[i]);
+#endif
+}
+#endif

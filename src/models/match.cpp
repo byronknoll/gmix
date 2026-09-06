@@ -5,16 +5,21 @@
 Match::Match(ShortTermMemory& short_term_memory,
              LongTermMemory& long_term_memory, unsigned int table_size,
              const unsigned int& byte_context, int limit,
-             std::string description, bool enable_analysis)
+             std::string description, bool enable_analysis,
+             bool add_skip_connection)
     : byte_context_(byte_context),
       cur_match_(0),
       cur_byte_(0),
       bit_pos_(128),
       match_length_(0),
       limit_(limit),
+      mask_(table_size - 1),
       learning_rate_(1.0 / limit) {
   prediction_index_ =
       short_term_memory.AddPrediction(description, enable_analysis, this);
+  if (add_skip_connection) {
+    short_term_memory.models_with_skip_connection.push_back(prediction_index_);
+  }
   memory_index_ = long_term_memory.model_memory.size();
   long_term_memory.model_memory.push_back(
       std::make_unique<MatchMemory>(table_size, description));
@@ -56,8 +61,7 @@ void Match::Predict(ShortTermMemory& short_term_memory,
     }
     if (match_length_ < 8) {
       // There was a mismatch, so we need to find a new match.
-      const auto& it =
-          match_memory.table[byte_context_ % match_memory.table.size()];
+      const auto& it = match_memory.table[byte_context_ & mask_];
       // Decode the five byte history pointer.
       cur_match_ = it[0] + (1 << 8) * it[1] + (1 << 16) * it[2] +
                    (1 << 24) * it[3] + (1ULL << 32) * it[4];
@@ -111,7 +115,7 @@ void Match::Learn(const ShortTermMemory& short_term_memory,
       return;
     }
     auto& match_memory = *GetMemory(long_term_memory);
-    auto& loc = match_memory.table[byte_context_ % match_memory.table.size()];
+    auto& loc = match_memory.table[byte_context_ & mask_];
     unsigned long long pos = long_term_memory.history.size() - 1;
     // Encode the five byte history pointer.
     loc[0] = pos;
@@ -142,6 +146,7 @@ void Match::Copy(const MemoryInterface* m) {
   cur_byte_ = orig->cur_byte_;
   bit_pos_ = orig->bit_pos_;
   match_length_ = orig->match_length_;
+  mask_ = orig->mask_;
 }
 
 unsigned long long Match::GetMemoryUsage(

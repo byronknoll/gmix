@@ -38,6 +38,9 @@ class Lstm : public MemoryInterface {
   const float learning_rate_;
   const unsigned int num_cells_, horizon_, input_size_, output_size_;
   unsigned int epoch_;
+#if defined(P1_MODE) && P1_MODE == 2
+  std::valarray<std::valarray<float>> work_;
+#endif
 };
 
 #endif  // MODELS_LSTM_H

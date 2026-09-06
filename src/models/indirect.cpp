@@ -23,7 +23,16 @@ Indirect::Indirect(ShortTermMemory& short_term_memory,
     mem->nonstationary_predictions[i] = 0;
   }
   for (int i = 0; i < 256; ++i) {
-    mem->run_map_predictions[i] = 0;
+    if (i == 0) {
+      mem->run_map_predictions[i] = 0.0f;
+    } else if (i < 128) {
+      float p = 0.5f / (i + 1.0f);
+      mem->run_map_predictions[i] = Sigmoid::Logit(p);
+    } else {
+      int k = i - 127;
+      float p = (k + 0.5f) / (k + 1.0f);
+      mem->run_map_predictions[i] = Sigmoid::Logit(p);
+    }
   }
 }
 
@@ -79,7 +88,7 @@ void Indirect::Learn(const ShortTermMemory& short_term_memory,
   m.run_map_predictions[run_map_state] +=
       (short_term_memory.new_bit -
        Sigmoid::Logistic(m.run_map_predictions[run_map_state])) *
-      learning_rate_;
+      (learning_rate_ * 2.0f);
   m.run_map_table[context] =
       short_term_memory.run_map.Next(run_map_state, short_term_memory.new_bit);
 }

@@ -9,6 +9,10 @@
 
 #include "../memory-interface.h"
 
+#ifdef LSTM_QUANT
+#include "../mixer/lstm-quant.h"
+#endif
+
 struct NeuronLayerWeights {
   NeuronLayerWeights(unsigned int input_size, unsigned int num_cells)
       : weights(std::valarray<float>(input_size), num_cells) {};
@@ -17,7 +21,11 @@ struct NeuronLayerWeights {
 
 struct LstmMemory : public MemoryInterface {
   std::vector<NeuronLayerWeights> neuron_layer_weights;
+#ifdef P1_MODE
+  std::valarray<std::valarray<float>> output_w;
+#else
   std::valarray<std::valarray<std::valarray<float>>> lstm_output_layer;
+#endif
 
   void WriteToDisk(std::ofstream* s) override;
   void ReadFromDisk(std::ifstream* s) override;
@@ -37,6 +45,14 @@ struct NeuronLayer : public MemoryInterface {
   std::valarray<std::valarray<float>> state_, update_, m_, v_, transpose_,
       norm_;
   int layer_index_;
+#ifdef P3_BATCH
+  std::valarray<std::valarray<float>> error_hist_;
+#endif
+#ifdef LSTM_QUANT
+  std::vector<LstmQuantWeight> qweights_;
+  std::vector<float> qscale_;
+  std::vector<int32_t> qrowsum_;
+#endif
 };
 
 class LstmLayer : public MemoryInterface {
@@ -69,6 +85,25 @@ class LstmLayer : public MemoryInterface {
   unsigned long long update_steps_ = 0;
   const unsigned long long update_limit_ = 3000;
   NeuronLayer forget_gate_, input_node_, output_gate_;
+#ifdef P3_BATCH
+  std::vector<const std::valarray<float>*> input_hist_;
+  std::vector<int> sym_hist_;
+#endif
+#ifdef LSTM_QUANT
+  bool qdirty_ = true;
+  unsigned int qcols_ = 0;
+  unsigned int qstride_ = 0;
+  float qact_scale_ = 1.0f;
+  std::vector<LstmQuantAct> qinput_;
+#ifdef LSTM_QUANT_KERNEL_VNNI
+  std::vector<uint8_t> qinput_biased_;
+#endif
+
+  void QuantRequantize(const LstmMemory& lstm_memory);
+  void QuantRequantizeGate(NeuronLayer& neurons, const LstmMemory& lstm_memory);
+  void QuantizeInput(const std::valarray<float>& input);
+  LstmQuantAcc QuantDotRow(const NeuronLayer& neurons, unsigned int i) const;
+#endif
 
   void ClipGradients(std::valarray<float>* arr);
   void ForwardPass(NeuronLayer& neurons, const std::valarray<float>& input,

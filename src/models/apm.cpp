@@ -77,7 +77,7 @@ void APM::Predict(ShortTermMemory& short_term_memory,
   if (b > kNumBins - 2) b = kNumBins - 2;
   float w = u - b;
 
-  unsigned int c = context_ % num_contexts_;
+  unsigned int c = context_ & (num_contexts_ - 1);
   unsigned int idx = c * kNumBins + b;
 
   const auto& mem = *GetMemory(long_term_memory);
