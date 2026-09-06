@@ -23,7 +23,7 @@ Predictor::Predictor() {
   AddModel(new BasicContexts());
   AddIntervalContexts();
   AddModel(
-      new PPMD::ModPPMD(short_term_memory_, long_term_memory_, 20, 2000, true));
+      new PPMD::ModPPMD(short_term_memory_, long_term_memory_, 25, 2000, true));
   AddModel(new LstmModel(short_term_memory_, long_term_memory_, true));
   AddIndirect();
   AddSkip();
