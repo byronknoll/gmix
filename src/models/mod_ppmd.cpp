@@ -63,9 +63,18 @@ class ppmd_Model : public MemoryInterface {
   };
 
   byte* HeapStart;
-  typedef byte* pbyte;
-  uint Ptr2Indx(void* p) const { return pbyte(p) - HeapStart; }
-  void* Indx2Ptr(uint indx) const { return indx + HeapStart; }
+  uint Ptr2Indx(void* p) const {
+    qword addr = ((byte*)p) - HeapStart;
+    uint lim = (UnitsStart - HeapStart);
+    uint indx = (addr >= lim) ? (addr - lim) / UNIT_SIZE + lim : addr;
+    return indx;
+  }
+
+  void* Indx2Ptr(uint indx) const {
+    uint lim = (UnitsStart - HeapStart);
+    qword addr = (indx >= lim) ? qword(indx - lim) * UNIT_SIZE + lim : indx;
+    return HeapStart + addr;
+  }
 
   struct _MEM_BLK {
     uint Stamp;
@@ -1493,20 +1502,40 @@ class ppmd_Model : public MemoryInterface {
     unsigned long long zero_sequence_start = 0;
     std::vector<unsigned long long> zero_sequence_counts;
     std::vector<unsigned long long> zero_sequence_starts;
-    for (unsigned long long i = 0; i < SubAllocatorSize; ++i) {
-      if (HeapStart[i] == 0) {
-        if (zero_sequence_count == 0) {
-          zero_sequence_start = i;
+    unsigned long long lower_used = pText ? (pText - HeapStart) : 0;
+    unsigned long long upper_start = UnitsStart ? (UnitsStart - HeapStart) : SubAllocatorSize;
+    if (upper_start < lower_used) upper_start = lower_used;
+
+    auto scan_zeros = [&](unsigned long long start, unsigned long long end) {
+      for (unsigned long long i = start; i < end; ++i) {
+        if (HeapStart[i] == 0) {
+          if (zero_sequence_count == 0) {
+            zero_sequence_start = i;
+          }
+          ++zero_sequence_count;
+        } else if (zero_sequence_count > 0) {
+          if (zero_sequence_count > 100) {
+            zero_sequence_counts.push_back(zero_sequence_count);
+            zero_sequence_starts.push_back(zero_sequence_start);
+          }
+          zero_sequence_count = 0;
         }
-        ++zero_sequence_count;
-      } else if (zero_sequence_count > 0) {
-        if (zero_sequence_count > 100) {
-          zero_sequence_counts.push_back(zero_sequence_count);
-          zero_sequence_starts.push_back(zero_sequence_start);
-        }
-        zero_sequence_count = 0;
       }
+    };
+
+    scan_zeros(0, lower_used);
+    if (upper_start > lower_used) {
+      if (zero_sequence_count == 0) {
+        zero_sequence_start = lower_used;
+      }
+      zero_sequence_count += (upper_start - lower_used);
+      scan_zeros(upper_start, SubAllocatorSize);
     }
+    if (zero_sequence_count > 100) {
+      zero_sequence_counts.push_back(zero_sequence_count);
+      zero_sequence_starts.push_back(zero_sequence_start);
+    }
+
     int num_sequences = zero_sequence_counts.size();
     Serialize(s, num_sequences);
     for (int i = 0; i < num_sequences; ++i) {
@@ -1515,7 +1544,7 @@ class ppmd_Model : public MemoryInterface {
     }
     int sequence_pos = 0;
     for (unsigned long long i = 0; i < SubAllocatorSize; ++i) {
-      if (sequence_pos < zero_sequence_counts.size() &&
+      if (sequence_pos < (int)zero_sequence_counts.size() &&
           i == zero_sequence_starts[sequence_pos]) {
         i += zero_sequence_counts[sequence_pos] - 1;
         ++sequence_pos;
@@ -1532,12 +1561,15 @@ class ppmd_Model : public MemoryInterface {
     Serialize(s, GlueCount);
     Serialize(s, GlueCount1);
     Serialize(s, SubAllocatorSize);
-    memset(HeapStart, 0, SubAllocatorSize);
     unsigned long long offset;
     Serialize(s, offset);
     pText = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
     Serialize(s, offset);
     UnitsStart = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
+    unsigned long long lower_used = pText ? (pText - HeapStart) : 0;
+    unsigned long long upper_start = UnitsStart ? (UnitsStart - HeapStart) : SubAllocatorSize;
+    if (lower_used > 0 && lower_used <= SubAllocatorSize) memset(HeapStart, 0, lower_used);
+    if (upper_start < SubAllocatorSize) memset(HeapStart + upper_start, 0, SubAllocatorSize - upper_start);
     Serialize(s, offset);
     LoUnit = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
     Serialize(s, offset);
