@@ -1503,8 +1503,13 @@ class ppmd_Model : public MemoryInterface {
     std::vector<unsigned long long> zero_sequence_counts;
     std::vector<unsigned long long> zero_sequence_starts;
     unsigned long long lower_used = pText ? (pText - HeapStart) : 0;
-    unsigned long long upper_start = UnitsStart ? (UnitsStart - HeapStart) : SubAllocatorSize;
-    if (upper_start < lower_used) upper_start = lower_used;
+    unsigned long long u_start = UnitsStart ? (UnitsStart - HeapStart) : SubAllocatorSize;
+    unsigned long long lo_offset = LoUnit ? (LoUnit - HeapStart) : u_start;
+    unsigned long long hi_offset = HiUnit ? (HiUnit - HeapStart) : SubAllocatorSize;
+    if (u_start < lower_used) u_start = lower_used;
+    if (lo_offset < u_start) lo_offset = u_start;
+    if (hi_offset < lo_offset) hi_offset = lo_offset;
+    if (hi_offset > SubAllocatorSize) hi_offset = SubAllocatorSize;
 
     auto scan_zeros = [&](unsigned long long start, unsigned long long end) {
       for (unsigned long long i = start; i < end; ++i) {
@@ -1524,13 +1529,21 @@ class ppmd_Model : public MemoryInterface {
     };
 
     scan_zeros(0, lower_used);
-    if (upper_start > lower_used) {
+    if (u_start > lower_used) {
       if (zero_sequence_count == 0) {
         zero_sequence_start = lower_used;
       }
-      zero_sequence_count += (upper_start - lower_used);
-      scan_zeros(upper_start, SubAllocatorSize);
+      zero_sequence_count += (u_start - lower_used);
     }
+    scan_zeros(u_start, lo_offset);
+    if (hi_offset > lo_offset) {
+      if (zero_sequence_count == 0) {
+        zero_sequence_start = lo_offset;
+      }
+      zero_sequence_count += (hi_offset - lo_offset);
+    }
+    scan_zeros(hi_offset, SubAllocatorSize);
+
     if (zero_sequence_count > 100) {
       zero_sequence_counts.push_back(zero_sequence_count);
       zero_sequence_starts.push_back(zero_sequence_start);
@@ -1566,10 +1579,6 @@ class ppmd_Model : public MemoryInterface {
     pText = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
     Serialize(s, offset);
     UnitsStart = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
-    unsigned long long lower_used = pText ? (pText - HeapStart) : 0;
-    unsigned long long upper_start = UnitsStart ? (UnitsStart - HeapStart) : SubAllocatorSize;
-    if (lower_used > 0 && lower_used <= SubAllocatorSize) memset(HeapStart, 0, lower_used);
-    if (upper_start < SubAllocatorSize) memset(HeapStart + upper_start, 0, SubAllocatorSize - upper_start);
     Serialize(s, offset);
     LoUnit = (offset != ULLONG_MAX) ? (HeapStart + offset) : nullptr;
     Serialize(s, offset);
@@ -1580,6 +1589,20 @@ class ppmd_Model : public MemoryInterface {
     FoundState = (offset != ULLONG_MAX) ? (STATE*)(HeapStart + offset) : nullptr;
     Serialize(s, offset);
     saved_pc = (offset != ULLONG_MAX) ? (PPM_CONTEXT*)(HeapStart + offset) : nullptr;
+
+    unsigned long long lower_used = pText ? (pText - HeapStart) : 0;
+    unsigned long long u_start = UnitsStart ? (UnitsStart - HeapStart) : SubAllocatorSize;
+    unsigned long long lo_offset = LoUnit ? (LoUnit - HeapStart) : u_start;
+    unsigned long long hi_offset = HiUnit ? (HiUnit - HeapStart) : SubAllocatorSize;
+    if (u_start < lower_used) u_start = lower_used;
+    if (lo_offset < u_start) lo_offset = u_start;
+    if (hi_offset < lo_offset) hi_offset = lo_offset;
+    if (hi_offset > SubAllocatorSize) hi_offset = SubAllocatorSize;
+
+    if (lower_used > 0 && lower_used <= SubAllocatorSize) memset(HeapStart, 0, lower_used);
+    if (lo_offset > u_start && lo_offset <= SubAllocatorSize) memset(HeapStart + u_start, 0, lo_offset - u_start);
+    if (hi_offset < SubAllocatorSize) memset(HeapStart + hi_offset, 0, SubAllocatorSize - hi_offset);
+
     Serialize(s, OrderFall);
     Serialize(s, RunLength);
     Serialize(s, InitRL);
@@ -1616,7 +1639,7 @@ class ppmd_Model : public MemoryInterface {
     }
     int sequence_pos = 0;
     for (unsigned long long i = 0; i < SubAllocatorSize; ++i) {
-      if (sequence_pos < zero_sequence_counts.size() &&
+      if (sequence_pos < (int)zero_sequence_counts.size() &&
           i == zero_sequence_starts[sequence_pos]) {
         i += zero_sequence_counts[sequence_pos] - 1;
         ++sequence_pos;
@@ -1670,9 +1693,23 @@ class ppmd_Model : public MemoryInterface {
     y = orig->y;
 
     unsigned long long lower_used = orig->pText ? (orig->pText - orig->HeapStart) : 0;
-    if (lower_used > 0) memcpy(HeapStart, orig->HeapStart, lower_used);
-    unsigned long long upper_used = orig->UnitsStart ? (orig->HeapStart + orig->SubAllocatorSize - orig->UnitsStart) : 0;
-    if (upper_used > 0) memcpy(HeapStart + SubAllocatorSize - upper_used, orig->HeapStart + orig->SubAllocatorSize - upper_used, upper_used);
+    if (lower_used > 0 && lower_used <= SubAllocatorSize) memcpy(HeapStart, orig->HeapStart, lower_used);
+
+    if (orig->UnitsStart && orig->LoUnit && orig->LoUnit > orig->UnitsStart) {
+      unsigned long long u_offset = orig->UnitsStart - orig->HeapStart;
+      unsigned long long u_size = orig->LoUnit - orig->UnitsStart;
+      if (u_offset + u_size <= SubAllocatorSize) {
+        memcpy(HeapStart + u_offset, orig->HeapStart + u_offset, u_size);
+      }
+    }
+
+    if (orig->HiUnit && (orig->HeapStart + orig->SubAllocatorSize) > orig->HiUnit) {
+      unsigned long long h_offset = orig->HiUnit - orig->HeapStart;
+      unsigned long long h_size = (orig->HeapStart + orig->SubAllocatorSize) - orig->HiUnit;
+      if (h_offset + h_size <= SubAllocatorSize) {
+        memcpy(HeapStart + h_offset, orig->HeapStart + h_offset, h_size);
+      }
+    }
     ppmd_PrepareByte();
   }
 };
