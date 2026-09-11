@@ -89,6 +89,18 @@ void Match::Predict(ShortTermMemory& short_term_memory,
   unsigned int match_context = match_length_ / 32;
   short_term_memory.longest_match =
       std::max(short_term_memory.longest_match, match_context);
+  if (match_length_ > short_term_memory.best_match_length) {
+    short_term_memory.best_match_length = match_length_;
+    short_term_memory.best_match_byte = (match_length_ >= 8) ? (cur_byte_ + 1) : 0;
+    if (match_length_ >= 8) {
+      int expected_bit = (cur_byte_ & bit_pos_) ? 1 : 0;
+      short_term_memory.match_bit_context =
+          ((expected_bit + 1) << 8) | short_term_memory.bit_context;
+      short_term_memory.bit_agreement_context =
+          (short_term_memory.bit_agreement_context & 0x7ff) |
+          ((expected_bit + 1) << 11);
+    }
+  }
 }
 
 void Match::Learn(const ShortTermMemory& short_term_memory,

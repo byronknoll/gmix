@@ -43,13 +43,20 @@ APM::APM(ShortTermMemory& short_term_memory,
          unsigned int num_contexts,
          float learning_rate,
          std::string description,
-         bool enable_analysis)
+         bool enable_analysis,
+         bool hash_with_bit_context,
+         bool add_skip_connection)
     : input_prediction_index_(input_prediction_index),
       context_(context),
       num_contexts_(num_contexts),
-      learning_rate_(learning_rate) {
+      learning_rate_(learning_rate),
+      hash_with_bit_context_(hash_with_bit_context) {
   output_prediction_index_ =
       short_term_memory.AddPrediction(description, enable_analysis, this);
+  if (add_skip_connection) {
+    short_term_memory.models_with_skip_connection.push_back(
+        output_prediction_index_);
+  }
   memory_index_ = long_term_memory.model_memory.size();
   long_term_memory.model_memory.push_back(
       std::make_unique<APMMemory>(num_contexts_, kNumBins, description));
@@ -77,7 +84,11 @@ void APM::Predict(ShortTermMemory& short_term_memory,
   if (b > kNumBins - 2) b = kNumBins - 2;
   float w = u - b;
 
-  unsigned int c = context_ & (num_contexts_ - 1);
+  unsigned int c = hash_with_bit_context_
+                       ? (((context_ * 2654435761u) ^
+                           (short_term_memory.bit_context * 2246822519u)) &
+                          (num_contexts_ - 1))
+                       : (context_ & (num_contexts_ - 1));
   unsigned int idx = c * kNumBins + b;
 
   const auto& mem = *GetMemory(long_term_memory);

@@ -10,9 +10,9 @@
 #include "sigmoid.h"
 
 struct MixerData {
-  MixerData(unsigned int input_size) : steps(0), weights(input_size) {};
+  MixerData(unsigned int input_size) : steps(0), weights(input_size, 0.0f) {};
   unsigned long long steps;
-  std::valarray<float> weights;
+  std::vector<float> weights;
 };
 
 struct MixerMemory : public MemoryInterface {
@@ -67,6 +67,10 @@ class Mixer : public Model {
   int output_index_, memory_index_, weight_size_;
   float learning_rate_;
   int layer_number_;
+  unsigned int mask_ = 0;
+  MixerData* last_mixer_data_ = nullptr;
+  unsigned int last_idx_ = 0;
+  float last_output_ = 0.0f;
 
   MixerData* FindMixerData(const LongTermMemory& long_term_memory);
   MixerData* FindOrCreateMixerData(const ShortTermMemory& short_term_memory,

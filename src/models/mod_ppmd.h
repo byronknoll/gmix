@@ -51,6 +51,7 @@ class ModPPMD : public Model {
   // byte-level predictions to bit-level predictions. The range is updated as
   // bits are observed.
   int top_, mid_, bot_, prediction_index_;
+  std::array<float, 257> prefix_sum_{};
 };
 
 }  // namespace PPMD

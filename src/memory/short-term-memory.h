@@ -86,6 +86,11 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int last_ten_bytes_hash = 0;
   unsigned int last_twelve_bytes_hash = 0;
   unsigned int last_sixteen_bytes_hash = 0;
+  unsigned int last_twenty_bytes_hash = 0;
+  unsigned int last_twentyfour_bytes_hash = 0;
+  unsigned int last_thirtytwo_bytes_hash = 0;
+  unsigned int last_fortyeight_bytes_hash = 0;
+  unsigned int last_sixtyfour_bytes_hash = 0;
   unsigned int last_byte_plus_recent = 0;
   unsigned int second_last_plus_recent = 0;
 
@@ -177,6 +182,15 @@ struct ShortTermMemory : MemoryInterface {
 
   // Most likely next byte, according to LSTM.
   unsigned int lstm_prediction_context = 0;
+  unsigned int ppm_prediction_context = 0;
+  unsigned int agreement_context = 0;
+  unsigned int dmc_state_context = 0;
+  unsigned int best_match_length = 0;
+  unsigned int best_match_byte = 0;
+  unsigned int match_bit_context = 0;
+  unsigned int ppm_bit_context = 0;
+  unsigned int lstm_bit_context = 0;
+  unsigned int bit_agreement_context = 0;
 
   std::vector<unsigned char> rotating_history;
   unsigned int rotating_history_pos = 0;

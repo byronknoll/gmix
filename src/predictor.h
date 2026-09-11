@@ -43,6 +43,14 @@ class Predictor {
   std::vector<std::unique_ptr<Model>> models_;
   // If sample_frequency_ is >0, model analysis will be enabled.
   int sample_frequency_ = 0;
+  int ppm_idx_ = 0;
+  int lstm_idx_ = 1;
+  int dmc_counts_idx_ = 2;
+  int dmc_state_idx_ = 3;
+  int ind_1_idx_ = -1;
+  int ind_2_idx_ = -1;
+  int match_2_idx_ = -1;
+  int match_3_idx_ = -1;
 
   void AddIndirect();
   void AddSkip();

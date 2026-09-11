@@ -17,6 +17,11 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, last_ten_bytes_hash);
   Serialize(s, last_twelve_bytes_hash);
   Serialize(s, last_sixteen_bytes_hash);
+  Serialize(s, last_twenty_bytes_hash);
+  Serialize(s, last_twentyfour_bytes_hash);
+  Serialize(s, last_thirtytwo_bytes_hash);
+  Serialize(s, last_fortyeight_bytes_hash);
+  Serialize(s, last_sixtyfour_bytes_hash);
   Serialize(s, indirect_1_8_1);
   Serialize(s, indirect_1_8_2);
   Serialize(s, indirect_1_8_3);
@@ -72,6 +77,15 @@ void ShortTermMemory::WriteToDisk(std::ofstream* s) {
   Serialize(s, bits_seen);
   SerializeArray(s, entropy);
   Serialize(s, lstm_prediction_context);
+  Serialize(s, ppm_prediction_context);
+  Serialize(s, agreement_context);
+  Serialize(s, dmc_state_context);
+  Serialize(s, best_match_length);
+  Serialize(s, best_match_byte);
+  Serialize(s, match_bit_context);
+  Serialize(s, ppm_bit_context);
+  Serialize(s, lstm_bit_context);
+  Serialize(s, bit_agreement_context);
   SerializeArray(s, rotating_history);
   Serialize(s, rotating_history_pos);
   SerializeArray(s, recent_bytes);
@@ -94,6 +108,11 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, last_ten_bytes_hash);
   Serialize(s, last_twelve_bytes_hash);
   Serialize(s, last_sixteen_bytes_hash);
+  Serialize(s, last_twenty_bytes_hash);
+  Serialize(s, last_twentyfour_bytes_hash);
+  Serialize(s, last_thirtytwo_bytes_hash);
+  Serialize(s, last_fortyeight_bytes_hash);
+  Serialize(s, last_sixtyfour_bytes_hash);
   Serialize(s, indirect_1_8_1);
   Serialize(s, indirect_1_8_2);
   Serialize(s, indirect_1_8_3);
@@ -149,6 +168,15 @@ void ShortTermMemory::ReadFromDisk(std::ifstream* s) {
   Serialize(s, bits_seen);
   SerializeArray(s, entropy);
   Serialize(s, lstm_prediction_context);
+  Serialize(s, ppm_prediction_context);
+  Serialize(s, agreement_context);
+  Serialize(s, dmc_state_context);
+  Serialize(s, best_match_length);
+  Serialize(s, best_match_byte);
+  Serialize(s, match_bit_context);
+  Serialize(s, ppm_bit_context);
+  Serialize(s, lstm_bit_context);
+  Serialize(s, bit_agreement_context);
   SerializeArray(s, rotating_history);
   Serialize(s, rotating_history_pos);
   SerializeArray(s, recent_bytes);
@@ -172,6 +200,11 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   last_ten_bytes_hash = orig->last_ten_bytes_hash;
   last_twelve_bytes_hash = orig->last_twelve_bytes_hash;
   last_sixteen_bytes_hash = orig->last_sixteen_bytes_hash;
+  last_twenty_bytes_hash = orig->last_twenty_bytes_hash;
+  last_twentyfour_bytes_hash = orig->last_twentyfour_bytes_hash;
+  last_thirtytwo_bytes_hash = orig->last_thirtytwo_bytes_hash;
+  last_fortyeight_bytes_hash = orig->last_fortyeight_bytes_hash;
+  last_sixtyfour_bytes_hash = orig->last_sixtyfour_bytes_hash;
   indirect_1_8_1 = orig->indirect_1_8_1;
   indirect_1_8_2 = orig->indirect_1_8_2;
   indirect_1_8_3 = orig->indirect_1_8_3;
@@ -227,6 +260,15 @@ void ShortTermMemory::Copy(const MemoryInterface* m) {
   bits_seen = orig->bits_seen;
   entropy = orig->entropy;
   lstm_prediction_context = orig->lstm_prediction_context;
+  ppm_prediction_context = orig->ppm_prediction_context;
+  agreement_context = orig->agreement_context;
+  dmc_state_context = orig->dmc_state_context;
+  best_match_length = orig->best_match_length;
+  best_match_byte = orig->best_match_byte;
+  match_bit_context = orig->match_bit_context;
+  ppm_bit_context = orig->ppm_bit_context;
+  lstm_bit_context = orig->lstm_bit_context;
+  bit_agreement_context = orig->bit_agreement_context;
   rotating_history = orig->rotating_history;
   rotating_history_pos = orig->rotating_history_pos;
   recent_bytes = orig->recent_bytes;
@@ -243,14 +285,10 @@ int ShortTermMemory::AddPrediction(std::string description,
 
 void ShortTermMemory::SetPrediction(float prediction, int index) {
   predictions[index] = Sigmoid::Logit(prediction);
-  if (prediction == 0.5) return;
-  active_models.push_back(index);
 }
 
 void ShortTermMemory::SetLogitPrediction(float prediction, int index) {
   predictions[index] = prediction;
-  if (prediction == 0) return;
-  active_models.push_back(index);
 }
 
 int ShortTermMemory::AddMixer(std::string description, int layer_number,

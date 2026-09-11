@@ -31,6 +31,15 @@ void LstmModel::Predict(ShortTermMemory& short_term_memory,
         short_term_memory.lstm_prediction_context = i;
       }
     }
+    short_term_memory.agreement_context =
+        (short_term_memory.lstm_prediction_context ==
+         short_term_memory.ppm_prediction_context)
+            ? short_term_memory.lstm_prediction_context
+            : 256;
+    prefix_sum_[0] = 0.0f;
+    for (int i = 0; i < 256; ++i) {
+      prefix_sum_[i + 1] = prefix_sum_[i] + probs_[i];
+    }
   } else {
     if (short_term_memory.new_bit) {
       bot_ = mid_ + 1;
@@ -39,11 +48,17 @@ void LstmModel::Predict(ShortTermMemory& short_term_memory,
     }
   }
   mid_ = bot_ + ((top_ - bot_) / 2);
-  float num = std::accumulate(&probs_[mid_ + 1], &probs_[top_ + 1], 0.0f);
-  float denom = std::accumulate(&probs_[bot_], &probs_[mid_ + 1], num);
+  float num = prefix_sum_[top_ + 1] - prefix_sum_[mid_ + 1];
+  float denom = prefix_sum_[top_ + 1] - prefix_sum_[bot_];
   if (denom != 0) {
     float p = num / denom;
     short_term_memory.SetPrediction(p, prediction_index_);
+    int expected_bit = (p >= 0.5f) ? 1 : 0;
+    short_term_memory.lstm_bit_context =
+        (expected_bit << 8) | short_term_memory.bit_context;
+    int ppm_bit = (short_term_memory.ppm_bit_context >> 8) & 1;
+    short_term_memory.bit_agreement_context =
+        (ppm_bit << 9) | (expected_bit << 8) | (short_term_memory.bit_context & 0xff);
   }
 }
 
@@ -72,6 +87,10 @@ void LstmModel::ReadFromDisk(std::ifstream* s) {
   Serialize(s, bot_);
   SerializeArray(s, probs_);
   lstm_.ReadFromDisk(s);
+  prefix_sum_[0] = 0.0f;
+  for (int i = 0; i < 256; ++i) {
+    prefix_sum_[i + 1] = prefix_sum_[i] + probs_[i];
+  }
 }
 
 void LstmModel::Copy(const MemoryInterface* m) {
@@ -80,6 +99,7 @@ void LstmModel::Copy(const MemoryInterface* m) {
   mid_ = orig->mid_;
   bot_ = orig->bot_;
   probs_ = orig->probs_;
+  prefix_sum_ = orig->prefix_sum_;
   lstm_.Copy(&orig->lstm_);
 }
 

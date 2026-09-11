@@ -25,6 +25,9 @@ Mixer::Mixer(ShortTermMemory& short_term_memory,
                    short_term_memory.num_layer1_mixers +
                    short_term_memory.models_with_skip_connection.size();
   }
+  if ((table_size & (table_size - 1)) == 0) {
+    mask_ = table_size - 1;
+  }
 }
 
 MixerMemory* Mixer::GetMemory(LongTermMemory& long_term_memory) {
@@ -39,20 +42,18 @@ const MixerMemory* Mixer::GetMemory(
 }
 
 MixerData* Mixer::FindMixerData(const LongTermMemory& long_term_memory) {
-  MixerData* data = nullptr;
   auto& mixer_table = GetMemory(long_term_memory)->mixer_table;
-  auto& ptr = mixer_table[context_ % mixer_table.size()];
-  if (ptr) {
-    data = ptr.get();
-  }
-  return data;
+  unsigned int idx = mask_ ? (context_ & mask_) : (context_ % mixer_table.size());
+  auto& ptr = mixer_table[idx];
+  return ptr ? ptr.get() : nullptr;
 }
 
 MixerData* Mixer::FindOrCreateMixerData(
     const ShortTermMemory& short_term_memory,
     LongTermMemory& long_term_memory) {
   auto& mixer_table = GetMemory(long_term_memory)->mixer_table;
-  auto& ptr = mixer_table[context_ % mixer_table.size()];
+  unsigned int idx = mask_ ? (context_ & mask_) : (context_ % mixer_table.size());
+  auto& ptr = mixer_table[idx];
   if (!ptr) {
     ++contexts_seen_;
     ptr.reset(new MixerData(weight_size_));
@@ -62,52 +63,58 @@ MixerData* Mixer::FindOrCreateMixerData(
 
 void Mixer::Predict(ShortTermMemory& short_term_memory,
                     const LongTermMemory& long_term_memory) {
-  MixerData* data = FindMixerData(long_term_memory);
+  auto& mixer_table = GetMemory(const_cast<LongTermMemory&>(long_term_memory))->mixer_table;
+  last_idx_ = mask_ ? (context_ & mask_) : (context_ % mixer_table.size());
+  auto& ptr = mixer_table[last_idx_];
+  MixerData* data = ptr ? ptr.get() : nullptr;
+  last_mixer_data_ = data;
   float p = 0;
   if (data != nullptr) {
+    const float* __restrict__ const w = data->weights.data();
     if (layer_number_ == 0) {
-      for (int i : short_term_memory.active_models) {
-        p += short_term_memory.predictions[i] * data->weights[i];
+      const float* __restrict__ const preds = &short_term_memory.predictions[0];
+      const int num_preds = short_term_memory.num_predictions;
+      for (int i = 0; i < num_preds; ++i) {
+        p += preds[i] * w[i];
       }
-      // Use the previous mixers in the same layer.
+      const float* __restrict__ const m0 = &short_term_memory.mixer_layer0_outputs[0];
       for (int i = 0; i < output_index_; ++i) {
-        p += short_term_memory.mixer_layer0_outputs[i] *
-             data->weights[short_term_memory.num_predictions + i];
+        p += m0[i] * w[num_preds + i];
       }
     } else if (layer_number_ == 1) {
-      for (int i = 0; i < short_term_memory.num_layer0_mixers; ++i) {
-        p += short_term_memory.mixer_layer0_outputs[i] * data->weights[i];
+      const float* __restrict__ const m0 = &short_term_memory.mixer_layer0_outputs[0];
+      const int m0_size = short_term_memory.num_layer0_mixers;
+      for (int i = 0; i < m0_size; ++i) {
+        p += m0[i] * w[i];
       }
-      // Use the previous mixers in the same layer.
+      const float* __restrict__ const m1 = &short_term_memory.mixer_layer1_outputs[0];
       for (int i = 0; i < output_index_; ++i) {
-        p += short_term_memory.mixer_layer1_outputs[i] *
-             data->weights[short_term_memory.num_layer0_mixers + i];
+        p += m1[i] * w[m0_size + i];
       }
-      // Skip connections.
-      int offset = short_term_memory.num_layer0_mixers + output_index_;
-      for (int i = 0; i < short_term_memory.models_with_skip_connection.size();
-           ++i) {
-        int index = short_term_memory.models_with_skip_connection[i];
-        p += short_term_memory.predictions[index] * data->weights[offset + i];
+      int offset = m0_size + output_index_;
+      const float* __restrict__ const preds = &short_term_memory.predictions[0];
+      for (int index : short_term_memory.models_with_skip_connection) {
+        p += preds[index] * w[offset++];
       }
     } else {
-      for (int i = 0; i < short_term_memory.num_layer0_mixers; ++i) {
-        p += short_term_memory.mixer_layer0_outputs[i] * data->weights[i];
+      const float* __restrict__ const m0 = &short_term_memory.mixer_layer0_outputs[0];
+      const int m0_size = short_term_memory.num_layer0_mixers;
+      for (int i = 0; i < m0_size; ++i) {
+        p += m0[i] * w[i];
       }
-      for (int i = 0; i < short_term_memory.num_layer1_mixers; ++i) {
-        p += short_term_memory.mixer_layer1_outputs[i] *
-             data->weights[short_term_memory.num_layer0_mixers + i];
+      const float* __restrict__ const m1 = &short_term_memory.mixer_layer1_outputs[0];
+      const int m1_size = short_term_memory.num_layer1_mixers;
+      for (int i = 0; i < m1_size; ++i) {
+        p += m1[i] * w[m0_size + i];
       }
-      // Skip connections.
-      int offset = short_term_memory.num_layer0_mixers +
-                   short_term_memory.num_layer1_mixers;
-      for (int i = 0; i < short_term_memory.models_with_skip_connection.size();
-           ++i) {
-        int index = short_term_memory.models_with_skip_connection[i];
-        p += short_term_memory.predictions[index] * data->weights[offset + i];
+      int offset = m0_size + m1_size;
+      const float* __restrict__ const preds = &short_term_memory.predictions[0];
+      for (int index : short_term_memory.models_with_skip_connection) {
+        p += preds[index] * w[offset++];
       }
     }
   }
+  last_output_ = p;
   if (layer_number_ == 2) {
     short_term_memory.final_mixer_output = p;
     // printf("Mixer2 output = %f\n", p);
@@ -120,7 +127,16 @@ void Mixer::Predict(ShortTermMemory& short_term_memory,
 
 void Mixer::Learn(const ShortTermMemory& short_term_memory,
                   LongTermMemory& long_term_memory) {
-  MixerData* data = FindOrCreateMixerData(short_term_memory, long_term_memory);
+  MixerData* data = last_mixer_data_;
+  if (!data) {
+    auto& mixer_table = GetMemory(long_term_memory)->mixer_table;
+    auto& ptr = mixer_table[last_idx_];
+    if (!ptr) {
+      ++contexts_seen_;
+      ptr.reset(new MixerData(weight_size_));
+    }
+    data = ptr.get();
+  }
   if (data->steps > max_steps_) {
     max_steps_ = data->steps;
   }
@@ -131,68 +147,61 @@ void Mixer::Learn(const ShortTermMemory& short_term_memory,
     cached_decay_ = 0.9f / std::pow(0.0000001f * steps_ + 0.8f, 0.8f);
   }
   float decay = cached_decay_ * (1.5f - ((1.0f * data->steps) / max_steps_));
-  float p;
-  if (layer_number_ == 2) {
-    p = Sigmoid::Logistic(short_term_memory.final_mixer_output);
-  } else if (layer_number_ == 1) {
-    p = Sigmoid::Logistic(
-        short_term_memory.mixer_layer1_outputs[output_index_]);
-  } else {
-    p = Sigmoid::Logistic(
-        short_term_memory.mixer_layer0_outputs[output_index_]);
-  }
+  float p = Sigmoid::Logistic(last_output_);
   float update = decay * learning_rate_ * (p - short_term_memory.new_bit);
   ++steps_;
   ++data->steps;
   if (data->steps > max_steps_) {
     max_steps_ = data->steps;
   }
+  float* __restrict__ const w = data->weights.data();
   if (layer_number_ == 0) {
-    for (int i : short_term_memory.active_models) {
-      data->weights[i] -= update * short_term_memory.predictions[i];
+    const float* __restrict__ const preds = &short_term_memory.predictions[0];
+    const int num_preds = short_term_memory.num_predictions;
+    for (int i = 0; i < num_preds; ++i) {
+      w[i] -= update * preds[i];
     }
-    // Use the previous mixers in the same layer.
+    const float* __restrict__ const m0 = &short_term_memory.mixer_layer0_outputs[0];
     for (int i = 0; i < output_index_; ++i) {
-      data->weights[i + short_term_memory.num_predictions] -=
-          update * short_term_memory.mixer_layer0_outputs[i];
+      w[num_preds + i] -= update * m0[i];
     }
   } else if (layer_number_ == 1) {
-    for (int i = 0; i < short_term_memory.num_layer0_mixers; ++i) {
-      data->weights[i] -= update * short_term_memory.mixer_layer0_outputs[i];
+    const float* __restrict__ const m0 = &short_term_memory.mixer_layer0_outputs[0];
+    const int m0_size = short_term_memory.num_layer0_mixers;
+    for (int i = 0; i < m0_size; ++i) {
+      w[i] -= update * m0[i];
     }
-    // Use the previous mixers in the same layer.
+    const float* __restrict__ const m1 = &short_term_memory.mixer_layer1_outputs[0];
     for (int i = 0; i < output_index_; ++i) {
-      data->weights[i + short_term_memory.num_layer0_mixers] -=
-          update * short_term_memory.mixer_layer1_outputs[i];
+      w[m0_size + i] -= update * m1[i];
     }
-    // Skip connections.
-    int offset = short_term_memory.num_layer0_mixers + output_index_;
-    for (int i = 0; i < short_term_memory.models_with_skip_connection.size();
-         ++i) {
-      int index = short_term_memory.models_with_skip_connection[i];
-      data->weights[i + offset] -=
-          update * short_term_memory.predictions[index];
+    int offset = m0_size + output_index_;
+    const float* __restrict__ const preds = &short_term_memory.predictions[0];
+    for (int index : short_term_memory.models_with_skip_connection) {
+      w[offset++] -= update * preds[index];
     }
   } else {
-    for (int i = 0; i < short_term_memory.num_layer0_mixers; ++i) {
-      data->weights[i] -= update * short_term_memory.mixer_layer0_outputs[i];
+    const float* __restrict__ const m0 = &short_term_memory.mixer_layer0_outputs[0];
+    const int m0_size = short_term_memory.num_layer0_mixers;
+    for (int i = 0; i < m0_size; ++i) {
+      w[i] -= update * m0[i];
     }
-    for (int i = 0; i < short_term_memory.num_layer1_mixers; ++i) {
-      data->weights[short_term_memory.num_layer0_mixers + i] -=
-          update * short_term_memory.mixer_layer1_outputs[i];
+    const float* __restrict__ const m1 = &short_term_memory.mixer_layer1_outputs[0];
+    const int m1_size = short_term_memory.num_layer1_mixers;
+    for (int i = 0; i < m1_size; ++i) {
+      w[m0_size + i] -= update * m1[i];
     }
-    // Skip connections.
-    int offset = short_term_memory.num_layer0_mixers +
-                 short_term_memory.num_layer1_mixers;
-    for (int i = 0; i < short_term_memory.models_with_skip_connection.size();
-         ++i) {
-      int index = short_term_memory.models_with_skip_connection[i];
-      data->weights[i + offset] -=
-          update * short_term_memory.predictions[index];
+    int offset = m0_size + m1_size;
+    const float* __restrict__ const preds = &short_term_memory.predictions[0];
+    for (int index : short_term_memory.models_with_skip_connection) {
+      w[offset++] -= update * preds[index];
     }
   }
   if ((data->steps & 1023) == 0) {
-    data->weights *= 1.0f - 3.0e-6f;  // Weight regularization.
+    const float factor = 1.0f - 3.0e-6f;
+    for (int i = 0; i < weight_size_; ++i) {
+      w[i] *= factor;
+    }
   }
 }
 
@@ -215,6 +224,7 @@ void Mixer::Copy(const MemoryInterface* m) {
   max_steps_ = orig->max_steps_;
   contexts_seen_ = orig->contexts_seen_;
   cached_decay_ = orig->cached_decay_;
+  last_output_ = orig->last_output_;
 }
 
 unsigned long long Mixer::GetMemoryUsage(

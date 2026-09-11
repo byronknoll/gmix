@@ -50,9 +50,10 @@ const IndirectMemory* Indirect::GetMemory(
 void Indirect::Predict(ShortTermMemory& short_term_memory,
                        const LongTermMemory& long_term_memory) {
   const auto& m = *GetMemory(long_term_memory);
-  unsigned int context =
+  last_context_ =
       ((static_cast<uint64_t>(context_) << 8) + short_term_memory.bit_context) %
       m.nonstationary_table.size();
+  unsigned int context = last_context_;
   int nonstationary_state = m.nonstationary_table[context];
   // 255 means this context has never been seen.
   if (nonstationary_state != 255) {
@@ -70,9 +71,7 @@ void Indirect::Predict(ShortTermMemory& short_term_memory,
 void Indirect::Learn(const ShortTermMemory& short_term_memory,
                      LongTermMemory& long_term_memory) {
   auto& m = *GetMemory(long_term_memory);
-  unsigned int context =
-      ((static_cast<uint64_t>(context_) << 8) + short_term_memory.bit_context) %
-      m.nonstationary_table.size();
+  unsigned int context = last_context_;
   int nonstationary_state = m.nonstationary_table[context];
   if (nonstationary_state == 255) {
     // 255 is the uninitialized state, so we the reset to a valid "0" state.

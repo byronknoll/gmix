@@ -1219,15 +1219,11 @@ class ppmd_Model : public MemoryInterface {
 
   mutable uint sqp[256];  // symbol probs
 
-  mutable uint trF[256];  // binary tree, freqs
-  mutable uint trT[256];  // binary tree, totals
-
   void ConvertSQ(void) const {
-    uint i, c, j, b, freq, total, prob;
+    uint i, c, freq, total, prob;
     uint cum = 0xFFFFFF00;  // base coef, add 1 to each to remove zero probs
 
-    for (i = 0; i < 256; i++)
-      sqp[i] = 0, trF[i] = 0, trT[i] = 0;  // init for all symbols
+    std::memset(sqp, 0, sizeof(sqp));
 
     for (i = 0; i < SQ_ptr; i++) {
       c = SQ[i].sym;
@@ -1238,16 +1234,6 @@ class ppmd_Model : public MemoryInterface {
         sqp[c] = prob + 1;
       } else {
         cum = prob;
-      }
-    }
-
-    // build a binary tree with ppmd probs
-    for (c = 0; c < 256; c++) {
-      for (i = 8; i != 0; i--) {
-        j = (256 + c) >> i;
-        b = (c >> (i - 1)) & 1;
-        if (b == 0) trF[j] += sqp[c];
-        trT[j] += sqp[c];
       }
     }
   }
@@ -1762,13 +1748,24 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
     }
     context_advanced_ = false;
     model->ppmd_PrepareByte();
+    float max_p = 0.0f;
+    int best_byte = 0;
     for (int i = 0; i < 256; ++i) {
       byte_predictions_[i] = model->sqp[i];
       if (byte_predictions_[i] < 1) byte_predictions_[i] = 1;
+      if (byte_predictions_[i] > max_p) {
+        max_p = byte_predictions_[i];
+        best_byte = i;
+      }
     }
     byte_predictions_ /= byte_predictions_.sum();
     if (update_shared_ppm_predictions_) {
       short_term_memory.ppm_predictions = byte_predictions_;
+      short_term_memory.ppm_prediction_context = best_byte;
+    }
+    prefix_sum_[0] = 0.0f;
+    for (int i = 0; i < 256; ++i) {
+      prefix_sum_[i + 1] = prefix_sum_[i] + byte_predictions_[i];
     }
     top_ = 255;
     bot_ = 0;
@@ -1780,15 +1777,14 @@ void ModPPMD::Predict(ShortTermMemory& short_term_memory,
     }
   }
   mid_ = bot_ + ((top_ - bot_) / 2);
-  float num =
-      std::accumulate(&byte_predictions_[mid_ + 1],
-                      &byte_predictions_[top_ + 1], 0.0f);
-  float denom =
-      std::accumulate(&byte_predictions_[bot_],
-                      &byte_predictions_[mid_ + 1], num);
+  float num = prefix_sum_[top_ + 1] - prefix_sum_[mid_ + 1];
+  float denom = prefix_sum_[top_ + 1] - prefix_sum_[bot_];
   if (denom != 0) {
     float p = num / denom;
     short_term_memory.SetPrediction(p, prediction_index_);
+    int expected_bit = (p >= 0.5f) ? 1 : 0;
+    short_term_memory.ppm_bit_context =
+        (expected_bit << 8) | short_term_memory.bit_context;
   }
 }
 
@@ -1822,6 +1818,10 @@ void ModPPMD::ReadFromDisk(std::ifstream* s) {
   Serialize(s, context_advanced_);
   Serialize(s, update_shared_ppm_predictions_);
   SerializeArray(s, byte_predictions_);
+  prefix_sum_[0] = 0.0f;
+  for (int i = 0; i < 256; ++i) {
+    prefix_sum_[i + 1] = prefix_sum_[i] + byte_predictions_[i];
+  }
   uint max_context_offset;
   Serialize(s, max_context_offset);
   GetModel(*long_term_memory_)->SetMaxContextOffset(max_context_offset);
@@ -1835,6 +1835,7 @@ void ModPPMD::Copy(const MemoryInterface* m) {
   context_advanced_ = orig->context_advanced_;
   update_shared_ppm_predictions_ = orig->update_shared_ppm_predictions_;
   byte_predictions_ = orig->byte_predictions_;
+  prefix_sum_ = orig->prefix_sum_;
   GetModel(*long_term_memory_)
       ->SetMaxContextOffset(GetModel(*orig->long_term_memory_)->GetMaxContextOffset());
 }

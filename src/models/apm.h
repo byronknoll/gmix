@@ -31,7 +31,9 @@ class APM : public Model {
       unsigned int num_contexts,
       float learning_rate,
       std::string description,
-      bool enable_analysis);
+      bool enable_analysis,
+      bool hash_with_bit_context = false,
+      bool add_skip_connection = false);
   ~APM() {}
 
   void Predict(ShortTermMemory& short_term_memory,
@@ -52,6 +54,7 @@ class APM : public Model {
   unsigned int num_contexts_;
   float learning_rate_;
   int memory_index_;
+  bool hash_with_bit_context_ = false;
 
   // Short-term state for current prediction.
   unsigned int last_context_ = 0;

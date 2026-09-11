@@ -58,6 +58,7 @@ class Indirect : public Model {
   unsigned int& context_;
   int prediction_index_indirect_, prediction_index_run_map_, memory_index_;
   float learning_rate_;
+  unsigned int last_context_ = 0;
 };
 
 #endif  // MODELS_INDIRECT_H

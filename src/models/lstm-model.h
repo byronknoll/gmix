@@ -29,6 +29,7 @@ class LstmModel : public Model {
   // This contains 256 entries, with a probability distribution for the next
   // byte prediction.
   std::valarray<float> probs_;
+  std::array<float, 257> prefix_sum_{};
 };
 
 #endif  // MODELS_LSTM_MODEL_H_

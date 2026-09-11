@@ -1,6 +1,6 @@
 CC = clang++-17
-CFLAGS_DEFINES ?= -DP2_FASTMATH -DLSTM_QUANT=8 -DP3_BATCH -DP3_REGBLOCK
-LFLAGS = -std=c++17 -Wall $(CFLAGS_DEFINES) -Ofast -march=native
+CFLAGS_DEFINES ?= -DP2_FASTMATH -DLSTM_QUANT=8 -DP3_BATCH -DP3_REGBLOCK -DOERR_REGBLOCK
+LFLAGS = -std=c++17 -Wall $(CFLAGS_DEFINES) -Ofast -march=native -flto
 
 all: gmix test dictionary-prep enwik9-prep
 
