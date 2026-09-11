@@ -40,8 +40,7 @@ class Indirect : public Model {
   // description: a short identifier for this model.
   Indirect(ShortTermMemory& short_term_memory, LongTermMemory& long_term_memory,
            float learning_rate, unsigned int table_size, unsigned int& context,
-           std::string description, bool enable_analysis,
-           bool add_skip_connection = false);
+           std::string description, bool enable_analysis);
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory) override;
   void Learn(const ShortTermMemory& short_term_memory,
