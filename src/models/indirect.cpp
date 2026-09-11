@@ -5,12 +5,19 @@
 Indirect::Indirect(ShortTermMemory& short_term_memory,
                    LongTermMemory& long_term_memory, float learning_rate,
                    unsigned int table_size, unsigned int& context,
-                   std::string description, bool enable_analysis)
+                   std::string description, bool enable_analysis,
+                   bool add_skip_connection)
     : context_(context), learning_rate_(learning_rate) {
   prediction_index_indirect_ = short_term_memory.AddPrediction(
       description + "-indirect", enable_analysis, this);
   prediction_index_run_map_ = short_term_memory.AddPrediction(
       description + "-run_map", enable_analysis, this);
+  if (add_skip_connection) {
+    short_term_memory.models_with_skip_connection.push_back(
+        prediction_index_indirect_);
+    short_term_memory.models_with_skip_connection.push_back(
+        prediction_index_run_map_);
+  }
   memory_index_ = long_term_memory.model_memory.size();
   // When the table size is a multiple of 256, there will be more context
   // collisions (because the byte context index will always be a multiple of

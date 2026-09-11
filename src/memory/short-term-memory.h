@@ -86,6 +86,11 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int last_ten_bytes_hash = 0;
   unsigned int last_twelve_bytes_hash = 0;
   unsigned int last_sixteen_bytes_hash = 0;
+  unsigned int last_twenty_bytes_hash = 0;
+  unsigned int last_twentyfour_bytes_hash = 0;
+  unsigned int last_thirtytwo_bytes_hash = 0;
+  unsigned int last_fortyeight_bytes_hash = 0;
+  unsigned int last_sixtyfour_bytes_hash = 0;
   unsigned int last_byte_plus_recent = 0;
   unsigned int second_last_plus_recent = 0;
 
@@ -139,6 +144,36 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int stride_2 = 0;
   unsigned int stride_3 = 0;
   unsigned int stride_4 = 0;
+
+  // Word contexts:
+  unsigned int word_0 = 0;
+  unsigned int word_1 = 0;
+  unsigned int word_2 = 0;
+  unsigned int word_3 = 0;
+  unsigned int word_0_1 = 0;
+  unsigned int word_1_2 = 0;
+  unsigned int word_1_2_3 = 0;
+  unsigned int word_1_3 = 0;
+  unsigned int word_0_1_2 = 0;
+  unsigned int word_0_2 = 0;
+  unsigned int word_len = 0;
+  unsigned int first_byte = 0;
+  unsigned int word_0_3 = 0;
+  unsigned int word_0_1_3 = 0;
+  unsigned int word_0_2_3 = 0;
+  unsigned int word_0_1_2_3 = 0;
+  unsigned int word_1_4 = 0;
+  unsigned int word_2_3 = 0;
+  unsigned int word_3_4 = 0;
+  unsigned int word_1_2_4 = 0;
+  unsigned int word_1_2_3_4 = 0;
+  unsigned int word_prefix_plus_byte = 0;
+  unsigned int first_byte_1 = 0;
+  unsigned int word_len_1 = 0;
+  unsigned int dist_to_delim1 = 0;
+  unsigned int dist_to_delim2 = 0;
+  unsigned int dist_delim1_byte = 0;
+  unsigned int dist_delim2_byte = 0;
 
   // Predictions for the next byte of data from PPM. Each prediction is in the
   // 0-1 range.
