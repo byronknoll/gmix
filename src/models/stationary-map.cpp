@@ -28,10 +28,14 @@ StationaryMap::StationaryMap(ShortTermMemory& short_term_memory,
                              LongTermMemory& long_term_memory,
                              const unsigned int& context,
                              unsigned int num_contexts, int rate,
-                             std::string description, bool enable_analysis)
+                             std::string description, bool enable_analysis,
+                             bool add_skip_connection)
     : context_(context), num_contexts_(num_contexts), rate_(rate) {
   prediction_index_ =
       short_term_memory.AddPrediction(description, enable_analysis, this);
+  if (add_skip_connection) {
+    short_term_memory.models_with_skip_connection.push_back(prediction_index_);
+  }
   memory_index_ = long_term_memory.model_memory.size();
   long_term_memory.model_memory.push_back(
       std::make_unique<StationaryMapMemory>(num_contexts_, description));
@@ -53,6 +57,8 @@ void StationaryMap::Predict(ShortTermMemory& short_term_memory,
   unsigned int idx;
   if (context_ < 256 && num_contexts_ <= 65536) {
     idx = ((context_ << 8) | (short_term_memory.bit_context & 0xff)) & (num_contexts_ - 1);
+  } else if (context_ < 65536 && num_contexts_ == 16777216) {
+    idx = (context_ << 8) | (short_term_memory.bit_context & 0xff);
   } else {
     uint32_t h = (context_ ^ (context_ >> 16)) * 2654435761u +
                  (short_term_memory.bit_context * 2246822519u);

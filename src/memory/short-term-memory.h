@@ -191,6 +191,14 @@ struct ShortTermMemory : MemoryInterface {
   unsigned int ppm_bit_context = 0;
   unsigned int lstm_bit_context = 0;
   unsigned int bit_agreement_context = 0;
+  unsigned int match_byte_context = 0;
+  unsigned int match_bigram_context = 0;
+  unsigned int error_context = 0;
+  unsigned int error_history = 0;
+  unsigned int failcount_context = 0;
+  unsigned int error_byte_context = 0;
+  unsigned int direct_two_bytes = 0;
+  unsigned int prev_two_bytes = 0;
 
   std::vector<unsigned char> rotating_history;
   unsigned int rotating_history_pos = 0;

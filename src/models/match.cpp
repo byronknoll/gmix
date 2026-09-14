@@ -99,6 +99,10 @@ void Match::Predict(ShortTermMemory& short_term_memory,
       short_term_memory.bit_agreement_context =
           (short_term_memory.bit_agreement_context & 0x7ff) |
           ((expected_bit + 1) << 11);
+      short_term_memory.match_byte_context =
+          ((cur_byte_ + 1) << 8) | (short_term_memory.bit_context & 0xff);
+      short_term_memory.match_bigram_context =
+          ((cur_byte_ + 1) << 8) | (short_term_memory.last_byte & 0xff);
     }
   }
 }
@@ -120,12 +124,6 @@ void Match::Learn(const ShortTermMemory& short_term_memory,
   }
 
   if (short_term_memory.recent_bits >= 128) {  // Byte boundary.
-    if (short_term_memory.longest_match >= 2) {
-      // When there is a long match, the byte history (in short term memory) is
-      // not updated. Here we should only replace the context if the history is
-      // updated.
-      return;
-    }
     auto& match_memory = *GetMemory(long_term_memory);
     auto& loc = match_memory.table[byte_context_ & mask_];
     unsigned long long pos = long_term_memory.history.size() - 1;

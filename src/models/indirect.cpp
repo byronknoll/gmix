@@ -5,12 +5,19 @@
 Indirect::Indirect(ShortTermMemory& short_term_memory,
                    LongTermMemory& long_term_memory, float learning_rate,
                    unsigned int table_size, unsigned int& context,
-                   std::string description, bool enable_analysis)
+                   std::string description, bool enable_analysis,
+                   bool add_skip_connection)
     : context_(context), learning_rate_(learning_rate) {
   prediction_index_indirect_ = short_term_memory.AddPrediction(
       description + "-indirect", enable_analysis, this);
   prediction_index_run_map_ = short_term_memory.AddPrediction(
       description + "-run_map", enable_analysis, this);
+  if (add_skip_connection) {
+    short_term_memory.models_with_skip_connection.push_back(
+        prediction_index_indirect_);
+    short_term_memory.models_with_skip_connection.push_back(
+        prediction_index_run_map_);
+  }
   memory_index_ = long_term_memory.model_memory.size();
   // When the table size is a multiple of 256, there will be more context
   // collisions (because the byte context index will always be a multiple of
@@ -59,12 +66,16 @@ void Indirect::Predict(ShortTermMemory& short_term_memory,
   if (nonstationary_state != 255) {
     float p = m.nonstationary_predictions[nonstationary_state];
     short_term_memory.SetLogitPrediction(p, prediction_index_indirect_);
+  } else {
+    short_term_memory.SetLogitPrediction(0.0f, prediction_index_indirect_);
   }
   int run_map_state = m.run_map_table[context];
   // 0 means this context has never been seen.
   if (run_map_state != 0) {
     float p = m.run_map_predictions[run_map_state];
     short_term_memory.SetLogitPrediction(p, prediction_index_run_map_);
+  } else {
+    short_term_memory.SetLogitPrediction(0.0f, prediction_index_run_map_);
   }
 }
 

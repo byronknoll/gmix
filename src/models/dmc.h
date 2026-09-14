@@ -34,7 +34,7 @@ struct DmcMemory : public MemoryInterface {
   DmcMemory(uint32_t max_nodes, uint32_t th_start, std::string desc = "");
   std::string description;
   std::vector<DMCNode> t;
-  std::array<uint32_t, 256> sm_table;
+  std::array<uint32_t, 65536> sm_table;
   uint32_t top = 0;
   uint32_t threshold = 0;
   uint32_t threshold_fine = 0;
@@ -76,7 +76,7 @@ class DMC : public Model {
   const DmcMemory* GetMemory(const LongTermMemory& long_term_memory) const;
 
   uint32_t curr_ = 0;
-  uint8_t last_sm_cxt_ = 0;
+  uint32_t last_sm_cxt_ = 0;
   int prediction_index_counts_ = 0;
   int prediction_index_state_ = 0;
   int memory_index_ = 0;

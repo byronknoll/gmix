@@ -26,7 +26,8 @@ class StateMap : public Model {
            unsigned int num_contexts,
            int limit,
            std::string description,
-           bool enable_analysis = false);
+           bool enable_analysis = false,
+           bool add_skip_connection = false);
 
   void Predict(ShortTermMemory& short_term_memory,
                const LongTermMemory& long_term_memory) override;

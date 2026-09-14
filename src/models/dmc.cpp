@@ -112,7 +112,8 @@ void DMC::Predict(ShortTermMemory& short_term_memory,
   uint32_t n1 = mem.t[curr_].c1 + 1;
   float p_counts = static_cast<float>(n1) / static_cast<float>(n0 + n1);
 
-  last_sm_cxt_ = mem.t[curr_].get_state();
+  last_sm_cxt_ = (mem.t[curr_].get_state() << 8) |
+                 (short_term_memory.bit_context & 0xff);
   uint32_t val = mem.sm_table[last_sm_cxt_];
   float p_state = static_cast<float>(val >> 10) / static_cast<float>(1 << 22);
 

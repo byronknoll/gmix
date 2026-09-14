@@ -51,6 +51,7 @@ class Predictor {
   int ind_2_idx_ = -1;
   int match_2_idx_ = -1;
   int match_3_idx_ = -1;
+  float last_prob_ = 0.5f;
 
   void AddIndirect();
   void AddSkip();

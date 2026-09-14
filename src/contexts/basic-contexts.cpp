@@ -15,6 +15,10 @@ void BasicContexts::ByteUpdate(ShortTermMemory& short_term_memory,
   for (int i = 0; i < short_term_memory.recent_bytes.size(); ++i) {
     short_term_memory.recent_bytes[i] = short_term_memory.GetRecentByte(i);
   }
+  short_term_memory.direct_two_bytes =
+      (short_term_memory.recent_bytes[1] << 8) | short_term_memory.last_byte;
+  short_term_memory.prev_two_bytes =
+      (short_term_memory.recent_bytes[2] << 8) | short_term_memory.recent_bytes[1];
 
   // Periodic stride detection (inspired by PAQ8 recordModel)
   unsigned int c = short_term_memory.last_byte;
@@ -73,12 +77,7 @@ void BasicContexts::Learn(const ShortTermMemory& short_term_memory,
   int current_byte =
       short_term_memory.recent_bits * 2 + short_term_memory.new_bit;
   if (current_byte >= 256) {  // A new byte has been observed.
-    // Only add the new byte to the history if there isn't a long match. This
-    // helps to save memory - we don't need to keep track of sequences which
-    // have already occurred before.
-    if (short_term_memory.longest_match < 2) {
-      long_term_memory.history.push_back(current_byte);
-    }
+    long_term_memory.history.push_back(current_byte);
   }
 }
 
