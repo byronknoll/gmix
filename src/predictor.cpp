@@ -182,6 +182,8 @@ void Predictor::AddSkip() {
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_7,
                         "Indirect(skip_0_7)", enable_analysis));
+  AddModel(new SkipContext({0, 1, 3}, short_term_memory_.skip_0_1_3));
+  AddModel(new SkipContext({0, 2, 4}, short_term_memory_.skip_0_2_4));
   AddModel(new SkipContext({0, 1, 3, 4}, short_term_memory_.skip_0_1_3_4));
   AddModel(new Indirect(short_term_memory_, long_term_memory_, learning_rate,
                         1 << 16, short_term_memory_.skip_0_1_3_4,
@@ -761,6 +763,9 @@ void Predictor::AddMixers() {
                      short_term_memory_.skip_0_1_3, 0.002, 0, 1 << 16,
                      "Mixer0(skip_0_1_3)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.skip_0_3_4, 0.002, 0, 1 << 16,
+                     "Mixer0(skip_0_3_4)", enable_analysis));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.match_bit_context, 0.003, 0, 1 << 10,
                      "Mixer0(match_bit_ctx)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
@@ -838,6 +843,9 @@ void Predictor::AddMixers() {
                      short_term_memory_.last_two_bytes_hash, 0.0015, 1, 1 << 16,
                      "Mixer1(2_bytes_hash)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.last_three_bytes_hash, 0.0015, 1, 1 << 16,
+                     "Mixer1(3_bytes_hash)", enable_analysis));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.bit_agreement_context, 0.002, 1, 1 << 13,
                      "Mixer1(bit_agreement)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
@@ -876,6 +884,12 @@ void Predictor::AddMixers() {
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.skip_0_1_3_4, 0.0015, 1, 1 << 16,
                      "Mixer1(skip_0_1_3_4)", enable_analysis));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.skip_1_2_3, 0.0015, 1, 1 << 16,
+                     "Mixer1(skip_1_2_3)", enable_analysis));
+  AddModel(new Mixer(short_term_memory_, long_term_memory_,
+                     short_term_memory_.skip_0_1_2_4, 0.0015, 1, 1 << 16,
+                     "Mixer1(skip_0_1_2_4)", enable_analysis));
   AddModel(new Mixer(short_term_memory_, long_term_memory_,
                      short_term_memory_.stride_2, 0.002, 1, 1 << 8,
                      "Mixer1(stride_2)", enable_analysis));
